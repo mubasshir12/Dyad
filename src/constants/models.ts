@@ -17,7 +17,7 @@ export const MODEL_OPTIONS: Record<RegularModelProvider, ModelOption[]> = {
     {
       name: "gpt-4.1-mini",
       displayName: "GPT 4.1 Mini",
-      description: "OpenAI's flagship model",
+      description: "OpenAI's lightweight, but intelligent model",
     },
     {
       name: "o3-mini",
