@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { IpcClient } from "@/ipc/ipc_client";
 import { Switch } from "@/components/ui/switch";
 import { showError } from "@/lib/toast";
+import { UserSettings } from "@/lib/schemas";
 
 interface ProviderSettingsPageProps {
   provider: string;
@@ -99,7 +100,7 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
     setIsSaving(true);
     setSaveError(null);
     try {
-      await updateSettings({
+      const settingsUpdate: Partial<UserSettings> = {
         providerSettings: {
           ...settings?.providerSettings,
           [provider]: {
@@ -109,7 +110,11 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
             },
           },
         },
-      });
+      };
+      if (isDyad) {
+        settingsUpdate.enableDyadPro = true;
+      }
+      await updateSettings(settingsUpdate);
       setApiKeyInput(""); // Clear input on success
       // Optionally show a success message
     } catch (error: any) {
