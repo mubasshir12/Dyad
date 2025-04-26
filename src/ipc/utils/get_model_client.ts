@@ -45,7 +45,7 @@ export function getModelClient(
     throw new Error("No API keys available for any model in AUTO_MODELS");
   }
 
-  const dyadApiKey = settings.providerSettings?.dyad?.apiKey?.value;
+  const dyadApiKey = settings.providerSettings?.auto?.apiKey?.value;
   if (dyadApiKey) {
     const provider = createOpenAI({
       apiKey: dyadApiKey,
