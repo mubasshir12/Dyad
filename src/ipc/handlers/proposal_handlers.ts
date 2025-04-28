@@ -22,11 +22,7 @@ import {
 } from "../processors/response_processor";
 import log from "electron-log";
 import { isServerFunction } from "../../supabase_admin/supabase_utils";
-import {
-  estimateTokens,
-  getContextWindow,
-} from "../handlers/token_count_handlers";
-import { estimateMessagesTokens } from "../utils/token_utils";
+import { estimateMessagesTokens, getContextWindow } from "../utils/token_utils";
 
 const logger = log.scope("proposal_handlers");
 
