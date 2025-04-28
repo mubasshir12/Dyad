@@ -48,6 +48,12 @@ import { AutoApproveSwitch } from "../AutoApproveSwitch";
 import { usePostHog } from "posthog-js/react";
 import { CodeHighlight } from "./CodeHighlight";
 import { TokenBar } from "./TokenBar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 const showTokenBarAtom = atom(false);
 
@@ -307,6 +313,21 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
 function mapActionToButton(action: SuggestedAction) {
   switch (action.id) {
+    case "summarize-in-new-chat":
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" key={action.id}>
+                Summarize to new chat
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Creating a new chat makes the AI more focused and efficient</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
     default:
       console.error(`Unsupported action: ${action.id}`);
       return (
@@ -323,7 +344,6 @@ function ActionProposalActions({ proposal }: { proposal: ActionProposal }) {
       <div className="flex items-center space-x-2">
         {proposal.actions.map((action) => mapActionToButton(action))}
       </div>
-      <AutoApproveSwitch />
     </div>
   );
 }
