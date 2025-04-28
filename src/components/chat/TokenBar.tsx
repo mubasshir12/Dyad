@@ -9,12 +9,10 @@ import { useCountTokens } from "@/hooks/useCountTokens";
 import { MessageSquare, Code, Bot, AlignLeft } from "lucide-react";
 import { chatInputValueAtom } from "@/atoms/chatAtoms";
 import { useAtom } from "jotai";
-import { chatMessagesAtom } from "@/atoms/chatAtoms";
 import { useSettings } from "@/hooks/useSettings";
 
 interface TokenBarProps {
   chatId?: number;
-  maxTokens?: number;
 }
 
 export function TokenBar({ chatId }: TokenBarProps) {
@@ -24,6 +22,9 @@ export function TokenBar({ chatId }: TokenBarProps) {
   const { settings } = useSettings();
   useEffect(() => {
     if (!chatId) return;
+    // Mark this as used, we need to re-trigger token count
+    // when selected model changes.
+    void settings?.selectedModel;
 
     const debounceTimer = setTimeout(() => {
       countTokens(chatId, inputValue).catch((err) => {
