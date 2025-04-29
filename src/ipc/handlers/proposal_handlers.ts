@@ -65,6 +65,25 @@ const CACHE_EXPIRATION_MS = 5 * 60 * 1000;
 // In-memory cache for codebase token counts
 const codebaseTokenCache = new Map<number, CodebaseTokenCache>();
 
+// Function to clean up expired cache entries
+function cleanupExpiredCacheEntries() {
+  const now = Date.now();
+  let expiredCount = 0;
+
+  codebaseTokenCache.forEach((entry, key) => {
+    if (now - entry.timestamp > CACHE_EXPIRATION_MS) {
+      codebaseTokenCache.delete(key);
+      expiredCount++;
+    }
+  });
+
+  if (expiredCount > 0) {
+    logger.log(
+      `Cleaned up ${expiredCount} expired codebase token cache entries`
+    );
+  }
+}
+
 // Function to get cached token count or calculate and cache it
 async function getCodebaseTokenCount(
   chatId: number,
@@ -72,6 +91,9 @@ async function getCodebaseTokenCount(
   messageContent: string,
   appPath: string
 ): Promise<number> {
+  // Clean up expired cache entries first
+  cleanupExpiredCacheEntries();
+
   const cacheEntry = codebaseTokenCache.get(chatId);
   const now = Date.now();
 
