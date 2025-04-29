@@ -22,8 +22,13 @@ import {
 } from "../processors/response_processor";
 import log from "electron-log";
 import { isServerFunction } from "../../supabase_admin/supabase_utils";
-import { estimateMessagesTokens, getContextWindow } from "../utils/token_utils";
-
+import {
+  estimateMessagesTokens,
+  estimateTokens,
+  getContextWindow,
+} from "../utils/token_utils";
+import { extractCodebase } from "../../utils/codebase";
+import { getDyadAppPath } from "../../paths/paths";
 const logger = log.scope("proposal_handlers");
 
 // Placeholder Proposal data (can be removed or kept for reference)
@@ -63,48 +68,10 @@ const getProposalHandler = async (
     });
 
     if (
-      latestAssistantMessage?.approvalState === "rejected" ||
-      latestAssistantMessage?.approvalState === "approved"
+      latestAssistantMessage?.content &&
+      latestAssistantMessage.id &&
+      !latestAssistantMessage?.approvalState
     ) {
-      // Get all chat messages to calculate token usage
-      const chat = await db.query.chats.findFirst({
-        where: eq(chats.id, chatId),
-        with: {
-          messages: {
-            orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-          },
-        },
-      });
-
-      if (chat) {
-        // Calculate total tokens from message history
-        const totalTokens = estimateMessagesTokens(chat.messages);
-        const contextWindow = Math.min(getContextWindow(), 100_000);
-        logger.log(
-          `Token usage: ${totalTokens}/${contextWindow} (${
-            (totalTokens / contextWindow) * 100
-          }%)`
-        );
-
-        // If we're using more than 80% of the context window, suggest summarizing
-        if (totalTokens > contextWindow * 0.8) {
-          logger.log(
-            `Token usage high (${totalTokens}/${contextWindow}), suggesting summarize action`
-          );
-          return {
-            proposal: {
-              type: "action-proposal",
-              actions: [{ id: "summarize-in-new-chat" }],
-            },
-            chatId,
-            messageId: latestAssistantMessage.id,
-          };
-        }
-      }
-      return null;
-    }
-
-    if (latestAssistantMessage?.content && latestAssistantMessage.id) {
       const messageId = latestAssistantMessage.id; // Get the message ID
       logger.log(
         `Found latest assistant message (ID: ${messageId}), parsing content...`
@@ -178,12 +145,47 @@ const getProposalHandler = async (
         logger.log(
           "No relevant tags found in the latest assistant message content."
         );
-        return null; // No proposal could be generated
       }
-    } else {
-      logger.log(`No assistant message found for chatId: ${chatId}`);
-      return null; // No message found
     }
+    // Get all chat messages to calculate token usage
+    const chat = await db.query.chats.findFirst({
+      where: eq(chats.id, chatId),
+      with: {
+        app: true,
+        messages: {
+          orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+        },
+      },
+    });
+
+    if (latestAssistantMessage && chat) {
+      // Calculate total tokens from message history
+      const totalTokens =
+        estimateMessagesTokens(chat.messages) +
+        estimateTokens(await extractCodebase(getDyadAppPath(chat.app.path)));
+      const contextWindow = Math.min(getContextWindow(), 100_000);
+      logger.log(
+        `Token usage: ${totalTokens}/${contextWindow} (${
+          (totalTokens / contextWindow) * 100
+        }%)`
+      );
+
+      // If we're using more than 80% of the context window, suggest summarizing
+      if (totalTokens > contextWindow * 0.8) {
+        logger.log(
+          `Token usage high (${totalTokens}/${contextWindow}), suggesting summarize action`
+        );
+        return {
+          proposal: {
+            type: "action-proposal",
+            actions: [{ id: "summarize-in-new-chat" }],
+          },
+          chatId,
+          messageId: latestAssistantMessage.id,
+        };
+      }
+    }
+    return null;
   } catch (error) {
     logger.error(`Error processing proposal for chatId ${chatId}:`, error);
     return null; // Indicate DB or processing error
