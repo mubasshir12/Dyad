@@ -20,15 +20,15 @@ export default function ChatPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useAtom(isPreviewOpenAtom);
   const [isResizing, setIsResizing] = useState(false);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
-  const { chats } = useChats(selectedAppId);
+  const { chats, loading } = useChats(selectedAppId);
 
   useEffect(() => {
-    if (!chatId) {
+    if (!chatId && chats.length && !loading) {
       // Not a real navigation, just a redirect, when the user navigates to /chat
       // without a chatId, we redirect to the first chat
       navigate({ to: "/chat", search: { id: chats[0]?.id }, replace: true });
     }
-  }, [chatId]);
+  }, [chatId, chats, loading, navigate]);
 
   useEffect(() => {
     if (isPreviewOpen) {
