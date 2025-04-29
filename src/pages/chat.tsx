@@ -7,15 +7,29 @@ import {
 } from "react-resizable-panels";
 import { ChatPanel } from "../components/ChatPanel";
 import { PreviewPanel } from "../components/preview_panel/PreviewPanel";
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { isPreviewOpenAtom } from "@/atoms/viewAtoms";
+import { useChats } from "@/hooks/useChats";
+import { selectedAppIdAtom } from "@/atoms/appAtoms";
 
 export default function ChatPage() {
-  const { id } = useSearch({ from: "/chat" });
+  let { id: chatId } = useSearch({ from: "/chat" });
+  const navigate = useNavigate();
   const [isPreviewOpen, setIsPreviewOpen] = useAtom(isPreviewOpenAtom);
   const [isResizing, setIsResizing] = useState(false);
+  const selectedAppId = useAtomValue(selectedAppIdAtom);
+  const { chats } = useChats(selectedAppId);
+  // if (!chatId) {
+  //   chatId = chats[0]?.id;
+  // }
+
+  useEffect(() => {
+    if (!chatId) {
+      navigate({ to: "/chat", search: { id: chats[0]?.id } });
+    }
+  }, [chatId]);
 
   useEffect(() => {
     if (isPreviewOpen) {
@@ -31,7 +45,7 @@ export default function ChatPage() {
       <Panel id="chat-panel" minSize={30}>
         <div className="h-full w-full">
           <ChatPanel
-            chatId={id}
+            chatId={chatId}
             isPreviewOpen={isPreviewOpen}
             onTogglePreview={() => {
               setIsPreviewOpen(!isPreviewOpen);
