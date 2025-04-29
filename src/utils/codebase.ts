@@ -100,7 +100,7 @@ async function isGitIgnored(
     gitIgnoreCache.set(cacheKey, result);
     return result;
   } catch (error) {
-    console.error(`Error checking if path is git ignored: ${filePath}`, error);
+    logger.error(`Error checking if path is git ignored: ${filePath}`, error);
     return false;
   }
 }
@@ -140,7 +140,7 @@ async function readFileWithCache(filePath: string): Promise<string | null> {
 
     return content;
   } catch (error) {
-    console.error(`Error reading file: ${filePath}`, error);
+    logger.error(`Error reading file: ${filePath}`, error);
     return null;
   }
 }
@@ -193,7 +193,7 @@ async function collectFiles(dir: string, baseDir: string): Promise<string[]> {
             return;
           }
         } catch (error) {
-          console.error(`Error checking file size: ${fullPath}`, error);
+          logger.error(`Error checking file size: ${fullPath}`, error);
           return;
         }
 
@@ -205,7 +205,7 @@ async function collectFiles(dir: string, baseDir: string): Promise<string[]> {
 
     await Promise.all(promises);
   } catch (error) {
-    console.error(`Error reading directory ${dir}:`, error);
+    logger.error(`Error reading directory ${dir}:`, error);
   }
 
   return files;
@@ -251,7 +251,7 @@ ${content}
 
 `;
   } catch (error) {
-    console.error(`Error reading file: ${filePath}`, error);
+    logger.error(`Error reading file: ${filePath}`, error);
     return `<dyad-file path="${path.relative(baseDir, filePath)}">
 // Error reading file: ${error}
 </dyad-file>
@@ -276,8 +276,9 @@ export async function extractCodebase(appPath: string): Promise<string> {
   // Collect all relevant files
   const files = await collectFiles(appPath, appPath);
 
-  // Sort files to prioritize important files
-  const sortedFiles = sortFilesByImportance(files, appPath);
+  // Sort files by modification time (oldest first)
+  // This is important for cache-ability.
+  const sortedFiles = await sortFilesByModificationTime(files);
 
   // Format files
   let output = "";
@@ -288,6 +289,28 @@ export async function extractCodebase(appPath: string): Promise<string> {
   const endTime = Date.now();
   logger.log("extractCodebase: time taken", endTime - startTime);
   return output;
+}
+
+/**
+ * Sort files by their modification timestamp (oldest first)
+ */
+async function sortFilesByModificationTime(files: string[]): Promise<string[]> {
+  // Get stats for all files
+  const fileStats = await Promise.all(
+    files.map(async (file) => {
+      try {
+        const stats = await fsAsync.stat(file);
+        return { file, mtime: stats.mtimeMs };
+      } catch (error) {
+        // If there's an error getting stats, use current time as fallback
+        logger.error(`Error getting file stats for ${file}:`, error);
+        return { file, mtime: Date.now() };
+      }
+    })
+  );
+
+  // Sort by modification time (oldest first)
+  return fileStats.sort((a, b) => a.mtime - b.mtime).map((item) => item.file);
 }
 
 /**
