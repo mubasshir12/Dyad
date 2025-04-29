@@ -21,13 +21,12 @@ export default function ChatPage() {
   const [isResizing, setIsResizing] = useState(false);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const { chats } = useChats(selectedAppId);
-  // if (!chatId) {
-  //   chatId = chats[0]?.id;
-  // }
 
   useEffect(() => {
     if (!chatId) {
-      navigate({ to: "/chat", search: { id: chats[0]?.id } });
+      // Not a real navigation, just a redirect, when the user navigates to /chat
+      // without a chatId, we redirect to the first chat
+      navigate({ to: "/chat", search: { id: chats[0]?.id }, replace: true });
     }
   }, [chatId]);
 
