@@ -160,7 +160,6 @@ export const PreviewIframe = ({
       const { type, payload } = event.data;
 
       if (type === "window-error" || type === "unhandled-rejection") {
-        debugger;
         const errorMessage = `Error ${payload.message}: ${payload.stack
           .split("\n")
           .slice(1, 2)
