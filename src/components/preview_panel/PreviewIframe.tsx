@@ -159,26 +159,18 @@ export const PreviewIframe = ({
 
       const { type, payload } = event.data;
 
-      if (type === "window-error") {
-        const errorMessage = `Error in ${payload.filename} (line ${payload.lineno}, col ${payload.colno}): ${payload.message}`;
+      if (type === "window-error" || type === "unhandled-rejection") {
+        debugger;
+        const errorMessage = `Error ${payload.message}: ${payload.stack
+          .split("\n")
+          .slice(1, 2)
+          .join("\n")}`;
         console.error("Iframe error:", errorMessage);
         setErrorMessage(errorMessage);
         setAppOutput((prev) => [
           ...prev,
           {
             message: `Iframe error: ${errorMessage}`,
-            type: "client-error",
-            appId: selectedAppId!,
-          },
-        ]);
-      } else if (type === "unhandled-rejection") {
-        const errorMessage = `Unhandled Promise Rejection: ${payload.reason}`;
-        console.error("Iframe unhandled rejection:", errorMessage);
-        setErrorMessage(errorMessage);
-        setAppOutput((prev) => [
-          ...prev,
-          {
-            message: `Iframe unhandled rejection: ${errorMessage}`,
             type: "client-error",
             appId: selectedAppId!,
           },

@@ -171,11 +171,8 @@ export function devErrorAndNavigationPlugin(): Plugin {
                   window.parent.postMessage({
                     type: 'window-error',
                     payload: {
-                      message: event.message,
-                      filename: event.filename,
-                      lineno: event.lineno,
-                      colno: event.colno,
-                      error: event.error?.toString() // Include stack trace if available
+                      message: event.error?.message || event.message,
+                      stack: event.error?.stack || '<no stack available>',
                     }
                   }, '*');
                 });
@@ -185,7 +182,8 @@ export function devErrorAndNavigationPlugin(): Plugin {
                    window.parent.postMessage({
                      type: 'unhandled-rejection',
                      payload: {
-                       reason: event.reason instanceof Error ? event.reason.toString() : JSON.stringify(event.reason) // Attempt to serialize reason
+                       message: event.reason?.message || event.reason.toString(),
+                       stack: event.reason?.stack || '<no stack available>',
                      }
                    }, '*');
                 });
