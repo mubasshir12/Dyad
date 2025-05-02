@@ -286,8 +286,10 @@ export class IpcClient {
 
   public async deleteChat(chatId: number): Promise<{ success: boolean }> {
     try {
-      const result = await this.ipcRenderer.invoke("delete-chat", chatId);
-      return result as { success: boolean };
+      const result = (await this.ipcRenderer.invoke("delete-chat", chatId)) as {
+        success: boolean;
+      };
+      return result;
     } catch (error) {
       showError(error);
       throw error;

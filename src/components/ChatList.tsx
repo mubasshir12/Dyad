@@ -90,7 +90,11 @@ export function ChatList({ show }: { show?: boolean }) {
 
   const handleDeleteChat = async (chatId: number) => {
     try {
-      await IpcClient.getInstance().deleteChat(chatId);
+      const result = await IpcClient.getInstance().deleteChat(chatId);
+      if (!result.success) {
+        showError("Failed to delete chat");
+        return;
+      }
       showSuccess("Chat deleted successfully");
 
       // If the deleted chat was selected, navigate to home
