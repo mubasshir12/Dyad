@@ -192,7 +192,7 @@
     };
 
     // --- Callback function executed when mutations are observed ---
-    const observerCallback = function (mutationsList, observer) {
+    const observerCallback = function (mutationsList) {
       // Iterate through all mutations that just occurred
       for (const mutation of mutationsList) {
         // We are only interested in nodes that were added
@@ -213,23 +213,34 @@
 
     function reportViteErrorOverlay(node) {
       console.log(`Detected vite error overlay: ${node}`);
-      window.parent.postMessage(
-        {
-          type: "build-error-report",
-          payload: {
-            message: node.shadowRoot.querySelector(".message").textContent,
-            file: node.shadowRoot.querySelector(".file").textContent,
-            frame: node.shadowRoot.querySelector(".frame").textContent,
+      try {
+        window.parent.postMessage(
+          {
+            type: "build-error-report",
+            payload: {
+              message: node.shadowRoot.querySelector(".message").textContent,
+              file: node.shadowRoot.querySelector(".file").textContent,
+              frame: node.shadowRoot.querySelector(".frame").textContent,
+            },
           },
-        },
-        PARENT_TARGET_ORIGIN
-      );
+          PARENT_TARGET_ORIGIN
+        );
+      } catch (error) {
+        console.error("Could not report vite error overlay", error);
+      }
     }
 
     // --- Wait for DOM ready logic ---
     if (document.readyState === "loading") {
       // The document is still loading, wait for DOMContentLoaded
       document.addEventListener("DOMContentLoaded", () => {
+        if (!document.body) {
+          console.error(
+            "document.body does not exist - something very weird happened"
+          );
+          return;
+        }
+
         const node = document.body.querySelector("vite-error-overlay");
         if (node) {
           reportViteErrorOverlay(node);
@@ -241,6 +252,12 @@
         "Document loading, waiting for DOMContentLoaded to set up observer."
       );
     } else {
+      if (!document.body) {
+        console.error(
+          "document.body does not exist - something very weird happened"
+        );
+        return;
+      }
       // The DOM is already interactive or complete
       console.log("DOM already ready, setting up observer immediately.");
       const observer = new MutationObserver(observerCallback);
