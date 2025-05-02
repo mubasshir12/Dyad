@@ -23,13 +23,13 @@ export function devErrorAndNavigationPlugin(): Plugin {
           stacktraceJsContent = fs.readFileSync(stackTraceLibPath, "utf-8");
         } catch (error) {
           console.error(
-            `[vite-dev-plugin] Failed to read stacktrace.js from ${stackTraceLibPath}:`,
+            `[dyad-shim] Failed to read stacktrace.js from ${stackTraceLibPath}:`,
             error
           );
           stacktraceJsContent = null;
         }
       } else {
-        console.error(`[vite-dev-plugin] stacktrace.js not found.`);
+        console.error(`[dyad-shim] stacktrace.js not found.`);
       }
 
       const dyadShimPath = path.join("dyad-shim.js");
@@ -38,13 +38,13 @@ export function devErrorAndNavigationPlugin(): Plugin {
           dyadShimContent = fs.readFileSync(dyadShimPath, "utf-8");
         } catch (error) {
           console.error(
-            `[vite-dev-plugin] Failed to read dyad-shim from ${dyadShimPath}:`,
+            `[dyad-shim] Failed to read dyad-shim from ${dyadShimPath}:`,
             error
           );
           dyadShimContent = null;
         }
       } else {
-        console.error(`[vite-dev-plugin] stacktrace.js not found.`);
+        console.error(`[dyad-shim] stacktrace.js not found.`);
       }
     },
 
@@ -63,7 +63,7 @@ export function devErrorAndNavigationPlugin(): Plugin {
           tag: "script",
           injectTo: "head-prepend",
           children:
-            "console.warn('[vite-dev-plugin] stacktrace.js library was not injected.');",
+            "console.warn('[dyad-shim] stacktrace.js library was not injected.');",
         });
       }
 
@@ -78,8 +78,7 @@ export function devErrorAndNavigationPlugin(): Plugin {
         tags.push({
           tag: "script",
           injectTo: "head-prepend",
-          children:
-            "console.warn('[vite-dev-plugin] dyad shim was not injected.');",
+          children: "console.warn('[dyad-shim] dyad shim was not injected.');",
         });
       }
 
