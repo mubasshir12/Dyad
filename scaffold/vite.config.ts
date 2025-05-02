@@ -38,7 +38,7 @@ export function devErrorAndNavigationPlugin(): Plugin {
           dyadShimContent = fs.readFileSync(dyadShimPath, "utf-8");
         } catch (error) {
           console.error(
-            `[vite-dev-plugin] Failed to read stacktrace.js from ${dyadShimPath}:`,
+            `[vite-dev-plugin] Failed to read dyad-shim from ${dyadShimPath}:`,
             error
           );
           dyadShimContent = null;
