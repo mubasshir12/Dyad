@@ -181,7 +181,9 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
           type === "iframe-sourcemapped-error"
             ? payload?.stack?.split("\n").slice(0, 1).join("\n")
             : payload?.stack;
-        const errorMessage = `Error ${payload?.message}\nStack trace: ${stack}`;
+        const errorMessage = `Error ${
+          payload?.message || payload?.reason
+        }\nStack trace: ${stack}`;
         console.error("Iframe error:", errorMessage);
         setErrorMessage(errorMessage);
         setAppOutput((prev) => [
