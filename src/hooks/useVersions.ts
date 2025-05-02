@@ -63,7 +63,6 @@ export function useVersions(appId: number | null) {
         const ipcClient = IpcClient.getInstance();
         await ipcClient.revertVersion({ appId, previousVersionId: versionId });
         await refreshVersions();
-        debugger;
         if (selectedChatId) {
           const chat = await IpcClient.getInstance().getChat(selectedChatId);
           setMessages(chat.messages);
