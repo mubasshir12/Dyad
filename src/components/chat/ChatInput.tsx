@@ -429,7 +429,7 @@ function RebuildButton() {
   const handleRebuild = useCallback(async () => {
     if (!selectedAppId) return;
 
-    posthog.capture("action:restart");
+    posthog.capture("action:rebuild");
     await restartApp({ removeNodeModules: true });
   }, [selectedAppId, posthog, restartApp]);
 
