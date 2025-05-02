@@ -16,6 +16,7 @@ import {
   ChevronsUpDown,
   ChevronsDownUp,
   BarChart2,
+  Paperclip,
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -72,6 +73,10 @@ export function ChatInput({ chatId }: { chatId?: number }) {
   const [messages, setMessages] = useAtom<Message[]>(chatMessagesAtom);
   const setIsPreviewOpen = useSetAtom(isPreviewOpenAtom);
   const [showTokenBar, setShowTokenBar] = useAtom(showTokenBarAtom);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Use the hook to fetch the proposal
   const {
@@ -118,13 +123,25 @@ export function ChatInput({ chatId }: { chatId?: number }) {
   };
 
   const handleSubmit = async () => {
-    if (!inputValue.trim() || isStreaming || !chatId) {
+    if (
+      (!inputValue.trim() && attachments.length === 0) ||
+      isStreaming ||
+      !chatId
+    ) {
       return;
     }
 
     const currentInput = inputValue;
     setInputValue("");
-    await streamMessage({ prompt: currentInput, chatId });
+
+    // Send message with attachments and clear them after sending
+    await streamMessage({
+      prompt: currentInput,
+      chatId,
+      attachments,
+      redo: false,
+    });
+    setAttachments([]);
     posthog.capture("chat:submit");
   };
 
@@ -205,6 +222,66 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     }
   };
 
+  const handleAttachmentClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+
+      // Check for large files (over 1MB)
+      const hasLargeFiles = files.some((file) => file.size > 1024 * 1024);
+
+      if (hasLargeFiles) {
+        setIsUploading(true);
+        // Use a small timeout to simulate processing of large files
+        setTimeout(() => {
+          setAttachments([...attachments, ...files]);
+          setIsUploading(false);
+        }, 500);
+      } else {
+        setAttachments([...attachments, ...files]);
+      }
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(attachments.filter((_, i) => i !== index));
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+
+      // Check for large files (over 1MB)
+      const hasLargeFiles = files.some((file) => file.size > 1024 * 1024);
+
+      if (hasLargeFiles) {
+        setIsUploading(true);
+        // Use a small timeout to simulate processing of large files
+        setTimeout(() => {
+          setAttachments([...attachments, ...files]);
+          setIsUploading(false);
+        }, 500);
+      } else {
+        setAttachments([...attachments, ...files]);
+      }
+    }
+  };
+
   if (!settings) {
     return null; // Or loading state
   }
@@ -236,7 +313,14 @@ export function ChatInput({ chatId }: { chatId?: number }) {
         </div>
       )}
       <div className="p-4">
-        <div className="flex flex-col border border-border rounded-lg bg-(--background-lighter) shadow-sm">
+        <div
+          className={`relative flex flex-col border border-border rounded-lg bg-(--background-lighter) shadow-sm ${
+            isDraggingOver ? "ring-2 ring-blue-500 border-blue-500" : ""
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           {/* Only render ChatInputActions if proposal is loaded */}
           {proposal && proposalResult?.chatId === chatId && (
             <ChatInputActions
@@ -255,6 +339,66 @@ export function ChatInput({ chatId }: { chatId?: number }) {
               isRejecting={isRejecting}
             />
           )}
+
+          {/* Attachments display */}
+          {attachments.length > 0 && (
+            <div className="px-2 pt-2 flex flex-wrap gap-1">
+              {attachments.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center bg-muted rounded-md px-2 py-1 text-xs gap-1"
+                  title={`${file.name} (${(file.size / 1024).toFixed(1)}KB)`}
+                >
+                  {file.type.startsWith("image/") ? (
+                    <div className="relative group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={file.name}
+                        className="w-5 h-5 object-cover rounded"
+                        onLoad={(e) =>
+                          URL.revokeObjectURL(
+                            (e.target as HTMLImageElement).src
+                          )
+                        }
+                      />
+                      <div className="absolute hidden group-hover:block top-6 left-0 z-10">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          className="max-w-[200px] max-h-[200px] object-contain bg-white p-1 rounded shadow-lg"
+                          onLoad={(e) =>
+                            URL.revokeObjectURL(
+                              (e.target as HTMLImageElement).src
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <FileText size={12} />
+                  )}
+                  <span className="truncate max-w-[120px]">{file.name}</span>
+                  <button
+                    onClick={() => removeAttachment(index)}
+                    className="hover:bg-muted-foreground/20 rounded-full p-0.5"
+                    aria-label="Remove attachment"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {isDraggingOver && (
+            <div className="absolute inset-0 bg-blue-100/30 dark:bg-blue-900/30 flex items-center justify-center rounded-lg z-10 pointer-events-none">
+              <div className="bg-background p-4 rounded-lg shadow-lg text-center">
+                <Paperclip className="mx-auto mb-2 text-blue-500" />
+                <p className="text-sm font-medium">Drop files to attach</p>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-start space-x-2 ">
             <textarea
               ref={textareaRef}
@@ -266,6 +410,29 @@ export function ChatInput({ chatId }: { chatId?: number }) {
               style={{ resize: "none" }}
               disabled={isStreaming}
             />
+
+            {/* File attachment button */}
+            <button
+              onClick={handleAttachmentClick}
+              className="px-2 py-2 mt-1 mr-1 hover:bg-(--background-darkest) text-(--sidebar-accent-fg) rounded-lg disabled:opacity-50"
+              disabled={isStreaming || isUploading}
+              title="Attach files"
+            >
+              {isUploading ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <Paperclip size={20} />
+              )}
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              multiple
+              accept=".jpg,.jpeg,.png,.gif,.webp,.txt,.md,.js,.ts,.html,.css,.json,.csv"
+            />
+
             {isStreaming ? (
               <button
                 onClick={handleCancel}
@@ -277,7 +444,10 @@ export function ChatInput({ chatId }: { chatId?: number }) {
             ) : (
               <button
                 onClick={handleSubmit}
-                disabled={!inputValue.trim() || !isAnyProviderSetup()}
+                disabled={
+                  (!inputValue.trim() && attachments.length === 0) ||
+                  !isAnyProviderSetup()
+                }
                 className="px-2 py-2 mt-1 mr-2 hover:bg-(--background-darkest) text-(--sidebar-accent-fg) rounded-lg disabled:opacity-50"
               >
                 <SendIcon size={20} />
