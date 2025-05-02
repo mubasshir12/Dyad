@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ChatSummary } from "@/lib/schemas";
 import { formatDistanceToNow } from "date-fns";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, MoreVertical, Trash2 } from "lucide-react";
 import { useAtom } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
@@ -16,6 +16,12 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useChats } from "@/hooks/useChats";
 
 export function ChatList({ show }: { show?: boolean }) {
@@ -108,28 +114,51 @@ export function ChatList({ show }: { show?: boolean }) {
             <SidebarMenu className="space-y-1">
               {chats.map((chat) => (
                 <SidebarMenuItem key={chat.id} className="mb-1">
-                  <Button
-                    variant="ghost"
-                    onClick={() =>
-                      handleChatClick({ chatId: chat.id, appId: chat.appId })
-                    }
-                    className={`justify-start w-full text-left py-3 hover:bg-sidebar-accent/80 ${
-                      selectedChatId === chat.id
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex flex-col w-full">
-                      <span className="truncate">
-                        {chat.title || "New Chat"}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(chat.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
-                  </Button>
+                  <div className="flex w-[185px] items-center">
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        handleChatClick({ chatId: chat.id, appId: chat.appId })
+                      }
+                      className={`justify-start w-full text-left py-3 pr-1 hover:bg-sidebar-accent/80 ${
+                        selectedChatId === chat.id
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex flex-col w-full">
+                        <span className="truncate">
+                          {chat.title || "New Chat"}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatDistanceToNow(new Date(chat.createdAt), {
+                            addSuffix: true,
+                          })}
+                        </span>
+                      </div>
+                    </Button>
+
+                    {selectedChatId === chat.id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="ml-1 w-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete Chat</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
