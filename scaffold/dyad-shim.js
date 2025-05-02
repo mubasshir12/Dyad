@@ -149,12 +149,17 @@
   window.addEventListener("error", (event) => {
     let error = event.error;
     if (!(error instanceof Error)) {
-      error = new Error(
-        event.message || "Unknown error from window.error event"
+      window.parent.postMessage(
+        {
+          type: "window-error",
+          payload: {
+            message: error.toString(),
+            stack: "<no stack available - an improper error was thrown>",
+          },
+        },
+        PARENT_TARGET_ORIGIN
       );
-      if (!error.stack && event.filename) {
-        error.stack = `${error.message}\n    at ${event.filename}:${event.lineno}:${event.colno}`;
-      }
+      return;
     }
     sendSourcemappedErrorToParent(error, "window-error");
   });
@@ -162,10 +167,18 @@
   window.addEventListener("unhandledrejection", (event) => {
     let error = event.reason;
     if (!(error instanceof Error)) {
-      error = new Error("Unhandled rejection reason: " + String(error));
-      try {
-        error.rawReason = event.reason;
-      } catch {}
+      window.parent.postMessage(
+        {
+          type: "unhandled-rejection",
+          payload: {
+            message: event.reason.toString(),
+            stack:
+              "<no stack available - an improper error was thrown (promise)>",
+          },
+        },
+        PARENT_TARGET_ORIGIN
+      );
+      return;
     }
     sendSourcemappedErrorToParent(error, "unhandled-rejection");
   });
