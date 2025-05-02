@@ -277,7 +277,17 @@ export class IpcClient {
   public async createChat(appId: number): Promise<number> {
     try {
       const chatId = await this.ipcRenderer.invoke("create-chat", appId);
-      return chatId;
+      return chatId as number;
+    } catch (error) {
+      showError(error);
+      throw error;
+    }
+  }
+
+  public async deleteChat(chatId: number): Promise<{ success: boolean }> {
+    try {
+      const result = await this.ipcRenderer.invoke("delete-chat", chatId);
+      return result as { success: boolean };
     } catch (error) {
       showError(error);
       throw error;
@@ -787,25 +797,31 @@ export class IpcClient {
 
   public async listLocalOllamaModels(): Promise<LocalModel[]> {
     try {
-      const response = await this.ipcRenderer.invoke("local-models:list-ollama");
+      const response = await this.ipcRenderer.invoke(
+        "local-models:list-ollama"
+      );
       return response?.models || [];
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to fetch Ollama models: ${error.message}`);
       }
-      throw new Error('Failed to fetch Ollama models: Unknown error occurred');
+      throw new Error("Failed to fetch Ollama models: Unknown error occurred");
     }
   }
 
   public async listLocalLMStudioModels(): Promise<LocalModel[]> {
     try {
-      const response = await this.ipcRenderer.invoke("local-models:list-lmstudio");
+      const response = await this.ipcRenderer.invoke(
+        "local-models:list-lmstudio"
+      );
       return response?.models || [];
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to fetch LM Studio models: ${error.message}`);
       }
-      throw new Error('Failed to fetch LM Studio models: Unknown error occurred');
+      throw new Error(
+        "Failed to fetch LM Studio models: Unknown error occurred"
+      );
     }
   }
 

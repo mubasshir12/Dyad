@@ -7,7 +7,7 @@ import { useAtom } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
-import { showError } from "@/lib/toast";
+import { showError, showSuccess } from "@/lib/toast";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -88,6 +88,24 @@ export function ChatList({ show }: { show?: boolean }) {
     }
   };
 
+  const handleDeleteChat = async (chatId: number) => {
+    try {
+      await IpcClient.getInstance().deleteChat(chatId);
+      showSuccess("Chat deleted successfully");
+
+      // If the deleted chat was selected, navigate to home
+      if (selectedChatId === chatId) {
+        setSelectedChatId(null);
+        navigate({ to: "/chat" });
+      }
+
+      // Refresh the chat list
+      await refreshChats();
+    } catch (error) {
+      showError(`Failed to delete chat: ${(error as any).toString()}`);
+    }
+  };
+
   return (
     <SidebarGroup className="overflow-y-auto h-[calc(100vh-112px)]">
       <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
@@ -151,7 +169,10 @@ export function ChatList({ show }: { show?: boolean }) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem variant="destructive">
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => handleDeleteChat(chat.id)}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             <span>Delete Chat</span>
                           </DropdownMenuItem>
