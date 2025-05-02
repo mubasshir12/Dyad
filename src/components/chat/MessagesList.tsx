@@ -65,7 +65,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                     messages[messages.length - 3];
                   if (
                     previousAssistantMessage?.role === "assistant" &&
-                    previousAssistantMessage.commitHash
+                    previousAssistantMessage?.commitHash
                   ) {
                     console.debug("Reverting to previous assistant version");
                     await revertVersion({
