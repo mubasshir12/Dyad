@@ -6,12 +6,14 @@ import { SetupBanner } from "../SetupBanner";
 import { useSettings } from "@/hooks/useSettings";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
-import { useAtom, useAtomValue } from "jotai";
-import { RefreshCw } from "lucide-react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { RefreshCw, Undo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVersions } from "@/hooks/useVersions";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { showError } from "@/lib/toast";
+import { IpcClient } from "@/ipc/ipc_client";
+import { chatMessagesAtom } from "@/atoms/chatAtoms";
 
 interface MessagesListProps {
   messages: Message[];
@@ -25,6 +27,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
     const { streamMessage, isStreaming, error, setError } = useStreamChat();
     const { isAnyProviderSetup } = useSettings();
     const selectedChatId = useAtomValue(selectedChatIdAtom);
+    const setMessages = useSetAtom(chatMessagesAtom);
     return (
       <div className="flex-1 overflow-y-auto p-4" ref={ref}>
         {messages.length > 0 ? (
@@ -40,9 +43,51 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
           </div>
         )}
         {messages.length > 0 && !isStreaming && (
-          <div className="flex max-w-3xl mx-auto">
+          <div className="flex max-w-3xl mx-auto gap-2">
+            {messages[messages.length - 1].role === "assistant" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!selectedChatId || !appId) {
+                    console.error("No chat selected or app ID not available");
+                    return;
+                  }
+                  if (versions.length < 2) {
+                    showError("Cannot undo; no previous version");
+                    return;
+                  }
+
+                  const previousAssistantMessage =
+                    messages[messages.length - 3];
+                  if (
+                    previousAssistantMessage?.role === "assistant" &&
+                    previousAssistantMessage?.commitHash
+                  ) {
+                    console.debug("Reverting to previous assistant version");
+                    await revertVersion({
+                      versionId: previousAssistantMessage.commitHash,
+                    });
+                  } else {
+                    // Revert to the previous version
+                    await revertVersion({
+                      versionId: versions[1].oid,
+                    });
+                  }
+                  if (selectedChatId) {
+                    const chat = await IpcClient.getInstance().getChat(
+                      selectedChatId
+                    );
+                    setMessages(chat.messages);
+                  }
+                }}
+              >
+                <Undo size={16} />
+                Undo
+              </Button>
+            )}
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={async () => {
                 if (!selectedChatId) {
