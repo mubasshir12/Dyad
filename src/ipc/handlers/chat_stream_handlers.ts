@@ -53,17 +53,12 @@ const TEXT_FILE_EXTENSIONS = [
 
 async function isTextFile(filePath: string): Promise<boolean> {
   const ext = path.extname(filePath).toLowerCase();
-  return (
-    TEXT_FILE_EXTENSIONS.includes(ext) ||
-    (filePath.includes(".") &&
-      (await stat(filePath)).isFile() &&
-      (await readFile(filePath, { encoding: "utf8", flag: "r" })).length > 0)
-  );
+  return TEXT_FILE_EXTENSIONS.includes(ext);
 }
 
 // Ensure the temp directory exists
 if (!fs.existsSync(TEMP_DIR)) {
-  await mkdir(TEMP_DIR, { recursive: true });
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
 // First, define the proper content types to match ai SDK
@@ -161,21 +156,12 @@ export function registerChatStreamHandlers() {
           // If it's a text-based file, try to include the content
           if (await isTextFile(filePath)) {
             try {
-              // Only read a snippet for the initial message
-              const content = await readFile(filePath, "utf-8");
-              const snippet =
-                content.length > 100
-                  ? content.substring(0, 100) + "..."
-                  : content;
-
-              // Add a reference tag that we'll replace with full content later
-              attachmentInfo += `\nContent of ${attachment.name} (snippet):\n\`\`\`\n${snippet}\n\`\`\`\n`;
-              attachmentInfo += `<dyad-text-attachment filename="${attachment.name}" type="${attachment.type}" path="${filePath}">\n`;
-              attachmentInfo += `</dyad-text-attachment>\n\n`;
+              attachmentInfo += `<dyad-text-attachment filename="${attachment.name}" type="${attachment.type}" path="${filePath}">
+              </dyad-text-attachment>
+              \n\n`;
             } catch (err) {
               logger.error(`Error reading file content: ${err}`);
             }
-            // }
           }
         }
       }
@@ -584,11 +570,9 @@ async function replaceTextAttachmentWithContent(
       const fullContent = await readFile(filePath, "utf-8");
 
       // Replace the placeholder tag with the full content
+      const escapedPath = filePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const tagPattern = new RegExp(
-        `<dyad-text-attachment filename="${fileName.replace(
-          /[.*+?^${}()|[\]\\]/g,
-          "\\$&"
-        )}" type="[^"]*" path="[^"]*">\\s*<\\/dyad-text-attachment>`,
+        `<dyad-text-attachment filename="[^"]*" type="[^"]*" path="${escapedPath}">\\s*<\\/dyad-text-attachment>`,
         "g"
       );
 
@@ -597,7 +581,9 @@ async function replaceTextAttachmentWithContent(
         `Full content of ${fileName}:\n\`\`\`\n${fullContent}\n\`\`\``
       );
 
-      logger.log(`Replaced text attachment content for: ${fileName}`);
+      logger.log(
+        `Replaced text attachment content for: ${fileName} - length before: ${text.length} - length after: ${replacedText.length}`
+      );
       return replacedText;
     }
     return text;
