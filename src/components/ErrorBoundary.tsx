@@ -52,6 +52,7 @@ ${error?.stack ? `\n\`\`\`\n${error.stack.slice(0, 1000)}\n\`\`\`` : ""}
 - Node Version: ${debugInfo.nodeVersion || "Not available"}
 - PNPM Version: ${debugInfo.pnpmVersion || "Not available"}
 - Node Path: ${debugInfo.nodePath || "Not available"}
+- Telemetry ID: ${debugInfo.telemetryId || "Not available"}
 
 ## Logs
 \`\`\`
