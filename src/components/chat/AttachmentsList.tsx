@@ -29,6 +29,9 @@ export function AttachmentsList({
                 onLoad={(e) =>
                   URL.revokeObjectURL((e.target as HTMLImageElement).src)
                 }
+                onError={(e) =>
+                  URL.revokeObjectURL((e.target as HTMLImageElement).src)
+                }
               />
               <div className="absolute hidden group-hover:block top-6 left-0 z-10">
                 <img

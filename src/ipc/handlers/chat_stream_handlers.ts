@@ -26,6 +26,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as crypto from "crypto";
+import { stat, readFile, writeFile, mkdir, unlink } from "fs/promises";
 
 const logger = log.scope("chat_stream_handlers");
 
@@ -38,9 +39,31 @@ const partialResponses = new Map<number, string>();
 // Directory for storing temporary files
 const TEMP_DIR = path.join(os.tmpdir(), "dyad-attachments");
 
+// Common helper functions
+const TEXT_FILE_EXTENSIONS = [
+  ".md",
+  ".txt",
+  ".json",
+  ".csv",
+  ".js",
+  ".ts",
+  ".html",
+  ".css",
+];
+
+async function isTextFile(filePath: string): Promise<boolean> {
+  const ext = path.extname(filePath).toLowerCase();
+  return (
+    TEXT_FILE_EXTENSIONS.includes(ext) ||
+    (filePath.includes(".") &&
+      (await stat(filePath)).isFile() &&
+      (await readFile(filePath, { encoding: "utf8", flag: "r" })).length > 0)
+  );
+}
+
 // Ensure the temp directory exists
 if (!fs.existsSync(TEMP_DIR)) {
-  fs.mkdirSync(TEMP_DIR, { recursive: true });
+  await mkdir(TEMP_DIR, { recursive: true });
 }
 
 // First, define the proper content types to match ai SDK
@@ -132,45 +155,27 @@ export function registerChatStreamHandlers() {
           // Extract the base64 data (remove the data:mime/type;base64, prefix)
           const base64Data = attachment.data.split(";base64,").pop() || "";
 
-          // Save file to temp directory
-          fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
+          await writeFile(filePath, Buffer.from(base64Data, "base64"));
           attachmentPaths.push(filePath);
+          attachmentInfo += `- ${attachment.name} (${attachment.type})\n`;
+          // If it's a text-based file, try to include the content
+          if (await isTextFile(filePath)) {
+            try {
+              // Only read a snippet for the initial message
+              const content = await readFile(filePath, "utf-8");
+              const snippet =
+                content.length > 100
+                  ? content.substring(0, 100) + "..."
+                  : content;
 
-          // Check if the attachment is an image
-          const isImage = attachment.type.startsWith("image/");
-
-          // Add info about the attachment to the message
-          if (isImage) {
-            attachmentInfo += `- Image: ${attachment.name} (${
-              attachment.type
-            }) [${Math.round(
-              Buffer.from(base64Data, "base64").length / 1024
-            )}KB]\n`;
-            // For images, add a special tag that helps the AI understand there's an image
-            attachmentInfo += `<image-attachment filename="${attachment.name}" type="${attachment.type}">\n`;
-            attachmentInfo += `</image-attachment>\n\n`;
-          } else {
-            attachmentInfo += `- ${attachment.name} (${attachment.type})\n`;
-
-            // If it's a text-based file, try to include the content
-            if (
-              attachment.type.startsWith("text/") ||
-              attachment.name.endsWith(".md") ||
-              attachment.name.endsWith(".txt") ||
-              attachment.name.endsWith(".json") ||
-              attachment.name.endsWith(".csv") ||
-              attachment.name.endsWith(".js") ||
-              attachment.name.endsWith(".ts") ||
-              attachment.name.endsWith(".html") ||
-              attachment.name.endsWith(".css")
-            ) {
-              try {
-                const content = fs.readFileSync(filePath, "utf-8");
-                attachmentInfo += `\nContent of ${attachment.name}:\n\`\`\`\n${content}\n\`\`\`\n\n`;
-              } catch (err) {
-                logger.error(`Error reading file content: ${err}`);
-              }
+              // Add a reference tag that we'll replace with full content later
+              attachmentInfo += `\nContent of ${attachment.name} (snippet):\n\`\`\`\n${snippet}\n\`\`\`\n`;
+              attachmentInfo += `<dyad-text-attachment filename="${attachment.name}" type="${attachment.type}" path="${filePath}">\n`;
+              attachmentInfo += `</dyad-text-attachment>\n\n`;
+            } catch (err) {
+              logger.error(`Error reading file content: ${err}`);
             }
+            // }
           }
         }
       }
@@ -298,65 +303,7 @@ This conversation includes one or more image attachments. When the user uploads 
 `;
         }
 
-        let chatMessages: CoreMessage[] = [];
-
-        // Helper function to convert traditional message to one with proper image attachments
-        function prepareMessageWithAttachments(
-          message: CoreMessage,
-          attachmentPaths: string[]
-        ): CoreMessage {
-          // If this is not a user message or no attachments, return the message as is
-          if (message.role !== "user" || attachmentPaths.length === 0) {
-            return message;
-          }
-
-          // For user messages with attachments, create a content array
-          const contentParts: (TextPart | ImagePart)[] = [];
-
-          // Add the text part first
-          contentParts.push({
-            type: "text",
-            text:
-              typeof message.content === "string"
-                ? message.content
-                : message.content.toString(),
-          });
-
-          // Add image parts for any image attachments
-          for (const filePath of attachmentPaths) {
-            if (
-              filePath.toLowerCase().endsWith(".jpg") ||
-              filePath.toLowerCase().endsWith(".jpeg") ||
-              filePath.toLowerCase().endsWith(".png") ||
-              filePath.toLowerCase().endsWith(".gif") ||
-              filePath.toLowerCase().endsWith(".webp")
-            ) {
-              try {
-                // Read the file as a buffer
-                const imageBuffer = fs.readFileSync(filePath);
-
-                // Add the image to the content parts
-                contentParts.push({
-                  type: "image",
-                  image: imageBuffer,
-                });
-
-                logger.log(`Added image attachment: ${filePath}`);
-              } catch (error) {
-                logger.error(`Error reading image file: ${error}`);
-              }
-            }
-          }
-
-          // Return the message with the content array
-          return {
-            role: "user",
-            content: contentParts,
-          };
-        }
-
-        // First create the initial codebase and system messages
-        chatMessages = [
+        let chatMessages: CoreMessage[] = [
           {
             role: "user",
             content: "This is my codebase. " + codebaseInfo,
@@ -378,7 +325,7 @@ This conversation includes one or more image attachments. When the user uploads 
 
           if (lastUserMessage.role === "user") {
             // Replace the last message with one that includes attachments
-            chatMessages[lastUserIndex] = prepareMessageWithAttachments(
+            chatMessages[lastUserIndex] = await prepareMessageWithAttachments(
               lastUserMessage,
               attachmentPaths
             );
@@ -568,9 +515,9 @@ This conversation includes one or more image attachments. When the user uploads 
           try {
             // We don't immediately delete files because they might be needed for reference
             // Instead, schedule them for deletion after some time
-            setTimeout(() => {
+            setTimeout(async () => {
               if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+                await unlink(filePath);
                 logger.log(`Deleted temporary file: ${filePath}`);
               }
             }, 30 * 60 * 1000); // Delete after 30 minutes
@@ -623,4 +570,104 @@ export function formatMessages(
   return messages
     .map((m) => `<message role="${m.role}">${m.content}</message>`)
     .join("\n");
+}
+
+// Helper function to replace text attachment placeholders with full content
+async function replaceTextAttachmentWithContent(
+  text: string,
+  filePath: string,
+  fileName: string
+): Promise<string> {
+  try {
+    if (await isTextFile(filePath)) {
+      // Read the full content
+      const fullContent = await readFile(filePath, "utf-8");
+
+      // Replace the placeholder tag with the full content
+      const tagPattern = new RegExp(
+        `<dyad-text-attachment filename="${fileName.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&"
+        )}" type="[^"]*" path="[^"]*">\\s*<\\/dyad-text-attachment>`,
+        "g"
+      );
+
+      const replacedText = text.replace(
+        tagPattern,
+        `Full content of ${fileName}:\n\`\`\`\n${fullContent}\n\`\`\``
+      );
+
+      logger.log(`Replaced text attachment content for: ${fileName}`);
+      return replacedText;
+    }
+    return text;
+  } catch (error) {
+    logger.error(`Error processing text file: ${error}`);
+    return text;
+  }
+}
+
+// Helper function to convert traditional message to one with proper image attachments
+async function prepareMessageWithAttachments(
+  message: CoreMessage,
+  attachmentPaths: string[]
+): Promise<CoreMessage> {
+  // If this is not a user message or no attachments, return the message as is
+  if (message.role !== "user" || attachmentPaths.length === 0) {
+    return message;
+  }
+  let textContent = message.content;
+  // Get the original text content
+  if (typeof textContent !== "string") {
+    logger.warn(
+      "Message content is not a string - shouldn't happen but using message as-is"
+    );
+    return message;
+  }
+
+  // Process text file attachments - replace placeholder tags with full content
+  for (const filePath of attachmentPaths) {
+    const fileName = path.basename(filePath);
+    textContent = await replaceTextAttachmentWithContent(
+      textContent,
+      filePath,
+      fileName
+    );
+  }
+
+  // For user messages with attachments, create a content array
+  const contentParts: (TextPart | ImagePart)[] = [];
+
+  // Add the text part first with possibly modified content
+  contentParts.push({
+    type: "text",
+    text: textContent,
+  });
+
+  // Add image parts for any image attachments
+  for (const filePath of attachmentPaths) {
+    const ext = path.extname(filePath).toLowerCase();
+    if ([".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext)) {
+      try {
+        // Read the file as a buffer
+        const imageBuffer = await readFile(filePath);
+
+        // Add the image to the content parts
+        contentParts.push({
+          type: "image",
+          image: imageBuffer,
+        });
+
+        logger.log(`Added image attachment: ${filePath}`);
+      } catch (error) {
+        logger.error(`Error reading image file: ${error}`);
+      }
+    }
+  }
+
+  // Return the message with the content array
+  return {
+    role: "user",
+    content: contentParts,
+  };
 }
