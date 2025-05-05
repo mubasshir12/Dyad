@@ -65,7 +65,7 @@ ${debugInfo.logs.slice(-3_500) || "No logs available"}
       const encodedTitle = encodeURIComponent(
         "[bug] Error in Dyad application"
       );
-      const githubIssueUrl = `https://github.com/dyad-sh/dyad/issues/new?title=${encodedTitle}&labels=bug,filed-from-app,error-boundary&body=${encodedBody}`;
+      const githubIssueUrl = `https://github.com/dyad-sh/dyad/issues/new?title=${encodedTitle}&labels=bug,filed-from-app,client-error&body=${encodedBody}`;
 
       // Open the pre-filled GitHub issue page
       await IpcClient.getInstance().openExternalUrl(githubIssueUrl);
