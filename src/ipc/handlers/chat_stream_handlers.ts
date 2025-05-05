@@ -304,8 +304,8 @@ This conversation includes one or more image attachments. When the user uploads 
           })),
         ];
 
-        // Check if the last message should include image attachments
-        if (chatMessages.length > 0 && attachmentPaths.length > 0) {
+        // Check if the last message should include attachments
+        if (chatMessages.length >= 2 && attachmentPaths.length > 0) {
           const lastUserIndex = chatMessages.length - 2;
           const lastUserMessage = chatMessages[lastUserIndex];
 
@@ -598,10 +598,6 @@ async function prepareMessageWithAttachments(
   message: CoreMessage,
   attachmentPaths: string[]
 ): Promise<CoreMessage> {
-  // If this is not a user message or no attachments, return the message as is
-  if (message.role !== "user" || attachmentPaths.length === 0) {
-    return message;
-  }
   let textContent = message.content;
   // Get the original text content
   if (typeof textContent !== "string") {

@@ -4,7 +4,6 @@ export function useAttachments() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
 
   const handleAttachmentClick = () => {
     fileInputRef.current?.click();
@@ -13,20 +12,7 @@ export function useAttachments() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
-
-      // Check for large files (over 1MB)
-      const hasLargeFiles = files.some((file) => file.size > 1024 * 1024);
-
-      if (hasLargeFiles) {
-        setIsUploading(true);
-        // Use a small timeout to simulate processing of large files
-        setTimeout(() => {
-          setAttachments([...attachments, ...files]);
-          setIsUploading(false);
-        }, 500);
-      } else {
-        setAttachments([...attachments, ...files]);
-      }
+      setAttachments((attachments) => [...attachments, ...files]);
     }
   };
 
@@ -49,20 +35,7 @@ export function useAttachments() {
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const files = Array.from(e.dataTransfer.files);
-
-      // Check for large files (over 1MB)
-      const hasLargeFiles = files.some((file) => file.size > 1024 * 1024);
-
-      if (hasLargeFiles) {
-        setIsUploading(true);
-        // Use a small timeout to simulate processing of large files
-        setTimeout(() => {
-          setAttachments([...attachments, ...files]);
-          setIsUploading(false);
-        }, 500);
-      } else {
-        setAttachments([...attachments, ...files]);
-      }
+      setAttachments((attachments) => [...attachments, ...files]);
     }
   };
 
@@ -74,7 +47,6 @@ export function useAttachments() {
     attachments,
     fileInputRef,
     isDraggingOver,
-    isUploading,
     handleAttachmentClick,
     handleFileChange,
     removeAttachment,
