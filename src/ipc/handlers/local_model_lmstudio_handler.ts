@@ -30,7 +30,6 @@ try {
     const modelsJson = await modelsResponse.json();
     const downloadedModels = modelsJson.data as LMStudioModel[];
     const models: LocalModel[] = downloadedModels
-      .filter((model: any) => model.type === "llm")
       .map((model: any) => ({
         modelName: model.id,
         displayName: model.id,
