@@ -58,7 +58,7 @@ import { useVersions } from "@/hooks/useVersions";
 import { useAttachments } from "@/hooks/useAttachments";
 import { AttachmentsList } from "./AttachmentsList";
 import { DragDropOverlay } from "./DragDropOverlay";
-
+import { showError as showErrorToast } from "@/lib/toast";
 const showTokenBarAtom = atom(false);
 
 export function ChatInput({ chatId }: { chatId?: number }) {
@@ -188,6 +188,12 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       } else {
         console.error("Failed to approve proposal:", result.error);
         setError(result.error || "Failed to approve proposal");
+      }
+      if (result.uncommittedFiles) {
+        showErrorToast(
+          `Some changed files were not committed. Please use git to manually commit them.
+          \n\n${result.uncommittedFiles.join("\n")}`
+        );
       }
     } catch (err) {
       console.error("Error approving proposal:", err);

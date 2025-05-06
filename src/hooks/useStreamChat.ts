@@ -87,6 +87,12 @@ export function useStreamChat({
               setIsPreviewOpen(true);
               refreshAppIframe();
             }
+            if (response.uncommittedFiles) {
+              showError(
+                `Some changed files were not committed. Please use git to manually commit them.
+                \n\n${response.uncommittedFiles.join("\n")}`
+              );
+            }
             refreshProposal(chatId);
 
             // Keep the same as below
