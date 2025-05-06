@@ -53,9 +53,13 @@ export function ChatHeader({
     const fetchBranch = async () => {
       try {
         const result = await IpcClient.getInstance().getCurrentBranch(appId);
-        setBranchInfo(result);
+        if (result.success) {
+          setBranchInfo(result);
+        } else {
+          showError("Failed to get current branch: " + result.errorMessage);
+        }
       } catch (error) {
-        console.error("Failed to get current branch:", error);
+        showError(`Failed to get current branch: ${error}`);
       }
     };
 
@@ -78,7 +82,11 @@ export function ChatHeader({
 
       // Refresh branch info
       const result = await IpcClient.getInstance().getCurrentBranch(appId);
-      setBranchInfo(result);
+      if (result.success) {
+        setBranchInfo(result);
+      } else {
+        showError(result.errorMessage);
+      }
     } catch (error) {
       showError(`Failed to checkout main branch: ${error}`);
     } finally {
