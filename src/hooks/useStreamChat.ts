@@ -14,7 +14,7 @@ import { useChats } from "./useChats";
 import { useLoadApp } from "./useLoadApp";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useVersions } from "./useVersions";
-import { showError } from "@/lib/toast";
+import { showError, showUncommittedFilesWarning } from "@/lib/toast";
 import { useProposal } from "./useProposal";
 import { useSearch } from "@tanstack/react-router";
 import { useRunApp } from "./useRunApp";
@@ -88,10 +88,7 @@ export function useStreamChat({
               refreshAppIframe();
             }
             if (response.uncommittedFiles) {
-              showError(
-                `Some changed files were not committed. Please use git to manually commit them.
-                \n\n${response.uncommittedFiles.join("\n")}`
-              );
+              showUncommittedFilesWarning(response.uncommittedFiles);
             }
             refreshProposal(chatId);
 
