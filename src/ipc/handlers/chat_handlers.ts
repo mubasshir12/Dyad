@@ -110,7 +110,7 @@ export function registerChatHandlers() {
       await db.delete(chats).where(eq(chats.id, chatId));
       return { success: true };
     } catch (error) {
-      console.error("Error deleting chat:", error);
+      logger.error("Error deleting chat:", error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -120,7 +120,7 @@ export function registerChatHandlers() {
       await db.delete(messages).where(eq(messages.chatId, chatId));
       return { success: true };
     } catch (error) {
-      console.error("Error deleting messages:", error);
+      logger.error("Error deleting messages:", error);
       return { success: false, error: (error as Error).message };
     }
   });
