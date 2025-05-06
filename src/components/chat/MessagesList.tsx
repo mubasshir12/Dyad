@@ -99,10 +99,8 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                             showError(result.error);
                           }
                         } else {
-
                           showWarning(
-                            "No initial commit hash found found for chat. Need to manually undo code changes"
-
+                            "No initial commit hash found for chat. Need to manually undo code changes"
                           );
                         }
                       }
@@ -170,7 +168,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                           });
                         } else {
                           showWarning(
-                            "No initial commit hash found found for chat. Need to manually undo code changes"
+                            "No initial commit hash found for chat. Need to manually undo code changes"
                           );
                         }
                       }
