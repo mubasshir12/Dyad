@@ -64,7 +64,7 @@
   };
 
   // --- Listener for Back/Forward Navigation (popstate event) ---
-  window.addEventListener("popstate", (event) => {
+  window.addEventListener("popstate", () => {
     const currentUrl = window.location.href;
     previousUrl = currentUrl;
   });

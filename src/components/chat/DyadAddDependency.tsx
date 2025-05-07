@@ -1,19 +1,12 @@
 import type React from "react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { Button } from "../ui/button";
+
 import { IpcClient } from "../../ipc/ipc_client";
-import { useAtom, useAtomValue } from "jotai";
-import { chatMessagesAtom, selectedChatIdAtom } from "../../atoms/chatAtoms";
-import { useStreamChat } from "@/hooks/useStreamChat";
-import {
-  Package,
-  ChevronsUpDown,
-  ChevronsDownUp,
-  Loader,
-  ExternalLink,
-  Download,
-} from "lucide-react";
+import {} from "jotai";
+import {} from "../../atoms/chatAtoms";
+
+import { Package, ChevronsUpDown, ChevronsDownUp, Loader } from "lucide-react";
 import { CodeHighlight } from "./CodeHighlight";
 
 interface DyadAddDependencyProps {
@@ -28,7 +21,7 @@ export const DyadAddDependency: React.FC<DyadAddDependencyProps> = ({
 }) => {
   // Extract package attribute from the node if available
   const packages = node?.properties?.packages?.split(" ") || "";
-  const [isInstalling, setIsInstalling] = useState(false);
+  const [isInstalling] = useState(false);
   const [isContentVisible, setIsContentVisible] = useState(false);
   const hasChildren = !!children;
 

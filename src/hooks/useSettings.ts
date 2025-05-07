@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { atom, useAtom } from "jotai";
+import { useAtom } from "jotai";
 import { userSettingsAtom, envVarsAtom } from "@/atoms/appAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
 import { cloudProviders, type UserSettings } from "@/lib/schemas";

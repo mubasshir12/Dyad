@@ -358,11 +358,3 @@ function renderCustomTag(
       return null;
   }
 }
-
-/**
- * Extract attribute values from className string
- */
-function extractAttribute(className: string, attrName: string): string {
-  const match = new RegExp(`${attrName}="([^"]*)"`, "g").exec(className);
-  return match ? match[1] : "";
-}

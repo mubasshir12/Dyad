@@ -3,15 +3,13 @@ import { useAtom, useAtomValue } from "jotai";
 import { appBasePathAtom, appsListAtom } from "@/atoms/appAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
 import { useLoadApps } from "@/hooks/useLoadApps";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   MoreVertical,
-  ArrowRight,
   MessageCircle,
   Pencil,
-  Github,
   Folder,
 } from "lucide-react";
 import {
@@ -50,7 +48,7 @@ export default function AppDetailsPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [isRenamingFolder, setIsRenamingFolder] = useState(false);
   const appBasePath = useAtomValue(appBasePathAtom);
-  const { settings } = useSettings();
+
   // Get the appId from search params and find the corresponding app
   const appId = search.appId ? Number(search.appId) : null;
   const selectedApp = appId ? appsList.find((app) => app.id === appId) : null;

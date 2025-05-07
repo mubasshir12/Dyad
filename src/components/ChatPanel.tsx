@@ -22,12 +22,11 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const appId = useAtomValue(selectedAppIdAtom);
   const [messages, setMessages] = useAtom(chatMessagesAtom);
-  const [appName, setAppName] = useState<string>("Chat");
+  const [, setAppName] = useState<string>("Chat");
   const [isVersionPaneOpen, setIsVersionPaneOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamCount = useAtomValue(chatStreamCountAtom);
   // Reference to store the processed prompt so we don't submit it twice
-  const processedPromptRef = useRef<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
