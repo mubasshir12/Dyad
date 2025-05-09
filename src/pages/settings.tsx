@@ -113,7 +113,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-            <ProviderSettingsGrid configuredProviders={[]} />
+            <ProviderSettingsGrid />
           </div>
 
           <div className="space-y-6">
