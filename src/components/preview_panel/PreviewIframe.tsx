@@ -28,8 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSettings } from "@/hooks/useSettings";
-
 import { useStreamChat } from "@/hooks/useStreamChat";
 
 interface ErrorBannerProps {

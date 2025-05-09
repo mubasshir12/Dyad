@@ -131,7 +131,7 @@ async function executeAppLocalNode({
 async function killProcessOnPort(port: number): Promise<void> {
   try {
     await killPort(port, "tcp");
-  } catch (err) {
+  } catch {
     // Ignore if nothing was running on that port
   }
 }

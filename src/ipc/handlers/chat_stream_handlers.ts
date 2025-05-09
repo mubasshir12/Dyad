@@ -61,19 +61,6 @@ if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
-// First, define the proper content types to match ai SDK
-type TextContent = {
-  type: "text";
-  text: string;
-};
-
-type ImageContent = {
-  type: "image";
-  image: Buffer;
-};
-
-type MessageContent = TextContent | ImageContent;
-
 export function registerChatStreamHandlers() {
   ipcMain.handle("chat:stream", async (event, req: ChatStreamParams) => {
     try {

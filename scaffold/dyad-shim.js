@@ -17,6 +17,7 @@
         ? new URL(url, window.location.href).href
         : window.location.href;
     } catch (e) {
+      console.error("Could not parse URL", e);
       newUrl = window.location.href;
     }
 

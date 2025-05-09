@@ -11,9 +11,6 @@ const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   google: "GEMINI_API_KEY",
 };
 
-// Define a type for the environment variables we expect
-type EnvVars = Record<string, string | undefined>;
-
 const TELEMETRY_CONSENT_KEY = "dyadTelemetryConsent";
 const TELEMETRY_USER_ID_KEY = "dyadTelemetryUserId";
 

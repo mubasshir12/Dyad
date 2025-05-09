@@ -19,6 +19,7 @@
     "publish": "npm run clean && electron-forge publish",
     "ts": "npx tsc -p tsconfig.app.json --noEmit",
     "lint": "npx oxlint --fix",
+    "lint:fix": "npx oxlint --fix --fix-suggestions --fix-dangerously",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",

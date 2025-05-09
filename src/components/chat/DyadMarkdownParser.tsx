@@ -30,7 +30,13 @@ type ContentPiece =
   | { type: "markdown"; content: string }
   | { type: "custom-tag"; tagInfo: CustomTagInfo };
 
-const customLink = ({ node, ...props }: { node?: any; [key: string]: any }) => (
+const customLink = ({
+  node: _node,
+  ...props
+}: {
+  node?: any;
+  [key: string]: any;
+}) => (
   <a
     {...props}
     onClick={(e) => {

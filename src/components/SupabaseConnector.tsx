@@ -74,7 +74,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
       toast.success("Project connected to app successfully");
       await refreshApp();
     } catch (error) {
-      toast.error("Failed to connect project to app");
+      toast.error("Failed to connect project to app: " + error);
     }
   };
 

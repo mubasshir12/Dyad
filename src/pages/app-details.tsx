@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/dialog";
 import { GitHubConnector } from "@/components/GitHubConnector";
 import { SupabaseConnector } from "@/components/SupabaseConnector";
-import { useSettings } from "@/hooks/useSettings";
 
 export default function AppDetailsPage() {
   const navigate = useNavigate();

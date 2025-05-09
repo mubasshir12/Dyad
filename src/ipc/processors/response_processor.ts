@@ -229,7 +229,7 @@ export async function processFullResponseActions(
     if (dyadExecuteSqlQueries.length > 0) {
       for (const query of dyadExecuteSqlQueries) {
         try {
-          const result = await executeSupabaseSql({
+          await executeSupabaseSql({
             supabaseProjectId: chatWithApp.app.supabaseProjectId!,
             query: query.content,
           });

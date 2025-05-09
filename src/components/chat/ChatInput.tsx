@@ -617,7 +617,6 @@ function ChatInputActions({
   isApproving,
   isRejecting,
 }: ChatInputActionsProps) {
-  const [, setAutoApprove] = useState(false);
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
 
   if (proposal.type === "tip-proposal") {

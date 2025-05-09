@@ -1,5 +1,5 @@
 {
   "rules": {
-    "eslint/no-unused-vars": "off"
+    "eslint/no-unused-vars": "error"
   }
 }
