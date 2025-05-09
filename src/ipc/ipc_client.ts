@@ -472,17 +472,11 @@ export class IpcClient {
   }: {
     appId: number;
     versionId: string;
-  }): Promise<{ success: boolean }> {
-    try {
-      const result = await this.ipcRenderer.invoke("checkout-version", {
-        appId,
-        versionId,
-      });
-      return result;
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+  }): Promise<void> {
+    await this.ipcRenderer.invoke("checkout-version", {
+      appId,
+      versionId,
+    });
   }
 
   // Get the current branch of an app

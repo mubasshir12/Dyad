@@ -218,7 +218,10 @@ export function registerVersionHandlers() {
 
   ipcMain.handle(
     "checkout-version",
-    async (_, { appId, versionId }: { appId: number; versionId: string }) => {
+    async (
+      _,
+      { appId, versionId }: { appId: number; versionId: string },
+    ): Promise<void> => {
       return withLock(appId, async () => {
         const app = await db.query.apps.findFirst({
           where: eq(apps.id, appId),
@@ -238,8 +241,6 @@ export function registerVersionHandlers() {
             ref: versionId,
             force: true,
           });
-
-          return { success: true };
         } catch (error: any) {
           logger.error(
             `Error checking out version ${versionId} for app ${appId}:`,

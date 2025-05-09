@@ -17,10 +17,6 @@ export function useCheckoutVersion() {
           throw new Error("App ID is null, cannot checkout version.");
         }
         const ipcClient = IpcClient.getInstance();
-        // The IPC client's checkoutVersion currently returns Promise<{ success: boolean }>.
-        // We'll adapt, assuming it throws on actual failure, which is critical for useMutation.
-        // If it resolves with { success: false }, this would be treated as a success by useMutation's error handling.
-        // However, the standard pattern is for IPC handlers to throw errors.
         await ipcClient.checkoutVersion({ appId, versionId });
       },
       onSuccess: (_, variables) => {
