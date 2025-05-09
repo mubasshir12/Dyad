@@ -6,7 +6,7 @@ import { SetupBanner } from "../SetupBanner";
 import { useSettings } from "@/hooks/useSettings";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Loader2, RefreshCw, Undo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useVersions } from "@/hooks/useVersions";
@@ -30,7 +30,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
     const setMessages = useSetAtom(chatMessagesAtom);
     const [isUndoLoading, setIsUndoLoading] = useState(false);
     const [isRetryLoading, setIsRetryLoading] = useState(false);
-    const [selectedChatId] = useAtom(selectedChatIdAtom);
+    const selectedChatId = useAtomValue(selectedChatIdAtom);
 
     return (
       <div className="flex-1 overflow-y-auto p-4" ref={ref}>

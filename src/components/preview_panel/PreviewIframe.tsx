@@ -111,7 +111,7 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
   // State to trigger iframe reload
   const [reloadKey, setReloadKey] = useState(0);
   const [errorMessage, setErrorMessage] = useAtom(previewErrorMessageAtom);
-  const [selectedChatId] = useAtom(selectedChatIdAtom);
+  const selectedChatId = useAtomValue(selectedChatIdAtom);
   const { streamMessage } = useStreamChat();
   const [availableRoutes, setAvailableRoutes] = useState<
     Array<{ path: string; label: string }>
