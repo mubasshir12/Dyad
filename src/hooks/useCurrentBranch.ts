@@ -6,7 +6,6 @@ export function useCurrentBranch(appId: number | null) {
   const {
     data: branchInfo,
     isLoading,
-    error,
     refetch: refetchBranchInfo,
   } = useQuery<BranchResult, Error>({
     queryKey: ["currentBranch", appId],
@@ -20,15 +19,12 @@ export function useCurrentBranch(appId: number | null) {
       return ipcClient.getCurrentBranch(appId);
     },
     enabled: appId !== null,
-    // We don't want to show an error toast globally for this,
-    // as the ChatHeader will display its own warning.
-    // meta: { showErrorToast: false }, // Example if we had global error handling
+    meta: { showErrorToast: false },
   });
 
   return {
     branchInfo,
     isLoading,
-    error,
     refetchBranchInfo,
   };
 }

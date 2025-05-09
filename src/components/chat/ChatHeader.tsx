@@ -47,15 +47,8 @@ export function ChatHeader({
   const {
     branchInfo,
     isLoading: branchInfoLoading,
-    error: branchInfoError,
     refetchBranchInfo,
   } = useCurrentBranch(appId);
-
-  useEffect(() => {
-    if (branchInfoError) {
-      showError(`Failed to get current branch: ${branchInfoError.message}`);
-    }
-  }, [branchInfoError]);
 
   useEffect(() => {
     if (appId) {
@@ -98,6 +91,7 @@ export function ChatHeader({
     }
   };
 
+  // REMINDER: KEEP UP TO DATE WITH app_handlers.ts
   const versionPostfix = versions.length === 10_000 ? `+` : "";
 
   const isNotMainBranch = branchInfo && branchInfo.branch !== "main";
