@@ -32,10 +32,10 @@ import killPort from "kill-port";
 import util from "util";
 import log from "electron-log";
 import { getSupabaseProjectName } from "../../supabase_admin/supabase_management_client";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 
 const logger = log.scope("app_handlers");
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 
 // Needed, otherwise electron in MacOS/Linux will not be able
 // to find node/pnpm.

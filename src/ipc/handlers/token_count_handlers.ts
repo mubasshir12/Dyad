@@ -14,11 +14,11 @@ import { getSupabaseContext } from "../../supabase_admin/supabase_context";
 import { TokenCountParams } from "../ipc_types";
 import { TokenCountResult } from "../ipc_types";
 import { estimateTokens, getContextWindow } from "../utils/token_utils";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 
 const logger = log.scope("token_count_handlers");
 
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 
 export function registerTokenCountHandlers() {
   handle(

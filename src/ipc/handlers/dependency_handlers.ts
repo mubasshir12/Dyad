@@ -3,11 +3,11 @@ import { messages, apps, chats } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { getDyadAppPath } from "../../paths/paths";
 import { executeAddDependency } from "../processors/executeAddDependency";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 import log from "electron-log";
 
 const logger = log.scope("dependency_handlers");
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 
 export function registerDependencyHandlers() {
   handle(

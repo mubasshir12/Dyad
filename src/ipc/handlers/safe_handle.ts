@@ -1,7 +1,7 @@
 import { ipcMain, IpcMainInvokeEvent } from "electron";
 import log from "electron-log";
 
-export function createSafeHandler(logger: log.LogFunctions) {
+export function createLoggedHandler(logger: log.LogFunctions) {
   return (
     channel: string,
     fn: (event: IpcMainInvokeEvent, ...args: any[]) => Promise<any>,

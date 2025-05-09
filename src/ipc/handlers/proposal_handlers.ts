@@ -29,9 +29,9 @@ import {
 import { extractCodebase } from "../../utils/codebase";
 import { getDyadAppPath } from "../../paths/paths";
 import { withLock } from "../utils/lock_utils";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 const logger = log.scope("proposal_handlers");
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 // Cache for codebase token counts
 interface CodebaseTokenCache {
   chatId: number;

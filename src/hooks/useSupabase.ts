@@ -43,6 +43,7 @@ export function useSupabase() {
       setLoading(true);
       try {
         await ipcClient.setSupabaseAppProject(projectId, appId);
+        setError(null);
       } catch (error) {
         console.error("Error setting Supabase project for app:", error);
         setError(error instanceof Error ? error : new Error(String(error)));
@@ -62,6 +63,7 @@ export function useSupabase() {
       setLoading(true);
       try {
         await ipcClient.unsetSupabaseAppProject(appId);
+        setError(null);
       } catch (error) {
         console.error("Error unsetting Supabase project for app:", error);
         setError(error instanceof Error ? error : new Error(String(error)));

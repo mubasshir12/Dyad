@@ -3,10 +3,10 @@ import { db } from "../../db";
 import { eq } from "drizzle-orm";
 import { apps } from "../../db/schema";
 import { getSupabaseClient } from "../../supabase_admin/supabase_management_client";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 
 const logger = log.scope("supabase_handlers");
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 
 export function registerSupabaseHandlers() {
   handle("supabase:list-projects", async () => {

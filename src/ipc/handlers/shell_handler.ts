@@ -1,18 +1,20 @@
 import { shell } from "electron";
 import log from "electron-log";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 
 const logger = log.scope("shell_handlers");
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 
 export function registerShellHandlers() {
   handle("open-external-url", async (_event, url: string) => {
-    // Basic validation to ensure it's a http/https url
-    if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
-      await shell.openExternal(url);
-      logger.debug("Opened external URL:", url);
+    if (!url) {
+      throw new Error("No URL provided.");
     }
-    throw new Error("Attempted to open invalid or non-http URL: " + url);
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      throw new Error("Attempted to open invalid or non-http URL: " + url);
+    }
+    await shell.openExternal(url);
+    logger.debug("Opened external URL:", url);
   });
 
   handle("show-item-in-folder", async (_event, fullPath: string) => {

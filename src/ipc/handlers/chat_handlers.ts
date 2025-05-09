@@ -5,13 +5,13 @@ import { desc, eq } from "drizzle-orm";
 import type { ChatSummary } from "../../lib/schemas";
 import * as git from "isomorphic-git";
 import * as fs from "fs";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 
 import log from "electron-log";
 import { getDyadAppPath } from "../../paths/paths";
 
 const logger = log.scope("chat_handlers");
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 
 export function registerChatHandlers() {
   handle("create-chat", async (_, appId: number): Promise<number> => {

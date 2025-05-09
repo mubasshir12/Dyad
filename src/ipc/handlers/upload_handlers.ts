@@ -1,10 +1,10 @@
 import log from "electron-log";
 import fetch from "node-fetch";
-import { createSafeHandler } from "./safe_handle";
+import { createLoggedHandler } from "./safe_handle";
 
 const logger = log.scope("upload_handlers");
 
-const handle = createSafeHandler(logger);
+const handle = createLoggedHandler(logger);
 
 interface UploadToSignedUrlParams {
   url: string;
