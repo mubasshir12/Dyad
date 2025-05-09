@@ -458,17 +458,11 @@ export class IpcClient {
   }: {
     appId: number;
     previousVersionId: string;
-  }): Promise<{ success: boolean }> {
-    try {
-      const result = await this.ipcRenderer.invoke("revert-version", {
-        appId,
-        previousVersionId,
-      });
-      return result;
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+  }): Promise<void> {
+    await this.ipcRenderer.invoke("revert-version", {
+      appId,
+      previousVersionId,
+    });
   }
 
   // Checkout a specific version without creating a revert commit

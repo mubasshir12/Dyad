@@ -94,7 +94,7 @@ export function registerVersionHandlers() {
         appId,
         previousVersionId,
       }: { appId: number; previousVersionId: string },
-    ) => {
+    ): Promise<void> => {
       return withLock(appId, async () => {
         const app = await db.query.apps.findFirst({
           where: eq(apps.id, appId),
@@ -205,8 +205,6 @@ export function registerVersionHandlers() {
                 );
             }
           }
-
-          return { success: true };
         } catch (error: any) {
           logger.error(
             `Error reverting to version ${previousVersionId} for app ${appId}:`,
