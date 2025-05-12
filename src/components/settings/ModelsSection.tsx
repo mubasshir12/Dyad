@@ -35,7 +35,7 @@ export function ModelsSection({ providerId }: ModelsSectionProps) {
     refetch: refetchModels,
   } = useLanguageModelsForProvider(providerId);
 
-  const { mutate: deleteModel, isLoading: isDeleting } = useDeleteCustomModel({
+  const { mutate: deleteModel, isPending: isDeleting } = useDeleteCustomModel({
     onSuccess: () => {
       refetchModels(); // Refetch models list after successful deletion
       // Optionally show a success toast here
