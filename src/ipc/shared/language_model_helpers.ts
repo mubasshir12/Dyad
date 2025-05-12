@@ -1,7 +1,14 @@
 import { db } from "@/db";
 import { language_model_providers as languageModelProvidersSchema } from "@/db/schema";
-import { PROVIDER_TO_ENV_VAR, RegularModelProvider } from "@/constants/models";
+import { RegularModelProvider } from "@/constants/models";
 import type { LanguageModelProvider } from "@/ipc/ipc_types";
+
+export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
+  openai: "OPENAI_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  google: "GEMINI_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
+};
 
 export const PROVIDERS: Record<
   RegularModelProvider,

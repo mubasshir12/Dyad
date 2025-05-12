@@ -92,17 +92,6 @@ export const MODEL_OPTIONS: Record<RegularModelProvider, ModelOption[]> = {
   ],
 };
 
-export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
-  openai: "OPENAI_API_KEY",
-  anthropic: "ANTHROPIC_API_KEY",
-  google: "GEMINI_API_KEY",
-  openrouter: "OPENROUTER_API_KEY",
-};
-
-export const ALLOWED_ENV_VARS = Object.keys(PROVIDER_TO_ENV_VAR).map(
-  (provider) => PROVIDER_TO_ENV_VAR[provider],
-);
-
 export const AUTO_MODELS = [
   {
     provider: "google",

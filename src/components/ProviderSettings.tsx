@@ -7,7 +7,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
 import type { LanguageModelProvider } from "@/ipc/ipc_types";
-import { useSettings } from "@/hooks/useSettings";
+
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
 import { GiftIcon } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
@@ -17,7 +17,12 @@ import { AlertTriangle } from "lucide-react";
 export function ProviderSettingsGrid() {
   const navigate = useNavigate();
 
-  const { data: providers, isLoading, error } = useLanguageModelProviders();
+  const {
+    data: providers,
+    isLoading,
+    error,
+    isProviderSetup,
+  } = useLanguageModelProviders();
 
   const handleProviderClick = (providerId: string) => {
     navigate({
@@ -25,8 +30,6 @@ export function ProviderSettingsGrid() {
       params: { provider: providerId },
     });
   };
-
-  const { isProviderSetup } = useSettings();
 
   if (isLoading) {
     return (
