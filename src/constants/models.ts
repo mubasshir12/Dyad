@@ -8,7 +8,10 @@ export interface ModelOption {
   contextWindow?: number;
 }
 
-type RegularModelProvider = Exclude<ModelProvider, "ollama" | "lmstudio">;
+export type RegularModelProvider = Exclude<
+  ModelProvider,
+  "ollama" | "lmstudio"
+>;
 export const MODEL_OPTIONS: Record<RegularModelProvider, ModelOption[]> = {
   openai: [
     // https://platform.openai.com/docs/models/gpt-4.1
@@ -87,46 +90,6 @@ export const MODEL_OPTIONS: Record<RegularModelProvider, ModelOption[]> = {
       tag: "Default",
     },
   ],
-};
-
-export const PROVIDERS: Record<
-  RegularModelProvider,
-  {
-    displayName: string;
-    hasFreeTier?: boolean;
-    websiteUrl?: string;
-    gatewayPrefix: string;
-  }
-> = {
-  openai: {
-    displayName: "OpenAI",
-    hasFreeTier: false,
-    websiteUrl: "https://platform.openai.com/api-keys",
-    gatewayPrefix: "",
-  },
-  anthropic: {
-    displayName: "Anthropic",
-    hasFreeTier: false,
-    websiteUrl: "https://console.anthropic.com/settings/keys",
-    gatewayPrefix: "anthropic/",
-  },
-  google: {
-    displayName: "Google",
-    hasFreeTier: true,
-    websiteUrl: "https://aistudio.google.com/app/apikey",
-    gatewayPrefix: "gemini/",
-  },
-  openrouter: {
-    displayName: "OpenRouter",
-    hasFreeTier: true,
-    websiteUrl: "https://openrouter.ai/settings/keys",
-    gatewayPrefix: "openrouter/",
-  },
-  auto: {
-    displayName: "Dyad",
-    websiteUrl: "https://academy.dyad.sh/settings",
-    gatewayPrefix: "",
-  },
 };
 
 export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
