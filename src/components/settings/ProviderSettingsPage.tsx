@@ -15,7 +15,7 @@ import { UserSettings } from "@/lib/schemas";
 
 import { ProviderSettingsHeader } from "./ProviderSettingsHeader";
 import { ApiKeyConfiguration } from "./ApiKeyConfiguration";
-import { CustomModelsSection } from "./CustomModelsSection";
+import { ModelsSection } from "./ModelsSection";
 
 interface ProviderSettingsPageProps {
   provider: string;
@@ -282,8 +282,9 @@ export function ProviderSettingsPage({ provider }: ProviderSettingsPageProps) {
 
         {/* Conditionally render CustomModelsSection */}
         {supportsCustomModels && providerData && (
-          <CustomModelsSection providerId={providerData.id} />
+          <ModelsSection providerId={providerData.id} />
         )}
+        <div className="h-24"></div>
       </div>
     </div>
   );
