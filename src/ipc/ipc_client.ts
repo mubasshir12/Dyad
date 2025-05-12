@@ -23,6 +23,8 @@ import type {
   BranchResult,
   LanguageModelProvider,
   LanguageModel,
+  CreateCustomLanguageModelProviderParams,
+  CreateCustomLanguageModelParams,
 } from "./ipc_types";
 import type { ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -744,12 +746,7 @@ export class IpcClient {
     name,
     apiBaseUrl,
     envVarName,
-  }: {
-    id: string;
-    name: string;
-    apiBaseUrl: string;
-    envVarName?: string;
-  }): Promise<LanguageModelProvider> {
+  }: CreateCustomLanguageModelProviderParams): Promise<LanguageModelProvider> {
     return this.ipcRenderer.invoke("create-custom-language-model-provider", {
       id,
       name,
@@ -758,14 +755,9 @@ export class IpcClient {
     });
   }
 
-  public async createCustomLanguageModel(params: {
-    id: string;
-    name: string;
-    providerId: string;
-    description?: string;
-    maxOutputTokens?: number;
-    contextWindow?: number;
-  }): Promise<void> {
+  public async createCustomLanguageModel(
+    params: CreateCustomLanguageModelParams,
+  ): Promise<void> {
     await this.ipcRenderer.invoke("create-custom-language-model", params);
   }
 

@@ -153,3 +153,19 @@ export interface LanguageModel {
   contextWindow?: number;
   type: "local" | "cloud" | "custom";
 }
+
+export interface CreateCustomLanguageModelProviderParams {
+  id: string;
+  name: string;
+  apiBaseUrl: string;
+  envVarName?: string;
+}
+
+export interface CreateCustomLanguageModelParams {
+  id: string;
+  name: string;
+  providerId: string;
+  description?: string;
+  maxOutputTokens?: number;
+  contextWindow?: number;
+}

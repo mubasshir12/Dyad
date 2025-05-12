@@ -1,4 +1,9 @@
-import type { LanguageModelProvider, LanguageModel } from "@/ipc/ipc_types";
+import type {
+  LanguageModelProvider,
+  LanguageModel,
+  CreateCustomLanguageModelProviderParams,
+  CreateCustomLanguageModelParams,
+} from "@/ipc/ipc_types";
 import { createLoggedHandler } from "./safe_handle";
 import log from "electron-log";
 import {
@@ -15,22 +20,6 @@ import { IpcMainInvokeEvent } from "electron";
 
 const logger = log.scope("language_model_handlers");
 const handle = createLoggedHandler(logger);
-
-export interface CreateCustomLanguageModelProviderParams {
-  id: string;
-  name: string;
-  apiBaseUrl: string;
-  envVarName?: string;
-}
-
-export interface CreateCustomLanguageModelParams {
-  id: string;
-  name: string;
-  providerId: string;
-  description?: string;
-  maxOutputTokens?: number;
-  contextWindow?: number;
-}
 
 export function registerLanguageModelHandlers() {
   handle(
