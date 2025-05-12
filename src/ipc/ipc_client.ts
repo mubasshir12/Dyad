@@ -22,6 +22,7 @@ import type {
   ChatLogsData,
   BranchResult,
   LanguageModelProvider,
+  LanguageModel,
 } from "./ipc_types";
 import type { ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -732,6 +733,12 @@ export class IpcClient {
     return this.ipcRenderer.invoke("get-language-model-providers");
   }
 
+  public async getLanguageModels(params: {
+    providerId: string;
+  }): Promise<LanguageModel[]> {
+    return this.ipcRenderer.invoke("get-language-models", params);
+  }
+
   public async createCustomLanguageModelProvider({
     id,
     name,
@@ -749,6 +756,17 @@ export class IpcClient {
       apiBaseUrl,
       envVarName,
     });
+  }
+
+  public async createCustomLanguageModel(params: {
+    id: string;
+    name: string;
+    providerId: string;
+    description?: string;
+    maxOutputTokens?: number;
+    contextWindow?: number;
+  }): Promise<void> {
+    await this.ipcRenderer.invoke("create-custom-language-model", params);
   }
 
   // --- End window control methods ---

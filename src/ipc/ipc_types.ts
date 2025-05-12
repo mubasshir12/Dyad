@@ -143,3 +143,13 @@ export interface LanguageModelProvider {
   apiBaseUrl?: string;
   type: "custom" | "local" | "cloud";
 }
+
+export interface LanguageModel {
+  name: string;
+  displayName: string;
+  description: string;
+  tag?: string;
+  maxOutputTokens?: number;
+  contextWindow?: number;
+  type: "local" | "cloud" | "custom";
+}
