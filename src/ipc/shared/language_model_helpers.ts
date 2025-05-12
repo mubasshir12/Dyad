@@ -157,6 +157,7 @@ export async function getLanguageModels(obj: {
       const models = MODEL_OPTIONS[providerId as RegularModelProvider] || [];
       return models.map((model) => ({
         ...model,
+        id: model.name,
         type: "cloud",
       }));
     } else {
@@ -171,6 +172,7 @@ export async function getLanguageModels(obj: {
     try {
       const customModelsDb = await db
         .select({
+          id: languageModelsSchema.id,
           // Map DB columns to LanguageModel fields
           name: languageModelsSchema.name,
           // No display_name in DB, use name instead

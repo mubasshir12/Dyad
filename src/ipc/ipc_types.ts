@@ -145,6 +145,7 @@ export interface LanguageModelProvider {
 }
 
 export interface LanguageModel {
+  id: string;
   name: string;
   displayName: string;
   description: string;
