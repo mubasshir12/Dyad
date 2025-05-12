@@ -116,9 +116,7 @@ export async function getModelClient(
       const provider = createOpenAICompatible({
         name: "lmstudio",
         baseURL,
-        apiKey: apiKey ?? undefined,
       });
-      // LM Studio might not require an API key, pass undefined if so
       return provider(model.name);
     }
     default: {
