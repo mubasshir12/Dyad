@@ -1,7 +1,7 @@
 import { streamText } from "ai";
 import log from "electron-log";
 import { ModelClient } from "./get_model_client";
-import { editSettings } from "@/main/settings";
+import { llmErrorStore } from "@/main/llm_error_store";
 const logger = log.scope("stream_utils");
 
 export interface StreamTextWithBackupParams
@@ -28,7 +28,6 @@ export function streamTextWithBackup(params: StreamTextWithBackupParams): {
 
     for (let i = 0; i < modelClients.length; i++) {
       const currentModelClient = modelClients[i];
-      //   console.log("PROVIDER", currentModel.provider);
 
       /* Local abort controller for this single attempt  */
       const attemptAbort = new AbortController();
@@ -40,8 +39,9 @@ export function streamTextWithBackup(params: StreamTextWithBackupParams): {
       let errorFromCurrent: { error: unknown } | undefined = undefined; // set when onError fires
       const providerId = currentModelClient.builtinProviderId;
       if (providerId) {
-        editSettings((settings) => {
-          settings.providerSettings[providerId].lastError = undefined;
+        llmErrorStore.clearModelError({
+          model: currentModelClient.model.modelId,
+          provider: providerId,
         });
       }
       logger.info(
@@ -61,11 +61,9 @@ export function streamTextWithBackup(params: StreamTextWithBackupParams): {
           const providerId = currentModelClient.builtinProviderId;
           const statusCode = (error as any)?.error?.statusCode;
           if (providerId && statusCode) {
-            editSettings((settings) => {
-              settings.providerSettings[providerId].lastError = {
-                statusCode: statusCode,
-                timestamp: Date.now(),
-              };
+            llmErrorStore.recordModelError({
+              model: currentModelClient.model.modelId,
+              provider: providerId,
             });
           }
           logger.error(

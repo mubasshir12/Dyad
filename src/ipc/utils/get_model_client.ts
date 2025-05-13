@@ -10,6 +10,7 @@ import { getEnvVar } from "./read_env";
 import log from "electron-log";
 import { getLanguageModelProviders } from "../shared/language_model_helpers";
 import { LanguageModelProvider } from "../ipc_types";
+import { llmErrorStore } from "@/main/llm_error_store";
 
 const AUTO_MODELS = [
   {
@@ -103,14 +104,16 @@ export async function getModelClient(
       // 1. Pro Saver Mode is enabled
       // 2. Provider is Google
       // 3. API Key is set
-      // 4. Last error was more than 1 hour ago
+      // 4. Has no recent errors
       if (
         settings.enableProSaverMode &&
         providerConfig.id === "google" &&
         googleSettings &&
         googleSettings.apiKey?.value &&
-        googleSettings?.lastError?.timestamp &&
-        googleSettings?.lastError?.timestamp < Date.now() - 1000 * 60 * 60 * 1 // More than 1 hour ago
+        llmErrorStore.modelHasNoRecentError({
+          model: model.name,
+          provider: providerConfig.id,
+        })
       ) {
         return {
           modelClient: getRegularModelClient(

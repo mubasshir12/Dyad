@@ -86,12 +86,6 @@ export function readSettings(): UserSettings {
   }
 }
 
-export function editSettings(callback: (settings: UserSettings) => void) {
-  const settings = readSettings();
-  callback(settings);
-  writeSettings(settings);
-}
-
 export function writeSettings(settings: Partial<UserSettings>): void {
   try {
     const filePath = getSettingsFilePath();
