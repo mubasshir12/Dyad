@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { CoreMessage, TextPart, ImagePart, streamText } from "ai";
+import { CoreMessage, TextPart, ImagePart } from "ai";
 import { db } from "../../db";
 import { chats, messages } from "../../db/schema";
 import { and, eq, isNull } from "drizzle-orm";
@@ -29,6 +29,7 @@ import * as crypto from "crypto";
 import { readFile, writeFile, unlink } from "fs/promises";
 import { getMaxTokens } from "../utils/token_utils";
 import { MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/settings_constants";
+import { streamTextWithBackup } from "../utils/stream_utils";
 
 const logger = log.scope("chat_stream_handlers");
 
@@ -219,6 +220,25 @@ export function registerChatStreamHandlers() {
           settings,
         );
 
+        // Get backup model clients if specified in settings
+        const backupModels = [];
+        if (settings.backupModels && Array.isArray(settings.backupModels)) {
+          for (const backupModelName of settings.backupModels) {
+            try {
+              const backupClient = await getModelClient(
+                backupModelName,
+                settings,
+              );
+              backupModels.push(backupClient);
+              logger.log(`Added backup model: ${backupModelName}`);
+            } catch (error) {
+              logger.error(
+                `Failed to initialize backup model ${backupModelName}: ${error}`,
+              );
+            }
+          }
+        }
+
         // Extract codebase information if app is associated with the chat
         let codebaseInfo = "";
         if (updatedChat.app) {
@@ -372,24 +392,27 @@ This conversation includes one or more image attachments. When the user uploads 
         }
 
         // When calling streamText, the messages need to be properly formatted for mixed content
-        const { textStream } = streamText({
-          maxTokens: await getMaxTokens(settings.selectedModel),
-          temperature: 0,
-          model: modelClient,
-          system: systemPrompt,
-          messages: chatMessages.filter((m) => m.content),
-          onError: (error) => {
-            logger.error("Error streaming text:", error);
-            const message =
-              (error as any)?.error?.message || JSON.stringify(error);
-            event.sender.send(
-              "chat:response:error",
-              `Sorry, there was an error from the AI: ${message}`,
-            );
-            // Clean up the abort controller
-            activeStreams.delete(req.chatId);
+        const { textStream } = await streamTextWithBackup({
+          options: {
+            maxTokens: await getMaxTokens(settings.selectedModel),
+            temperature: 0,
+            model: modelClient,
+            system: systemPrompt,
+            messages: chatMessages.filter((m) => m.content),
+            onError: (error) => {
+              logger.error("Error streaming text:", error);
+              const message =
+                (error as any)?.error?.message || JSON.stringify(error);
+              event.sender.send(
+                "chat:response:error",
+                `Sorry, there was an error from the AI: ${message}`,
+              );
+              // Clean up the abort controller
+              activeStreams.delete(req.chatId);
+            },
+            abortSignal: abortController.signal,
           },
-          abortSignal: abortController.signal,
+          backupModels,
         });
 
         // Process the stream as before
