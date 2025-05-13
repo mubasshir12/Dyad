@@ -244,8 +244,9 @@ export function registerChatStreamHandlers() {
         }));
 
         // Limit chat history based on maxChatTurnsInContext setting
+        // We add 1 because the current prompt counts as a turn.
         const maxChatTurns =
-          settings.maxChatTurnsInContext || MAX_CHAT_TURNS_IN_CONTEXT; // Default to 5 if not set
+          (settings.maxChatTurnsInContext || MAX_CHAT_TURNS_IN_CONTEXT) + 1;
 
         // If we need to limit the context, we take only the most recent turns
         let limitedMessageHistory = messageHistory;
@@ -266,7 +267,6 @@ export function registerChatStreamHandlers() {
               // Drop assistant messages before the first user message
               recentMessages = recentMessages.slice(firstUserIndex);
             } else if (firstUserIndex === -1) {
-              // No user messages found, add a dummy one at the beginning
               logger.warn(
                 "No user messages found in recent history, set recent messages to empty",
               );
@@ -274,7 +274,6 @@ export function registerChatStreamHandlers() {
             }
           }
 
-          // Combine system messages with recent messages
           limitedMessageHistory = [...recentMessages];
 
           logger.log(
