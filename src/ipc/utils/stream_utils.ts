@@ -31,10 +31,16 @@ export function streamTextWithBackup(params: StreamTextWithBackupParams): {
 
       /* Local abort controller for this single attempt  */
       const attemptAbort = new AbortController();
-      if (callerAbort)
-        callerAbort.addEventListener("abort", () => attemptAbort.abort(), {
-          once: true,
-        });
+      if (callerAbort) {
+        if (callerAbort.aborted) {
+          // Already aborted, trigger immediately
+          attemptAbort.abort();
+        } else {
+          callerAbort.addEventListener("abort", () => attemptAbort.abort(), {
+            once: true,
+          });
+        }
+      }
 
       let errorFromCurrent: { error: unknown } | undefined = undefined; // set when onError fires
       const providerId = currentModelClient.builtinProviderId;
@@ -59,8 +65,7 @@ export function streamTextWithBackup(params: StreamTextWithBackupParams): {
         abortSignal: attemptAbort.signal,
         onError: (error) => {
           const providerId = currentModelClient.builtinProviderId;
-          const statusCode = (error as any)?.error?.statusCode;
-          if (providerId && statusCode) {
+          if (providerId) {
             llmErrorStore.recordModelError({
               model: currentModelClient.model.modelId,
               provider: providerId,
@@ -111,7 +116,7 @@ export function streamTextWithBackup(params: StreamTextWithBackupParams): {
     }
     callerOnError?.(lastErr);
     logger.error("All model invocations failed", lastErr);
-    throw lastErr ?? new Error("All model invocations failed");
+    // throw lastErr ?? new Error("All model invocations failed");
   }
 
   return { textStream: combinedGenerator() };
