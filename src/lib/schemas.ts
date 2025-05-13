@@ -113,11 +113,11 @@ export const UserSettingsSchema = z.object({
   telemetryConsent: z.enum(["opted_in", "opted_out", "unset"]).optional(),
   telemetryUserId: z.string().optional(),
   hasRunBefore: z.boolean().optional(),
-  enableDyadPro: z.boolean().optional(),
   dyadProBudget: DyadProBudgetSchema.optional(),
   experiments: ExperimentsSchema.optional(),
   lastShownReleaseNotesVersion: z.string().optional(),
   maxChatTurnsInContext: z.number().optional(),
+  enableProBudgetMode: z.boolean().optional(),
   // DEPRECATED.
   runtimeMode: RuntimeModeSchema.optional(),
 });
