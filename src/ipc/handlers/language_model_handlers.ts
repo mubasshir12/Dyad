@@ -298,11 +298,7 @@ export function registerLanguageModelHandlers() {
       if (provider.type === "local") {
         throw new Error("Local models cannot be fetched");
       }
-      return getLanguageModels(
-        provider.type === "cloud"
-          ? { builtinProviderId: params.providerId }
-          : { customProviderId: params.providerId },
-      );
+      return getLanguageModels({ providerId: params.providerId });
     },
   );
 

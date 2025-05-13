@@ -1,3 +1,4 @@
+import { LargeLanguageModel } from "@/lib/schemas";
 import { readSettings } from "../../main/settings";
 import { Message } from "../ipc_types";
 
@@ -27,4 +28,16 @@ export async function getContextWindow() {
 
   const modelOption = models.find((m) => m.apiName === model.name);
   return modelOption?.contextWindow || DEFAULT_CONTEXT_WINDOW;
+}
+
+// Most models support at least 8000 output tokens so we use it as a default value.
+const DEFAULT_MAX_TOKENS = 8_000;
+
+export async function getMaxTokens(model: LargeLanguageModel) {
+  const models = await getLanguageModels({
+    providerId: model.provider,
+  });
+
+  const modelOption = models.find((m) => m.apiName === model.name);
+  return modelOption?.maxOutputTokens || DEFAULT_MAX_TOKENS;
 }
