@@ -11,7 +11,7 @@ import { AttachmentsList } from "./AttachmentsList";
 import { DragDropOverlay } from "./DragDropOverlay";
 import { usePostHog } from "posthog-js/react";
 import { HomeSubmitOptions } from "@/pages/home";
-import { ChatControls } from "../ChatControls";
+import { ChatInputControls } from "../ChatInputControls";
 export function HomeChatInput({
   onSubmit,
 }: {
@@ -146,7 +146,7 @@ export function HomeChatInput({
             )}
           </div>
           <div className="px-2">
-            <ChatControls />
+            <ChatInputControls />
           </div>
         </div>
       </div>

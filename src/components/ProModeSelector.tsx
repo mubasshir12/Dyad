@@ -20,6 +20,9 @@ export function ProModeSelector() {
   const toggleBudgetMode = () => {
     updateSettings({ enableProBudgetMode: !settings?.enableProBudgetMode });
   };
+  if (!settings?.enableDyadPro) {
+    return null;
+  }
 
   return (
     <Popover>
