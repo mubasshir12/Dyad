@@ -65,7 +65,8 @@ export function registerLanguageModelHandlers() {
 
       // Insert the new provider
       await db.insert(languageModelProvidersSchema).values({
-        id,
+        // Make sure we will never have accidental collisions with builtin providers
+        id: "custom::" + id,
         name,
         api_base_url: apiBaseUrl,
         env_var_name: envVarName || null,
