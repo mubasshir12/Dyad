@@ -38,7 +38,7 @@ const options: OptionInfo[] = [
   {
     value: "100",
     label: "Max (100)",
-    description: "Maximum context (not recomended due to cost and speed).",
+    description: "Maximum context (not recommended due to cost and speed).",
   },
 ];
 
