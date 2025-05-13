@@ -215,29 +215,10 @@ export function registerChatStreamHandlers() {
       } else {
         // Normal AI processing for non-test prompts
         const settings = readSettings();
-        const modelClient = await getModelClient(
+        const { modelClient, backupModelClients } = await getModelClient(
           settings.selectedModel,
           settings,
         );
-
-        // Get backup model clients if specified in settings
-        const backupModels = [];
-        if (settings.backupModels && Array.isArray(settings.backupModels)) {
-          for (const backupModelName of settings.backupModels) {
-            try {
-              const backupClient = await getModelClient(
-                backupModelName,
-                settings,
-              );
-              backupModels.push(backupClient);
-              logger.log(`Added backup model: ${backupModelName}`);
-            } catch (error) {
-              logger.error(
-                `Failed to initialize backup model ${backupModelName}: ${error}`,
-              );
-            }
-          }
-        }
 
         // Extract codebase information if app is associated with the chat
         let codebaseInfo = "";
@@ -392,27 +373,25 @@ This conversation includes one or more image attachments. When the user uploads 
         }
 
         // When calling streamText, the messages need to be properly formatted for mixed content
-        const { textStream } = await streamTextWithBackup({
-          options: {
-            maxTokens: await getMaxTokens(settings.selectedModel),
-            temperature: 0,
-            model: modelClient,
-            system: systemPrompt,
-            messages: chatMessages.filter((m) => m.content),
-            onError: (error) => {
-              logger.error("Error streaming text:", error);
-              const message =
-                (error as any)?.error?.message || JSON.stringify(error);
-              event.sender.send(
-                "chat:response:error",
-                `Sorry, there was an error from the AI: ${message}`,
-              );
-              // Clean up the abort controller
-              activeStreams.delete(req.chatId);
-            },
-            abortSignal: abortController.signal,
+        const { textStream } = streamTextWithBackup({
+          maxTokens: await getMaxTokens(settings.selectedModel),
+          temperature: 0,
+          model: modelClient,
+          backupModelClients: backupModelClients,
+          system: systemPrompt,
+          messages: chatMessages.filter((m) => m.content),
+          onError: (error: any) => {
+            logger.error("Error streaming text:", error);
+            const message =
+              (error as any)?.error?.message || JSON.stringify(error);
+            event.sender.send(
+              "chat:response:error",
+              `Sorry, there was an error from the AI: ${message}`,
+            );
+            // Clean up the abort controller
+            activeStreams.delete(req.chatId);
           },
-          backupModels,
+          abortSignal: abortController.signal,
         });
 
         // Process the stream as before

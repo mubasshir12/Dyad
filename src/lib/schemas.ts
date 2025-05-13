@@ -54,11 +54,18 @@ export const LargeLanguageModelSchema = z.object({
  */
 export type LargeLanguageModel = z.infer<typeof LargeLanguageModelSchema>;
 
+export const ProviderErrorSchema = z.object({
+  statusCode: z.number(),
+  timestamp: z.number(),
+});
+export type ProviderError = z.infer<typeof ProviderErrorSchema>;
+
 /**
  * Zod schema for provider settings
  */
 export const ProviderSettingSchema = z.object({
   apiKey: SecretSchema.optional(),
+  lastError: ProviderErrorSchema.optional(),
 });
 
 /**

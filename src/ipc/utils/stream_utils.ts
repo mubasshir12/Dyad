@@ -1,59 +1,120 @@
 import { streamText } from "ai";
 import log from "electron-log";
-
+import { ModelClient } from "./get_model_client";
+import { editSettings } from "@/main/settings";
 const logger = log.scope("stream_utils");
 
-/**
- * Streams text from a model with backup models in case of failure
- * @param options The options for streamText
- * @param backupModels Array of backup model clients to try if the primary model fails
- * @returns The result of streamText with the first successful model
- */
-export async function streamTextWithBackup({
-  options,
-  backupModels = [],
-}: {
-  options: Parameters<typeof streamText>[0];
-  backupModels: any[];
-}) {
-  // Try the primary model first
-  try {
-    logger.log(`Attempting to stream with primary model`);
-    return streamText(options);
-  } catch (error) {
-    logger.error(`Error with primary model: ${error}`);
+export interface StreamTextWithBackupParams
+  extends Omit<Parameters<typeof streamText>[0], "model"> {
+  model: ModelClient; // primary client
+  backupModelClients?: ModelClient[]; // ordered fall-backs
+}
 
-    // Original onError handler should still run for the primary model
-    if (options.onError) {
-      options.onError({ error });
-    }
+export function streamTextWithBackup(params: StreamTextWithBackupParams): {
+  textStream: AsyncIterable<string>;
+} {
+  const {
+    model: primaryModel,
+    backupModelClients = [],
+    onError: callerOnError,
+    abortSignal: callerAbort,
+    ...rest
+  } = params;
 
-    // If we have backup models, try them in sequence
-    for (let i = 0; i < backupModels.length; i++) {
-      const backupModel = backupModels[i];
-      logger.log(`Attempting to stream with backup model #${i + 1}`);
+  const modelClients: ModelClient[] = [primaryModel, ...backupModelClients];
+
+  async function* combinedGenerator(): AsyncIterable<string> {
+    let lastErr: { error: unknown } | undefined = undefined;
+
+    for (let i = 0; i < modelClients.length; i++) {
+      const currentModelClient = modelClients[i];
+      //   console.log("PROVIDER", currentModel.provider);
+
+      /* Local abort controller for this single attempt  */
+      const attemptAbort = new AbortController();
+      if (callerAbort)
+        callerAbort.addEventListener("abort", () => attemptAbort.abort(), {
+          once: true,
+        });
+
+      let errorFromCurrent: { error: unknown } | undefined = undefined; // set when onError fires
+      const providerId = currentModelClient.builtinProviderId;
+      if (providerId) {
+        editSettings((settings) => {
+          settings.providerSettings[providerId].lastError = undefined;
+        });
+      }
+      logger.info(
+        "Streaming text with model",
+        currentModelClient.model.modelId,
+        "provider",
+        currentModelClient.model.provider,
+        "builtinProviderId",
+        currentModelClient.builtinProviderId,
+      );
+      const { textStream } = streamText({
+        ...rest,
+        maxRetries: 0,
+        model: currentModelClient.model,
+        abortSignal: attemptAbort.signal,
+        onError: (error) => {
+          const providerId = currentModelClient.builtinProviderId;
+          const statusCode = (error as any)?.error?.statusCode;
+          if (providerId && statusCode) {
+            editSettings((settings) => {
+              settings.providerSettings[providerId].lastError = {
+                statusCode: statusCode,
+                timestamp: Date.now(),
+              };
+            });
+          }
+          logger.error(
+            `Error streaming text with ${providerId} and model ${currentModelClient.model.modelId}: ${error}`,
+            error,
+          );
+          errorFromCurrent = error;
+          attemptAbort.abort(); // kill fetch / SSE
+        },
+      });
 
       try {
-        // Create new options with the backup model
-        const backupOptions = {
-          ...options,
-          model: backupModel,
-          onError: (backupError: unknown) => {
-            logger.error(`Error with backup model #${i + 1}: ${backupError}`);
-            if (options.onError) {
-              options.onError({ error: backupError });
-            }
-          },
-        };
+        for await (const chunk of textStream) {
+          /* If onError fired during streaming, bail out immediately. */
+          if (errorFromCurrent) throw errorFromCurrent;
+          yield chunk;
+        }
 
-        return streamText(backupOptions);
-      } catch (backupError) {
-        logger.error(`Failed with backup model #${i + 1}: ${backupError}`);
-        // Continue to next backup model
+        /* Stream ended – check if it actually failed */
+        if (errorFromCurrent) throw errorFromCurrent;
+
+        /* Completed successfully – stop trying more models. */
+        return;
+      } catch (err) {
+        if (typeof err === "object" && err !== null && "error" in err) {
+          lastErr = err as { error: unknown };
+        } else {
+          lastErr = { error: err };
+        }
+        logger.warn(
+          `[streamTextWithBackup] model #${i} failed – ${
+            i < modelClients.length - 1
+              ? "switching to backup"
+              : "no backups left"
+          }`,
+          err,
+        );
+        /* loop continues to next model (if any) */
       }
     }
 
-    // If all models failed, throw the original error
-    throw error;
+    /* Every model failed */
+    if (!lastErr) {
+      throw new Error("Invariant in StreamTextWithbackup failed!");
+    }
+    callerOnError?.(lastErr);
+    logger.error("All model invocations failed", lastErr);
+    throw lastErr ?? new Error("All model invocations failed");
   }
+
+  return { textStream: combinedGenerator() };
 }
