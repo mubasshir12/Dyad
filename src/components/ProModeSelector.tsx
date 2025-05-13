@@ -17,8 +17,8 @@ import { useSettings } from "@/hooks/useSettings";
 export function ProModeSelector() {
   const { settings, updateSettings } = useSettings();
 
-  const toggleBudgetMode = () => {
-    updateSettings({ enableProBudgetMode: !settings?.enableProBudgetMode });
+  const toggleSaverMode = () => {
+    updateSettings({ enableProSaverMode: !settings?.enableProSaverMode });
   };
   if (!settings?.enableDyadPro) {
     return null;
@@ -52,27 +52,27 @@ export function ProModeSelector() {
           </div>
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <Label htmlFor="budget-mode">Budget Mode</Label>
+              <Label htmlFor="saver-mode">Saver Mode</Label>
               <div className="flex items-center gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent side="right" className="max-w-72">
-                    Using free Gemini API key means that Google can use your
-                    data to improve their model
+                    Note: using the free Gemini API lets Google use your data to
+                    improve their models.
                   </TooltipContent>
                 </Tooltip>
                 <p className="text-xs text-muted-foreground max-w-55">
-                  Uses your free Gemini API key quota before using Dyad Pro API
-                  credits.
+                  Uses your free Gemini API quota before consuming Dyad Pro AI
+                  credits
                 </p>
               </div>
             </div>
             <Switch
-              id="budget-mode"
-              checked={Boolean(settings?.enableProBudgetMode)}
-              onCheckedChange={toggleBudgetMode}
+              id="saver-mode"
+              checked={Boolean(settings?.enableProSaverMode)}
+              onCheckedChange={toggleSaverMode}
             />
           </div>
         </div>
