@@ -12,6 +12,9 @@ import { getLanguageModelProviders } from "../shared/language_model_helpers";
 import { LanguageModelProvider } from "../ipc_types";
 import { llmErrorStore } from "@/main/llm_error_store";
 
+const isDyadDevelopmentForwardKeyEnabled =
+  process.env.DYAD_DEVELOPMENT_FORWARD_KEY === "true";
+
 const AUTO_MODELS = [
   {
     provider: "google",
@@ -231,11 +234,12 @@ function getRegularModelClient(
             `Custom provider ${model.provider} is missing the API Base URL.`,
           );
         }
+        const dyadApiKey = settings.providerSettings?.auto?.apiKey?.value;
         // Assume custom providers are OpenAI compatible for now
         const provider = createOpenAICompatible({
           name: providerConfig.id,
           baseURL: providerConfig.apiBaseUrl,
-          apiKey: apiKey,
+          apiKey: isDyadDevelopmentForwardKeyEnabled ? dyadApiKey : apiKey,
         });
         return {
           modelClient: {
