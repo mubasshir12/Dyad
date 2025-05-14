@@ -18,10 +18,6 @@ const AUTO_MODELS = [
     name: "gemini-2.5-flash-preview-04-17",
   },
   {
-    provider: "google",
-    name: "gemini-2.5-pro-exp-03-25",
-  },
-  {
     provider: "anthropic",
     name: "claude-3-7-sonnet-latest",
   },
