@@ -15,6 +15,10 @@ import { llmErrorStore } from "@/main/llm_error_store";
 const AUTO_MODELS = [
   {
     provider: "google",
+    name: "gemini-2.5-flash-preview-04-17",
+  },
+  {
+    provider: "google",
     name: "gemini-2.5-pro-exp-03-25",
   },
   {
