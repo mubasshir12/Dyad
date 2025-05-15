@@ -74,8 +74,9 @@ export async function getModelClient(
           {
             provider: autoModel.provider,
             name: autoModel.name,
-          } as LargeLanguageModel,
+          },
           settings,
+          files,
         );
       }
     }
@@ -256,12 +257,11 @@ function getRegularModelClient(
             `Custom provider ${model.provider} is missing the API Base URL.`,
           );
         }
-        const dyadApiKey = settings.providerSettings?.auto?.apiKey?.value;
         // Assume custom providers are OpenAI compatible for now
         const provider = createOpenAICompatible({
           name: providerConfig.id,
           baseURL: providerConfig.apiBaseUrl,
-          apiKey: dyadLocalEngine ? dyadApiKey : apiKey,
+          apiKey,
         });
         return {
           modelClient: {
