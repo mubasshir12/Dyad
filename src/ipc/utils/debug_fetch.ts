@@ -30,12 +30,14 @@ export async function debugFetch(
     headers: fetchOptions.headers,
   });
 
-  if (fetchOptions.body) {
+
+  if (fetchOptions.body && options.includeUsageInStream) {
     fetchOptions.body = JSON.stringify({
       ...JSON.parse(fetchOptions.body as string),
       stream_options: { include_usage: true },
     });
   }
+
 
   const response = await fetch(url, fetchOptions);
 
