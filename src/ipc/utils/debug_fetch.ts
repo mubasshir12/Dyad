@@ -6,6 +6,7 @@ interface DebugFetchOptions extends RequestInit {
   debugTag?: string;
   logResponse?: boolean;
   logStream?: boolean;
+  includeUsageInStream?: boolean;
 }
 
 /**
@@ -30,14 +31,12 @@ export async function debugFetch(
     headers: fetchOptions.headers,
   });
 
-
   if (fetchOptions.body && options.includeUsageInStream) {
     fetchOptions.body = JSON.stringify({
       ...JSON.parse(fetchOptions.body as string),
       stream_options: { include_usage: true },
     });
   }
-
 
   const response = await fetch(url, fetchOptions);
 
