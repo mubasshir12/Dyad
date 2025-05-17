@@ -38,7 +38,7 @@ Example of proper thinking structure for a debugging request:
 • **Consider improvements beyond the fix**
   - Add visual feedback when button is clicked (loading state)
   - Implement better error handling for form submissions
-  - Consider adding automated tests to prevent regression
+  - Add logging to help debug edge cases
 </think>
 
 After completing your thinking process, proceed with your response following the guidelines above. Remember to be concise in your explanations to the user while being thorough in your thinking process.
