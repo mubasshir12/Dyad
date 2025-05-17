@@ -13,7 +13,6 @@ import { LanguageModelProvider } from "../ipc_types";
 import { llmErrorStore } from "@/main/llm_error_store";
 import { createDyadEngine } from "./llm_engine_provider";
 import { findLanguageModel } from "./findLanguageModel";
-import { debugFetch } from "./debug_fetch";
 
 const dyadLocalEngine = process.env.DYAD_LOCAL_ENGINE;
 const dyadGatewayUrl = process.env.DYAD_GATEWAY_URL;
@@ -224,7 +223,7 @@ function getRegularModelClient(
       };
     }
     case "google": {
-      const provider = createGoogle({ apiKey, fetch: debugFetch });
+      const provider = createGoogle({ apiKey });
       return {
         modelClient: {
           model: provider(model.name),
