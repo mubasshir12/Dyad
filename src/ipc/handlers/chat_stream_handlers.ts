@@ -239,6 +239,12 @@ export function registerChatStreamHandlers() {
         const { modelClient, backupModelClients, isEngineEnabled } =
           await getModelClient(settings.selectedModel, settings, files);
 
+        // // Extract think tags from the model.
+        // modelClient.model = wrapLanguageModel({
+        //   model: modelClient.model,
+        //   middleware: extractReasoningMiddleware({ tagName: "think" }),
+        // });
+
         // Prepare message history for the AI
         const messageHistory = updatedChat.messages.map((message) => ({
           role: message.role as "user" | "assistant" | "system",

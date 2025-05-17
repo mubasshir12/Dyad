@@ -62,6 +62,13 @@ export function streamTextWithBackup(params: StreamTextWithBackupParams): {
         ...rest,
         maxRetries: 0,
         model: currentModelClient.model,
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              // thinkingBudget: 0,Build me a Habit Streak Tracker
+            },
+          },
+        },
         abortSignal: attemptAbort.signal,
         onError: (error) => {
           const providerId = currentModelClient.builtinProviderId;
