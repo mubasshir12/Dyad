@@ -792,9 +792,29 @@ export class IpcClient {
     });
   }
 
-  // --- End window control methods ---
+  public async selectAppFolder(): Promise<{
+    path: string | null;
+    name: string | null;
+  }> {
+    return this.ipcRenderer.invoke("select-app-folder");
+  }
 
-  // --- Language Model Operations ---
+  public async checkAiRules(params: {
+    path: string;
+  }): Promise<{ exists: boolean }> {
+    return this.ipcRenderer.invoke("check-ai-rules", params);
+  }
 
-  // --- App Operations ---
+  public async importApp(params: {
+    path: string;
+    appName?: string;
+  }): Promise<{ appId: number; chatId: number }> {
+    return this.ipcRenderer.invoke("import-app", params);
+  }
+
+  async checkAppName(params: {
+    appName: string;
+  }): Promise<{ exists: boolean }> {
+    return this.ipcRenderer.invoke("check-app-name", params);
+  }
 }
