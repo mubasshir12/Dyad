@@ -170,6 +170,10 @@ const server = http.createServer((clientReq, clientRes) => {
   const isTLS = target.protocol === "https:";
   const lib = isTLS ? https : http;
 
+  parentPort?.postMessage(
+    `[proxy-worker] Client request headers: ${JSON.stringify(clientReq.headers)}`,
+  );
+
   /* Copy request headers but rewrite Host / Origin / Referer */
   const headers = { ...clientReq.headers, host: target.host };
   if (headers.origin) headers.origin = target.origin;
@@ -181,6 +185,12 @@ const server = http.createServer((clientReq, clientRes) => {
       delete headers.referer;
     }
   }
+
+  // Request uncompressed content from upstream
+  delete headers["accept-encoding"];
+  parentPort?.postMessage(
+    `[proxy-worker] Headers sent to upstream: ${JSON.stringify(headers)}`,
+  );
 
   if (headers["if-none-match"] && needsInjection(target.pathname))
     delete headers["if-none-match"];
@@ -197,8 +207,18 @@ const server = http.createServer((clientReq, clientRes) => {
   const upReq = lib.request(upOpts, (upRes) => {
     const inject = needsInjection(target.pathname);
 
+    parentPort?.postMessage(
+      `[proxy-worker] Upstream response headers: ${JSON.stringify(upRes.headers)}`,
+    );
+    parentPort?.postMessage(
+      `[proxy-worker] Attempting injection for ${target.pathname}: ${inject}`,
+    );
+
     if (!inject) {
       clientRes.writeHead(upRes.statusCode, upRes.headers);
+      parentPort?.postMessage(
+        `[proxy-worker] No injection. Headers sent to client: ${JSON.stringify(upRes.headers)}`,
+      );
       return void upRes.pipe(clientRes);
     }
 
@@ -207,15 +227,33 @@ const server = http.createServer((clientReq, clientRes) => {
     upRes.on("end", () => {
       try {
         const merged = Buffer.concat(chunks);
+        parentPort?.postMessage(
+          `[proxy-worker] Before injection: Content-Type: ${upRes.headers["content-type"]}, Content-Encoding: ${upRes.headers["content-encoding"]}, Original length: ${Buffer.byteLength(merged)}`,
+        );
+
         const patched = injectHTML(merged);
+        parentPort?.postMessage(
+          `[proxy-worker] After injection: Patched length: ${Buffer.byteLength(patched)}`,
+        );
 
         const hdrs = {
           ...upRes.headers,
           "content-length": Buffer.byteLength(patched),
         };
+        // If we injected content, it's no longer encoded in the original way
+        delete hdrs["content-encoding"];
+        // Also, remove ETag as content has changed
+        delete hdrs["etag"];
+
         clientRes.writeHead(upRes.statusCode, hdrs);
+        parentPort?.postMessage(
+          `[proxy-worker] Injection done. Headers sent to client: ${JSON.stringify(hdrs)}`,
+        );
         clientRes.end(patched);
       } catch (e) {
+        parentPort?.postMessage(
+          `[proxy-worker] Injection failed: ${e.message}`,
+        );
         clientRes.writeHead(500, { "content-type": "text/plain" });
         clientRes.end("Injection failed: " + e.message);
       }
@@ -245,6 +283,8 @@ server.on("upgrade", (req, socket, _head) => {
   const isTLS = target.protocol === "https:";
   const headers = { ...req.headers, host: target.host };
   if (headers.origin) headers.origin = target.origin;
+  // Request uncompressed content from upstream for WebSocket handshake too if needed, though less critical here.
+  delete headers["accept-encoding"];
 
   const upReq = (isTLS ? https : http).request({
     protocol: target.protocol,
