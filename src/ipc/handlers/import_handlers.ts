@@ -10,6 +10,7 @@ import { chats } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import git from "isomorphic-git";
 import { getGitAuthor } from "../utils/git_author";
+import { ImportAppParams, ImportAppResult } from "../ipc_types";
 
 const logger = log.scope("import-handlers");
 const handle = createLoggedHandler(logger);
@@ -19,7 +20,7 @@ export function registerImportHandlers() {
   handle("select-app-folder", async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openDirectory"],
-      title: "Select App Folder",
+      title: "Select App Folder to Import",
     });
 
     if (result.canceled) {
@@ -66,11 +67,8 @@ export function registerImportHandlers() {
     "import-app",
     async (
       _,
-      {
-        path: sourcePath,
-        appName: customAppName,
-      }: { path: string; appName?: string },
-    ): Promise<{ appId: number; chatId: number }> => {
+      { path: sourcePath, appName }: ImportAppParams,
+    ): Promise<ImportAppResult> => {
       // Validate the source path exists
       try {
         await fs.access(sourcePath);
@@ -78,8 +76,6 @@ export function registerImportHandlers() {
         throw new Error("Source folder does not exist");
       }
 
-      // Use custom app name if provided, otherwise use source folder name
-      const appName = customAppName || path.basename(sourcePath);
       const destPath = getDyadAppPath(appName);
 
       // Check if the app already exists

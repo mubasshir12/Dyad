@@ -44,17 +44,15 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
   const { refreshApps } = useLoadApps();
   const setSelectedAppId = useSetAtom(selectedAppIdAtom);
 
-  const checkAppName = async (name: string) => {
+  const checkAppName = async (name: string): Promise<void> => {
     setIsCheckingName(true);
     try {
       const result = await IpcClient.getInstance().checkAppName({
         appName: name,
       });
       setNameExists(result.exists);
-      return result.exists;
     } catch (error: unknown) {
       showError("Failed to check app name: " + (error as any).toString());
-      return true;
     } finally {
       setIsCheckingName(false);
     }

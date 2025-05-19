@@ -27,6 +27,8 @@ import type {
   CreateCustomLanguageModelParams,
   DoesReleaseNoteExistParams,
   ApproveProposalResult,
+  ImportAppResult,
+  ImportAppParams,
 } from "./ipc_types";
 import type { ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -805,10 +807,7 @@ export class IpcClient {
     return this.ipcRenderer.invoke("check-ai-rules", params);
   }
 
-  public async importApp(params: {
-    path: string;
-    appName?: string;
-  }): Promise<{ appId: number; chatId: number }> {
+  public async importApp(params: ImportAppParams): Promise<ImportAppResult> {
     return this.ipcRenderer.invoke("import-app", params);
   }
 
