@@ -25,6 +25,7 @@ import { useEffect } from "react";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { useCurrentBranch } from "@/hooks/useCurrentBranch";
 import { useCheckoutVersion } from "@/hooks/useCheckoutVersion";
+import { useRenameBranch } from "@/hooks/useRenameBranch";
 
 interface ChatHeaderProps {
   isVersionPaneOpen: boolean;
@@ -53,6 +54,7 @@ export function ChatHeader({
   } = useCurrentBranch(appId);
 
   const { checkoutVersion, isCheckingOutVersion } = useCheckoutVersion();
+  const { renameBranch, isRenamingBranch } = useRenameBranch();
 
   useEffect(() => {
     if (appId) {
@@ -63,6 +65,18 @@ export function ChatHeader({
   const handleCheckoutMainBranch = async () => {
     if (!appId) return;
     await checkoutVersion({ appId, versionId: "main" });
+  };
+
+  const handleRenameMasterToMain = async () => {
+    if (!appId) return;
+    try {
+      await renameBranch({ oldBranchName: "master", newBranchName: "main" });
+    } catch (error) {
+      console.error(
+        "Failed to rename master to main directly in component",
+        error,
+      );
+    }
   };
 
   const handleNewChat = async () => {
@@ -127,14 +141,27 @@ export function ChatHeader({
               {branchInfoLoading && <span>Checking branch...</span>}
             </span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCheckoutMainBranch}
-            disabled={isCheckingOutVersion || branchInfoLoading}
-          >
-            {isCheckingOutVersion ? "Checking out..." : "Switch to main branch"}
-          </Button>
+          {currentBranchName === "master" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRenameMasterToMain}
+              disabled={isRenamingBranch || branchInfoLoading}
+            >
+              {isRenamingBranch ? "Renaming..." : "Rename master to main"}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCheckoutMainBranch}
+              disabled={isCheckingOutVersion || branchInfoLoading}
+            >
+              {isCheckingOutVersion
+                ? "Checking out..."
+                : "Switch to main branch"}
+            </Button>
+          )}
         </div>
       )}
 
