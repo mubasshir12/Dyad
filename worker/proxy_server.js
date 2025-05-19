@@ -181,9 +181,10 @@ const server = http.createServer((clientReq, clientRes) => {
       delete headers.referer;
     }
   }
-
-  // Request uncompressed content from upstream
-  delete headers["accept-encoding"];
+  if (needsInjection) {
+    // Request uncompressed content from upstream
+    delete headers["accept-encoding"];
+  }
 
   if (headers["if-none-match"] && needsInjection(target.pathname))
     delete headers["if-none-match"];
@@ -253,8 +254,6 @@ server.on("upgrade", (req, socket, _head) => {
   const isTLS = target.protocol === "https:";
   const headers = { ...req.headers, host: target.host };
   if (headers.origin) headers.origin = target.origin;
-  // Request uncompressed content from upstream for WebSocket handshake too if needed, though less critical here.
-  delete headers["accept-encoding"];
 
   const upReq = (isTLS ? https : http).request({
     protocol: target.protocol,
