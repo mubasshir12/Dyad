@@ -133,6 +133,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                     console.error("No chat selected");
                     return;
                   }
+                  debugger;
 
                   setIsRetryLoading(true);
                   try {
