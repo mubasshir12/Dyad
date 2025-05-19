@@ -20,7 +20,7 @@ import { IpcClient } from "@/ipc/ipc_client";
 import { useRouter } from "@tanstack/react-router";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useChats } from "@/hooks/useChats";
-import { showError } from "@/lib/toast";
+import { showError, showSuccess } from "@/lib/toast";
 import { useEffect } from "react";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { useCurrentBranch } from "@/hooks/useCurrentBranch";
@@ -69,14 +69,10 @@ export function ChatHeader({
 
   const handleRenameMasterToMain = async () => {
     if (!appId) return;
-    try {
-      await renameBranch({ oldBranchName: "master", newBranchName: "main" });
-    } catch (error) {
-      console.error(
-        "Failed to rename master to main directly in component",
-        error,
-      );
-    }
+    // If this throws, it will automatically show an error toast
+    await renameBranch({ oldBranchName: "master", newBranchName: "main" });
+
+    showSuccess("Master branch renamed to main");
   };
 
   const handleNewChat = async () => {

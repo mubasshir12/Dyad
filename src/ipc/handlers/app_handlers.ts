@@ -780,7 +780,7 @@ export function registerAppHandlers() {
 
     const appPath = getDyadAppPath(app.path);
 
-    return withLock(String(appId), async () => {
+    return withLock(appId, async () => {
       try {
         // Check if the old branch exists
         const branches = await git.listBranches({ fs, dir: appPath });

@@ -37,8 +37,8 @@ export function useRenameBranch() {
       });
       // Potentially show a success message or trigger other actions
     },
-    onError: (error) => {
-      showError(`Failed to rename branch: ${error.message}`);
+    meta: {
+      showErrorToast: true,
     },
   });
 
