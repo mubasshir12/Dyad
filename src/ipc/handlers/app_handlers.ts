@@ -12,7 +12,10 @@ import { promises as fsPromises } from "node:fs";
 
 // Import our utility modules
 import { withLock } from "../utils/lock_utils";
-import { getFilesRecursively } from "../utils/file_utils";
+import {
+  copyDirectoryRecursive,
+  getFilesRecursively,
+} from "../utils/file_utils";
 import {
   runningApps,
   processCounter,
@@ -189,15 +192,13 @@ export function registerAppHandlers() {
 
       // Start async operations in background
       try {
-        await fsPromises.cp(
+        // Why do we not use fs.cp here?
+        // Because scaffold is inside ASAR and it does NOT
+        // behave like a regular directory if you use fs.cp
+        // https://www.electronjs.org/docs/latest/tutorial/asar-archives#limitations-of-the-node-api
+        await copyDirectoryRecursive(
           path.join(__dirname, "..", "..", "scaffold"),
           fullAppPath,
-          {
-            recursive: true,
-            // Scaffold should *not* have node_modules anyways, but
-            // just in case, we filter it out.
-            filter: (source) => !source.includes("node_modules"),
-          },
         );
         // Initialize git repo and create first commit
         await git.init({
