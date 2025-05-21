@@ -9,6 +9,34 @@ export function ChatErrorBox({
   error: string;
   isDyadProEnabled: boolean;
 }) {
+  if (error.includes("doesn't have a free quota tier")) {
+    return (
+      <ChatErrorContainer onDismiss={onDismiss}>
+        {error}
+        <span className="ml-1">
+          <ExternalLink href="https://dyad.sh/pro">
+            Access with Dyad Pro.
+          </ExternalLink>
+        </span>
+      </ChatErrorContainer>
+    );
+  }
+
+  // Important, this needs to come after the "free quota tier" check
+  // because it also includes this URL in the error message
+  if (error.includes("https://ai.google.dev/gemini-api/docs/rate-limits")) {
+    return (
+      <ChatErrorContainer onDismiss={onDismiss}>
+        {error}
+        <span className="ml-1">
+          <ExternalLink href="https://dyad.sh/pro">
+            Upgrade to Dyad Pro.
+          </ExternalLink>
+        </span>
+      </ChatErrorContainer>
+    );
+  }
+
   if (error.includes("LiteLLM Virtual Key expected")) {
     return (
       <ChatInfoContainer onDismiss={onDismiss}>
