@@ -9,6 +9,19 @@ export function ChatErrorBox({
   error: string;
   isDyadProEnabled: boolean;
 }) {
+  if (error.includes("LiteLLM Virtual Key expected")) {
+    return (
+      <ChatInfoContainer onDismiss={onDismiss}>
+        <span>
+          Looks like you don't have a valid Dyad Pro key.{" "}
+          <ExternalLink href="https://dyad.sh/pro">
+            Upgrade to Dyad Pro
+          </ExternalLink>{" "}
+          today.
+        </span>
+      </ChatInfoContainer>
+    );
+  }
   if (isDyadProEnabled && error.includes("ExceededBudget:")) {
     return (
       <ChatInfoContainer onDismiss={onDismiss}>
