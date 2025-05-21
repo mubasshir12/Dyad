@@ -227,7 +227,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
               >
                 Get Dyad Pro
               </a>{" "}
-              and enjoy 50% faster AI edits with Turbo Edits.
+              and enjoy faster AI edits with Turbo Edits.
             </p>
           </div>
         )}
