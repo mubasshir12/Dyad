@@ -89,8 +89,8 @@ export function ProModeSelector() {
           <SelectorRow
             id="lazy-edits"
             label="Turbo Edits"
-            description="Edits files faster."
-            tooltip="Edits files faster."
+            description="Makes editing files faster and cheaper."
+            tooltip="Uses a faster, cheaper model to generate full file updates."
             proEnabled={proEnabled}
             settingEnabled={Boolean(settings?.enableProLazyEditsMode)}
             toggle={toggleLazyEdits}
@@ -140,7 +140,7 @@ function SelectorRow({
           <Tooltip>
             <TooltipTrigger asChild>
               <Info
-                className={`h-4 w-4 ${!proEnabled ? "text-muted-foreground/50 cursor-not-allowed" : "text-muted-foreground cursor-help"}`}
+                className={`h-4 w-4 cursor-help ${!proEnabled ? "text-muted-foreground/50" : "text-muted-foreground"}`}
               />
             </TooltipTrigger>
             <TooltipContent side="right" className="max-w-72">
