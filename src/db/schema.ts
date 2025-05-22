@@ -1,120 +1,28 @@
-import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { relations } from "drizzle-orm";
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm'; // For CURRENT_TIMESTAMP
 
-export const apps = sqliteTable("apps", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  path: text("path").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  githubOrg: text("github_org"),
-  githubRepo: text("github_repo"),
-  supabaseProjectId: text("supabase_project_id"),
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(), // Assuming userId is provided and unique
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
 });
 
-export const chats = sqliteTable("chats", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  appId: integer("app_id")
-    .notNull()
-    .references(() => apps.id, { onDelete: "cascade" }),
-  title: text("title"),
-  initialCommitHash: text("initial_commit_hash"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
+export const buildRequests = sqliteTable('build_requests', {
+  id: text('id').primaryKey(), // buildId
+  userId: text('user_id').references(() => users.id), // As per prompt, nullable
+  requirement: text('requirement').notNull(),
+  status: text('status', { enum: ['pending', 'in-progress', 'completed', 'error'] }).default('pending').notNull(),
+  websiteUrl: text('website_url'), 
+  devServerPid: integer('dev_server_pid'), // Nullable by default
+  buildError: text('build_error'), // Nullable by default
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`), 
 });
 
-export const messages = sqliteTable("messages", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  chatId: integer("chat_id")
-    .notNull()
-    .references(() => chats.id, { onDelete: "cascade" }),
-  role: text("role", { enum: ["user", "assistant"] }).notNull(),
-  content: text("content").notNull(),
-  approvalState: text("approval_state", {
-    enum: ["approved", "rejected"],
-  }),
-  commitHash: text("commit_hash"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
+export const chatMessages = sqliteTable('chat_messages', {
+  id: text('id').primaryKey(),
+  buildId: text('build_id').references(() => buildRequests.id), // As per prompt, nullable
+  userId: text('user_id').references(() => users.id), // As per prompt, nullable. For easier querying of all user messages
+  sender: text('sender', { enum: ['user', 'ai'] }).notNull(),
+  content: text('content').notNull(),
+  timestamp: integer('timestamp', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
 });
-
-// Define relations
-export const appsRelations = relations(apps, ({ many }) => ({
-  chats: many(chats),
-}));
-
-export const chatsRelations = relations(chats, ({ many, one }) => ({
-  messages: many(messages),
-  app: one(apps, {
-    fields: [chats.appId],
-    references: [apps.id],
-  }),
-}));
-
-export const messagesRelations = relations(messages, ({ one }) => ({
-  chat: one(chats, {
-    fields: [messages.chatId],
-    references: [chats.id],
-  }),
-}));
-
-export const language_model_providers = sqliteTable(
-  "language_model_providers",
-  {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
-    api_base_url: text("api_base_url").notNull(),
-    env_var_name: text("env_var_name"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-);
-
-export const language_models = sqliteTable("language_models", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  displayName: text("display_name").notNull(),
-  apiName: text("api_name").notNull(),
-  builtinProviderId: text("builtin_provider_id"),
-  customProviderId: text("custom_provider_id").references(
-    () => language_model_providers.id,
-    { onDelete: "cascade" },
-  ),
-  description: text("description"),
-  max_output_tokens: integer("max_output_tokens"),
-  context_window: integer("context_window"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
-
-// Define relations for new tables
-export const languageModelProvidersRelations = relations(
-  language_model_providers,
-  ({ many }) => ({
-    languageModels: many(language_models),
-  }),
-);
-
-export const languageModelsRelations = relations(
-  language_models,
-  ({ one }) => ({
-    provider: one(language_model_providers, {
-      fields: [language_models.customProviderId],
-      references: [language_model_providers.id],
-    }),
-  }),
-);

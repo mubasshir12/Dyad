@@ -11,10 +11,12 @@ export async function executeAddDependency({
   packages,
   message,
   appPath,
+  skipDbUpdate, // New parameter
 }: {
   packages: string[];
-  message: Message;
+  message: Message; // Message type might need adjustment if id becomes optional for this use case
   appPath: string;
+  skipDbUpdate?: boolean; // New parameter
 }) {
   const packageStr = packages.join(" ");
 
@@ -39,9 +41,11 @@ export async function executeAddDependency({
     )}">${installResults}</dyad-add-dependency>`,
   );
 
-  // Save the updated message back to the database
-  await db
-    .update(messages)
-    .set({ content: updatedContent })
-    .where(eq(messages.id, message.id));
+  // Save the updated message back to the database, conditionally
+  if (!skipDbUpdate) {
+    await db
+      .update(messages)
+      .set({ content: updatedContent })
+      .where(eq(messages.id, message.id));
+  }
 }

@@ -5,43 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1744692127560,
-      "tag": "0000_nebulous_proemial_gods",
+      "when": 1747850953662,
+      "tag": "0000_jazzy_weapon_omega",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1744999922420,
-      "tag": "0001_hesitant_roland_deschain",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1745359640409,
-      "tag": "0002_unique_morlocks",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1746209201530,
-      "tag": "0003_open_bucky",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1746556241557,
-      "tag": "0004_flawless_jigsaw",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1747095436506,
-      "tag": "0005_clumsy_namor",
+      "when": 1747851386853,
+      "tag": "0001_famous_dreadnoughts",
       "breakpoints": true
     }
   ]

@@ -170,31 +170,52 @@ async function readFileFromFunctionPath(input: string): Promise<string> {
 
 export async function processFullResponseActions(
   fullResponse: string,
-  chatId: number,
+  // Allow chatId and messageId to be special values (e.g., -1) to skip DB operations
+  chatId: number, 
   {
     chatSummary,
     messageId,
   }: { chatSummary: string | undefined; messageId: number },
+  // New optional parameter to control behavior, especially for website_generator
+  options?: {
+    appPathOverride?: string; // Allows using a custom path like buildDirectory
+    skipDbOperations?: boolean; // General flag to skip DB writes
+    skipSupabaseOperations?: boolean; // Flag to skip Supabase specific ops
+  }
 ): Promise<{
   updatedFiles?: boolean;
   error?: string;
   extraFiles?: string[];
   extraFilesError?: string;
 }> {
-  logger.log("processFullResponseActions for chatId", chatId);
-  // Get the app associated with the chat
-  const chatWithApp = await db.query.chats.findFirst({
-    where: eq(chats.id, chatId),
-    with: {
-      app: true,
-    },
-  });
-  if (!chatWithApp || !chatWithApp.app) {
-    logger.error(`No app found for chat ID: ${chatId}`);
-    return {};
-  }
+  logger.log("processFullResponseActions for chatId", chatId, "messageId", messageId, "options", options);
 
-  const appPath = getDyadAppPath(chatWithApp.app.path);
+  const effectiveAppPath = options?.appPathOverride || (chatId !== -1 ? await (async () => {
+    const chatWithApp = await db.query.chats.findFirst({
+      where: eq(chats.id, chatId),
+      with: { app: true },
+    });
+    if (!chatWithApp || !chatWithApp.app) {
+      logger.error(`No app found for chat ID: ${chatId} (and no appPathOverride provided)`);
+      // This path should not be taken if appPathOverride is correctly supplied by website_generator
+      throw new Error(`App path determination failed for chatId: ${chatId}`);
+    }
+    return getDyadAppPath(chatWithApp.app.path);
+  })() : '');
+
+  if (!effectiveAppPath && !options?.appPathOverride) {
+    // This case should ideally be prevented by caller logic
+    logger.error("effectiveAppPath could not be determined and was not overridden.");
+    return { error: "Application path could not be determined." };
+  }
+  
+  const supabaseProjectId = chatId !== -1 && !options?.skipSupabaseOperations ? await (async () => {
+    const chatWithApp = await db.query.chats.findFirst({
+      where: eq(chats.id, chatId),
+      with: { app: true },
+    });
+    return chatWithApp?.app?.supabaseProjectId;
+  })() : undefined;
   const writtenFiles: string[] = [];
   const renamedFiles: string[] = [];
   const deletedFiles: string[] = [];
@@ -209,29 +230,32 @@ export async function processFullResponseActions(
     const dyadRenameTags = getDyadRenameTags(fullResponse);
     const dyadDeletePaths = getDyadDeleteTags(fullResponse);
     const dyadAddDependencyPackages = getDyadAddDependencyTags(fullResponse);
-    const dyadExecuteSqlQueries = chatWithApp.app.supabaseProjectId
+    const dyadExecuteSqlQueries = supabaseProjectId
       ? getDyadExecuteSqlTags(fullResponse)
       : [];
 
-    const message = await db.query.messages.findFirst({
+    // Retrieve message only if we are not skipping DB operations and messageId is valid
+    const message = (!options?.skipDbOperations && messageId !== -1) ? await db.query.messages.findFirst({
       where: and(
         eq(messages.id, messageId),
         eq(messages.role, "assistant"),
         eq(messages.chatId, chatId),
       ),
-    });
+    }) : { id: -1, content: fullResponse, approvalState: null, commitHash: null }; // Mock message if DB ops are skipped
 
-    if (!message) {
-      logger.error(`No message found for ID: ${messageId}`);
-      return {};
+    if (!message && !options?.skipDbOperations) { // Only error if we expected a message
+      logger.error(`No message found for ID: ${messageId} and DB operations not skipped.`);
+      return { error: `Message with ID ${messageId} not found.`};
     }
+    
+    const skipDbUpdateForDependencies = options?.skipDbOperations || messageId === -1;
 
     // Handle SQL execution tags
-    if (dyadExecuteSqlQueries.length > 0) {
+    if (supabaseProjectId && dyadExecuteSqlQueries.length > 0) {
       for (const query of dyadExecuteSqlQueries) {
         try {
           await executeSupabaseSql({
-            supabaseProjectId: chatWithApp.app.supabaseProjectId!,
+            supabaseProjectId: supabaseProjectId,
             query: query.content,
           });
         } catch (error) {
@@ -244,13 +268,16 @@ export async function processFullResponseActions(
       logger.log(`Executed ${dyadExecuteSqlQueries.length} SQL queries`);
     }
 
-    // TODO: Handle add dependency tags
+    // Handle add dependency tags
     if (dyadAddDependencyPackages.length > 0) {
       try {
         await executeAddDependency({
           packages: dyadAddDependencyPackages,
-          message: message,
-          appPath,
+          // Provide a valid-looking message object even if DB ops are skipped,
+          // as executeAddDependency might use its structure (e.g. message.content)
+          message: message || { id: -1, content: fullResponse, approvalState: 'approved', commitHash: null, chatId: -1, role: 'assistant', createdAt: new Date() },
+          appPath: effectiveAppPath,
+          skipDbUpdate: skipDbUpdateForDependencies,
         });
       } catch (error) {
         errors.push({
@@ -262,11 +289,11 @@ export async function processFullResponseActions(
       }
       writtenFiles.push("package.json");
       const pnpmFilename = "pnpm-lock.yaml";
-      if (fs.existsSync(path.join(appPath, pnpmFilename))) {
+      if (fs.existsSync(path.join(effectiveAppPath, pnpmFilename))) {
         writtenFiles.push(pnpmFilename);
       }
       const packageLockFilename = "package-lock.json";
-      if (fs.existsSync(path.join(appPath, packageLockFilename))) {
+      if (fs.existsSync(path.join(effectiveAppPath, packageLockFilename))) {
         writtenFiles.push(packageLockFilename);
       }
     }
@@ -275,7 +302,7 @@ export async function processFullResponseActions(
     for (const tag of dyadWriteTags) {
       const filePath = tag.path;
       const content = tag.content;
-      const fullFilePath = path.join(appPath, filePath);
+      const fullFilePath = path.join(effectiveAppPath, filePath);
 
       // Ensure directory exists
       const dirPath = path.dirname(fullFilePath);
@@ -285,10 +312,10 @@ export async function processFullResponseActions(
       fs.writeFileSync(fullFilePath, content);
       logger.log(`Successfully wrote file: ${fullFilePath}`);
       writtenFiles.push(filePath);
-      if (isServerFunction(filePath)) {
+      if (supabaseProjectId && isServerFunction(filePath)) {
         try {
           await deploySupabaseFunctions({
-            supabaseProjectId: chatWithApp.app.supabaseProjectId!,
+            supabaseProjectId: supabaseProjectId,
             functionName: path.basename(path.dirname(filePath)),
             content: content,
           });
@@ -303,8 +330,8 @@ export async function processFullResponseActions(
 
     // Process all file renames
     for (const tag of dyadRenameTags) {
-      const fromPath = path.join(appPath, tag.from);
-      const toPath = path.join(appPath, tag.to);
+      const fromPath = path.join(effectiveAppPath, tag.from);
+      const toPath = path.join(effectiveAppPath, tag.to);
 
       // Ensure target directory exists
       const dirPath = path.dirname(toPath);
@@ -319,26 +346,25 @@ export async function processFullResponseActions(
         // Add the new file and remove the old one from git
         await git.add({
           fs,
-          dir: appPath,
+          dir: effectiveAppPath,
           filepath: tag.to,
         });
         try {
           await git.remove({
             fs,
-            dir: appPath,
+            dir: effectiveAppPath,
             filepath: tag.from,
           });
         } catch (error) {
           logger.warn(`Failed to git remove old file ${tag.from}:`, error);
-          // Continue even if remove fails as the file was still renamed
         }
       } else {
         logger.warn(`Source file for rename does not exist: ${fromPath}`);
       }
-      if (isServerFunction(tag.from)) {
+      if (supabaseProjectId && isServerFunction(tag.from)) {
         try {
           await deleteSupabaseFunction({
-            supabaseProjectId: chatWithApp.app.supabaseProjectId!,
+            supabaseProjectId: supabaseProjectId,
             functionName: getFunctionNameFromPath(tag.from),
           });
         } catch (error) {
@@ -348,10 +374,10 @@ export async function processFullResponseActions(
           });
         }
       }
-      if (isServerFunction(tag.to)) {
+      if (supabaseProjectId && isServerFunction(tag.to)) {
         try {
           await deploySupabaseFunctions({
-            supabaseProjectId: chatWithApp.app.supabaseProjectId!,
+            supabaseProjectId: supabaseProjectId,
             functionName: getFunctionNameFromPath(tag.to),
             content: await readFileFromFunctionPath(toPath),
           });
@@ -366,9 +392,8 @@ export async function processFullResponseActions(
 
     // Process all file deletions
     for (const filePath of dyadDeletePaths) {
-      const fullFilePath = path.join(appPath, filePath);
+      const fullFilePath = path.join(effectiveAppPath, filePath);
 
-      // Delete the file if it exists
       if (fs.existsSync(fullFilePath)) {
         if (fs.lstatSync(fullFilePath).isDirectory()) {
           fs.rmdirSync(fullFilePath, { recursive: true });
@@ -378,24 +403,22 @@ export async function processFullResponseActions(
         logger.log(`Successfully deleted file: ${fullFilePath}`);
         deletedFiles.push(filePath);
 
-        // Remove the file from git
         try {
           await git.remove({
             fs,
-            dir: appPath,
+            dir: effectiveAppPath,
             filepath: filePath,
           });
         } catch (error) {
           logger.warn(`Failed to git remove deleted file ${filePath}:`, error);
-          // Continue even if remove fails as the file was still deleted
         }
       } else {
         logger.warn(`File to delete does not exist: ${fullFilePath}`);
       }
-      if (isServerFunction(filePath)) {
+      if (supabaseProjectId && isServerFunction(filePath)) {
         try {
           await deleteSupabaseFunction({
-            supabaseProjectId: chatWithApp.app.supabaseProjectId!,
+            supabaseProjectId: supabaseProjectId,
             functionName: getFunctionNameFromPath(filePath),
           });
         } catch (error) {
@@ -423,7 +446,7 @@ export async function processFullResponseActions(
       for (const file of writtenFiles) {
         await git.add({
           fs,
-          dir: appPath,
+          dir: effectiveAppPath,
           filepath: file,
         });
       }
@@ -440,39 +463,38 @@ export async function processFullResponseActions(
         changes.push(
           `added ${dyadAddDependencyPackages.join(", ")} package(s)`,
         );
-      if (dyadExecuteSqlQueries.length > 0)
+      if (supabaseProjectId && dyadExecuteSqlQueries.length > 0)
         changes.push(`executed ${dyadExecuteSqlQueries.length} SQL queries`);
 
-      let message = chatSummary
+      let commitMessageText = chatSummary
         ? `[dyad] ${chatSummary} - ${changes.join(", ")}`
         : `[dyad] ${changes.join(", ")}`;
-      // Use chat summary, if provided, or default for commit message
+      
       let commitHash = await git.commit({
         fs,
-        dir: appPath,
-        message,
-        author: await getGitAuthor(),
+        dir: effectiveAppPath,
+        message: commitMessageText,
+        author: await getGitAuthor(), // Ensure getGitAuthor doesn't rely on DB if skipDbOperations
       });
-      logger.log(`Successfully committed changes: ${changes.join(", ")}`);
+      logger.log(`Successfully committed changes: ${changes.join(", ")} in ${effectiveAppPath}`);
 
       // Check for any uncommitted changes after the commit
-      const statusMatrix = await git.statusMatrix({ fs, dir: appPath });
+      const statusMatrix = await git.statusMatrix({ fs, dir: effectiveAppPath });
       uncommittedFiles = statusMatrix
         .filter((row) => row[1] !== 1 || row[2] !== 1 || row[3] !== 1)
-        .map((row) => row[0]); // Get just the file paths
+        .map((row) => row[0]);
 
       if (uncommittedFiles.length > 0) {
-        // Stage all changes
         await git.add({
           fs,
-          dir: appPath,
+          dir: effectiveAppPath,
           filepath: ".",
         });
         try {
           commitHash = await git.commit({
             fs,
-            dir: appPath,
-            message: message + " + extra files edited outside of Dyad",
+            dir: effectiveAppPath,
+            message: commitMessageText + " + extra files edited outside of Dyad",
             author: await getGitAuthor(),
             amend: true,
           });
@@ -480,33 +502,28 @@ export async function processFullResponseActions(
             `Amend commit with changes outside of dyad: ${uncommittedFiles.join(", ")}`,
           );
         } catch (error) {
-          // Just log, but don't throw an error because the user can still
-          // commit these changes outside of Dyad if needed.
           logger.error(
-            `Failed to commit changes outside of dyad: ${uncommittedFiles.join(
-              ", ",
-            )}`,
+            `Failed to amend commit with changes outside of dyad: ${uncommittedFiles.join(", ")}`, error
           );
           extraFilesError = (error as any).toString();
         }
       }
 
-      // Save the commit hash to the message
+      if (!options?.skipDbOperations && messageId !== -1) {
+        await db
+          .update(messages)
+          .set({ commitHash: commitHash })
+          .where(eq(messages.id, messageId));
+      }
+    }
+    
+    if (!options?.skipDbOperations && messageId !== -1) {
+      logger.log("Marking message as approved: hasChanges", hasChanges, "messageId", messageId);
       await db
         .update(messages)
-        .set({
-          commitHash: commitHash,
-        })
+        .set({ approvalState: "approved" })
         .where(eq(messages.id, messageId));
     }
-    logger.log("mark as approved: hasChanges", hasChanges);
-    // Update the message to approved
-    await db
-      .update(messages)
-      .set({
-        approvalState: "approved",
-      })
-      .where(eq(messages.id, messageId));
 
     return {
       updatedFiles: hasChanges,
@@ -517,27 +534,33 @@ export async function processFullResponseActions(
     logger.error("Error processing files:", error);
     return { error: (error as any).toString() };
   } finally {
-    const appendedContent = `
-    ${warnings
-      .map(
-        (warning) =>
-          `<dyad-output type="warning" message="${warning.message}">${warning.error}</dyad-output>`,
-      )
-      .join("\n")}
-    ${errors
-      .map(
-        (error) =>
-          `<dyad-output type="error" message="${error.message}">${error.error}</dyad-output>`,
-      )
-      .join("\n")}
-    `;
-    if (appendedContent.length > 0) {
-      await db
-        .update(messages)
-        .set({
-          content: fullResponse + "\n\n" + appendedContent,
-        })
-        .where(eq(messages.id, messageId));
+    if (!options?.skipDbOperations && messageId !== -1) {
+      const appendedContent = `
+      ${warnings
+        .map(
+          (warning) =>
+            `<dyad-output type="warning" message="${warning.message}">${warning.error}</dyad-output>`,
+        )
+        .join("\n")}
+      ${errors
+        .map(
+          (error) =>
+            `<dyad-output type="error" message="${error.message}">${error.error}</dyad-output>`,
+        )
+        .join("\n")}
+      `;
+      if (appendedContent.trim().length > 0) { // Check if there's actual content to append
+        // Fetch current content first to append, as 'fullResponse' might not be the latest
+        const currentMessage = await db.query.messages.findFirst({ where: eq(messages.id, messageId) });
+        const baseContent = currentMessage ? currentMessage.content : fullResponse;
+
+        await db
+          .update(messages)
+          .set({
+            content: baseContent + "\n\n" + appendedContent,
+          })
+          .where(eq(messages.id, messageId));
+      }
     }
   }
 }
