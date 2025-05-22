@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { showError, showSuccess } from "@/lib/toast";
+import { useMutation } from "@tanstack/react-query";
 
 type PreviewMode = "preview" | "code";
 
@@ -160,7 +161,8 @@ export function PreviewPanel() {
   const [previewMode, setPreviewMode] = useAtom(previewModeAtom);
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
-  const { runApp, stopApp, restartApp, loading, app } = useRunApp();
+  const { runApp, stopApp, restartApp, loading, app, refreshAppIframe } =
+    useRunApp();
   const runningAppIdRef = useRef<number | null>(null);
   const key = useAtomValue(previewPanelKeyAtom);
   const appOutput = useAtomValue(appOutputAtom);
@@ -178,31 +180,25 @@ export function PreviewPanel() {
   }, [restartApp]);
 
   const useClearSessionData = () => {
-    const queryClient = useQueryClient();
-    
     return useMutation({
       mutationFn: () => {
         const ipcClient = IpcClient.getInstance();
         return ipcClient.clearSessionData();
       },
-      onSuccess: () => {
+      onSuccess: async () => {
+        await refreshAppIframe();
         showSuccess("Preview data cleared");
         // Optionally invalidate relevant queries
       },
       onError: (error) => {
         showError(`Error clearing preview data: ${error}`);
-      }
+      },
     });
   };
 
   const { mutate: clearSessionData } = useClearSessionData();
 
   const handleClearSessionData = useCallback(() => {
-    if (selectedAppId === null) {
-      console.warn("No app selected, cannot clear cookies.");
-      // Optionally show a user notification here
-      return;
-    }
     clearSessionData();
   }, [selectedAppId, clearSessionData]);
 
