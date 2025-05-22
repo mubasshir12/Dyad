@@ -177,21 +177,34 @@ export function PreviewPanel() {
     restartApp({ removeNodeModules: true });
   }, [restartApp]);
 
-  const handleClearSessionData = useCallback(async () => {
+  const useClearSessionData = () => {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+      mutationFn: () => {
+        const ipcClient = IpcClient.getInstance();
+        return ipcClient.clearSessionData();
+      },
+      onSuccess: () => {
+        showSuccess("Preview data cleared");
+        // Optionally invalidate relevant queries
+      },
+      onError: (error) => {
+        showError(`Error clearing preview data: ${error}`);
+      }
+    });
+  };
+
+  const { mutate: clearSessionData } = useClearSessionData();
+
+  const handleClearSessionData = useCallback(() => {
     if (selectedAppId === null) {
       console.warn("No app selected, cannot clear cookies.");
       // Optionally show a user notification here
       return;
     }
-    try {
-      const ipcClient = IpcClient.getInstance();
-      await ipcClient.clearSessionData();
-
-      showSuccess(`Preview data cleared`);
-    } catch (error) {
-      showError("Error clearing preview data: " + error);
-    }
-  }, [selectedAppId]);
+    clearSessionData();
+  }, [selectedAppId, clearSessionData]);
 
   useEffect(() => {
     const previousAppId = runningAppIdRef.current;
