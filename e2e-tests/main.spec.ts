@@ -15,8 +15,7 @@ test.beforeAll(async () => {
   const latestBuild = findLatestBuild();
   // parse the directory and find paths and other info
   const appInfo = parseElectronApp(latestBuild);
-  // set the CI environment variable to true
-  process.env.CI = "e2e";
+  process.env.E2E_TEST_BUILD = "true";
   electronApp = await electron.launch({
     args: [
       appInfo.main,
