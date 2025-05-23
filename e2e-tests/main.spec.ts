@@ -38,6 +38,8 @@ test.beforeAll(async () => {
   // parse the directory and find paths and other info
   const appInfo = parseElectronApp(latestBuild);
   process.env.E2E_TEST_BUILD = "true";
+  // This is just a hack to avoid the AI setup screen.
+  process.env.OPENAI_API_KEY = "sk-test";
   electronApp = await electron.launch({
     args: [
       appInfo.main,
