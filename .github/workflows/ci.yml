@@ -39,7 +39,10 @@ jobs:
         run: npm run pre:e2e
       - name: E2E tests
         # Suggested in https://github.com/microsoft/playwright/issues/12139#issuecomment-1040933567
-        run: DEBUG=pw:browser xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run e2e
+        run: |
+          Xvfb :99 -ac -screen 0 1280x960x24 &
+          sleep 2
+          DEBUG=pw:browser npm run e2e
       - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         if: failure()
         with:
