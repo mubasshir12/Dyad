@@ -11,10 +11,12 @@ const config: PlaywrightTestConfig = {
     /* See https://playwright.dev/docs/trace-viewer */
     trace: "retain-on-failure",
 
-    // Capture screenshot after each test failure.
-    screenshot: "on",
-
-    video: "retain-on-failure",
+    // These options do NOT work for electron playwright.
+    // Instead, you need to do a workaround.
+    // See https://github.com/microsoft/playwright/issues/8208
+    //
+    // screenshot: "on",
+    // video: "retain-on-failure",
   },
 };
 
