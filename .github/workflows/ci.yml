@@ -33,3 +33,7 @@ jobs:
         run: npm run presubmit
       - name: Type-checking
         run: npm run ts
+      - name: Build
+        run: npm run pre:e2e
+      - name: E2E tests
+        run: npm run e2e
