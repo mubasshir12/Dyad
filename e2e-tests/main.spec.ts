@@ -28,6 +28,8 @@ test.beforeAll(async () => {
       // To avoid this error on CI (Linux):
       //   pw:browser [pid=2743][err] [2743:0523/050346.234089:FATAL:setuid_sandbox_host.cc(163)] The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure that /home/runner/work/dyad/dyad/out/dyad-linux-x64/chrome-sandbox is owned by root and has mode 4755. +71ms
       "--no-sandbox",
+      "--disable-gpu",
+      "--user-data-dir=/tmp/dyad-e2e-tests",
     ],
     executablePath: appInfo.executable,
   });
@@ -58,6 +60,7 @@ test("renders the first page", async () => {
     response: 1,
   });
   page = await electronApp.firstWindow();
+  //   await new Promise((resolve) => setTimeout(resolve, 5000));
   await page.waitForSelector("h1");
   const text = await page.$eval("h1", (el) => el.textContent);
   expect(text).toBe("Build your dream app");

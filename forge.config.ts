@@ -41,7 +41,7 @@ const ignore = (file: string) => {
   return true;
 };
 
-const disableCodeSigning = process.env.DYAD_DISABLE_CODE_SIGNING === "true";
+const isEndToEndTestBuild = process.env.E2E_TEST_BUILD === "true";
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -53,12 +53,12 @@ const config: ForgeConfig = {
     ],
     icon: "./assets/icon/logo",
 
-    osxSign: disableCodeSigning
+    osxSign: isEndToEndTestBuild
       ? undefined
       : {
           identity: process.env.APPLE_TEAM_ID,
         },
-    osxNotarize: disableCodeSigning
+    osxNotarize: isEndToEndTestBuild
       ? undefined
       : {
           appleId: process.env.APPLE_ID!,
@@ -130,7 +130,7 @@ const config: ForgeConfig = {
       [FuseV1Options.RunAsNode]: false,
       [FuseV1Options.EnableCookieEncryption]: true,
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
-      [FuseV1Options.EnableNodeCliInspectArguments]: true,
+      [FuseV1Options.EnableNodeCliInspectArguments]: isEndToEndTestBuild,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
       [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),

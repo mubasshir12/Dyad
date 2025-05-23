@@ -34,7 +34,7 @@
     "test:ui": "vitest --ui",
     "extract-codebase": "ts-node scripts/extract-codebase.ts",
     "prepare": "husky install",
-    "pre:e2e": "DYAD_DISABLE_CODE_SIGNING=true npm run package",
+    "pre:e2e": "E2E_TEST_BUILD=true npm run package",
     "e2e": "playwright test"
   },
   "keywords": [],
