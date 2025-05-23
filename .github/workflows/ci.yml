@@ -37,4 +37,4 @@ jobs:
         run: npm run pre:e2e
       - name: E2E tests
         # Suggested in https://github.com/microsoft/playwright/issues/12139#issuecomment-1040933567
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run e2e
+        run: DEBUG=pw:browser xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- npm run e2e
