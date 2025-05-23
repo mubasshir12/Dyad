@@ -33,6 +33,8 @@ jobs:
         run: npm run presubmit
       - name: Type-checking
         run: npm run ts
+      - name: Install Chromium browser for Playwright
+        run: npx playwright install chromium --with-deps
       - name: Build
         run: npm run pre:e2e
       - name: E2E tests
