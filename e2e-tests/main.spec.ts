@@ -29,6 +29,7 @@ test.beforeAll(async () => {
       //   pw:browser [pid=2743][err] [2743:0523/050346.234089:FATAL:setuid_sandbox_host.cc(163)] The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure that /home/runner/work/dyad/dyad/out/dyad-linux-x64/chrome-sandbox is owned by root and has mode 4755. +71ms
       "--no-sandbox",
       "--disable-gpu",
+      "--disable-dev-shm-usage", // Add this!
       "--enable-logging",
       "--user-data-dir=/tmp/dyad-e2e-tests",
     ],
