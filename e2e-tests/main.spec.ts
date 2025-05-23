@@ -4,11 +4,33 @@
  * in both renderer and main processes
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test as base } from "@playwright/test";
 import { findLatestBuild, parseElectronApp } from "electron-playwright-helpers";
 import { ElectronApplication, Page, _electron as electron } from "playwright";
 
 let electronApp: ElectronApplication;
+
+// From https://github.com/microsoft/playwright/issues/8208#issuecomment-1435475930
+//
+// Note how we mark the fixture as { auto: true }.
+// This way it is always instantiated, even if the test does not use it explicitly.
+export const test = base.extend<{ attachScreenshotsToReport: void }>({
+  attachScreenshotsToReport: [
+    async ({}, use, testInfo) => {
+      await use();
+
+      // After the test we can check whether the test passed or failed.
+      if (testInfo.status !== testInfo.expectedStatus) {
+        const screenshot = await page.screenshot();
+        await testInfo.attach("screenshot", {
+          body: screenshot,
+          contentType: "image/png",
+        });
+      }
+    },
+    { auto: true },
+  ],
+});
 
 test.beforeAll(async () => {
   // find the latest build in the out directory
