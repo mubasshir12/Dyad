@@ -22,7 +22,13 @@ test.beforeAll(async () => {
   // set the CI environment variable to true
   process.env.CI = "e2e";
   electronApp = await electron.launch({
-    args: [appInfo.main],
+    args: [
+      appInfo.main,
+      // Why no-sandbox?
+      // To avoid this error on CI (Linux):
+      //   pw:browser [pid=2743][err] [2743:0523/050346.234089:FATAL:setuid_sandbox_host.cc(163)] The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure that /home/runner/work/dyad/dyad/out/dyad-linux-x64/chrome-sandbox is owned by root and has mode 4755. +71ms
+      "--no-sandbox",
+    ],
     executablePath: appInfo.executable,
   });
   electronApp.on("window", async (page) => {
