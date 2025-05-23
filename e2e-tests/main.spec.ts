@@ -5,11 +5,7 @@
  */
 
 import { expect, test } from "@playwright/test";
-import {
-  findLatestBuild,
-  parseElectronApp,
-  stubDialog,
-} from "electron-playwright-helpers";
+import { findLatestBuild, parseElectronApp } from "electron-playwright-helpers";
 import { ElectronApplication, Page, _electron as electron } from "playwright";
 
 let electronApp: ElectronApplication;
@@ -24,12 +20,6 @@ test.beforeAll(async () => {
   electronApp = await electron.launch({
     args: [
       appInfo.main,
-      // Why no-sandbox?
-      // To avoid this error on CI (Linux):
-      //   pw:browser [pid=2743][err] [2743:0523/050346.234089:FATAL:setuid_sandbox_host.cc(163)] The SUID sandbox helper binary was found, but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure that /home/runner/work/dyad/dyad/out/dyad-linux-x64/chrome-sandbox is owned by root and has mode 4755. +71ms
-      "--no-sandbox",
-      "--disable-gpu",
-      "--disable-dev-shm-usage", // Add this!
       "--enable-logging",
       "--user-data-dir=/tmp/dyad-e2e-tests",
     ],
@@ -71,12 +61,7 @@ test.afterAll(async () => {
 let page: Page;
 
 test("renders the first page", async () => {
-  // Stub the dialog to not move to applications folder
-  stubDialog(electronApp, "showMessageBox", {
-    response: 1,
-  });
   page = await electronApp.firstWindow();
-  //   await new Promise((resolve) => setTimeout(resolve, 5000));
   await page.waitForSelector("h1");
   const text = await page.$eval("h1", (el) => el.textContent);
   expect(text).toBe("Build your dream app");
