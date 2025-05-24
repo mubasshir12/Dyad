@@ -167,10 +167,7 @@ async function copyRepoToApp(repoCachePath: string, appPath: string) {
       filter: (src, _dest) => {
         const excludedDirs = ["node_modules", ".git"];
         const relativeSrc = path.relative(repoCachePath, src);
-        if (
-          excludedDirs.includes(path.basename(relativeSrc)) &&
-          path.dirname(relativeSrc) === "."
-        ) {
+        if (excludedDirs.includes(path.basename(relativeSrc))) {
           logger.info(`Excluding ${src} from copy`);
           return false;
         }
