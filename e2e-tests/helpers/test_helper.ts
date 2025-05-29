@@ -1,6 +1,7 @@
 import { test as base, Page, expect } from "@playwright/test";
 import { findLatestBuild, parseElectronApp } from "electron-playwright-helpers";
 import { ElectronApplication, _electron as electron } from "playwright";
+import fs from "fs";
 
 const showDebugLogs = process.env.DEBUG_LOGS === "true";
 
@@ -15,8 +16,32 @@ class PageObject {
     await this.selectTestModel();
   }
 
-  async dumpMessages() {
+  async snapshotMessages() {
     await expect(this.page.getByTestId("messages-list")).toMatchAriaSnapshot();
+  }
+
+  async snapshotServerDump() {
+    // Get the text content of the messages list
+    const messagesListText = await this.page
+      .getByTestId("messages-list")
+      .textContent();
+
+    // Find the dump path using regex
+    const dumpPathMatch = messagesListText?.match(
+      /\[\[dyad-dump-path=([^\]]+)\]\]/,
+    );
+
+    if (!dumpPathMatch) {
+      throw new Error("No dump path found in messages list");
+    }
+
+    const dumpFilePath = dumpPathMatch[1];
+
+    // Read the JSON file
+    const dumpContent = fs.readFileSync(dumpFilePath, "utf-8");
+
+    // Perform snapshot comparison
+    expect(prettifyDump(dumpContent)).toMatchSnapshot("server-dump.txt");
   }
 
   async waitForChatCompletion() {
@@ -163,3 +188,16 @@ export const test = base.extend<{
     await electronApp.close();
   },
 });
+
+function prettifyDump(dumpContent: string) {
+  const parsedDump = JSON.parse(dumpContent) as Array<{
+    role: string;
+    content: string;
+  }>;
+
+  return parsedDump
+    .map((message) => {
+      return `===\nrole: ${message.role}\nmessage: ${message.content}`;
+    })
+    .join("\n\n");
+}

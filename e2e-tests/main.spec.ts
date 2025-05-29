@@ -11,11 +11,11 @@ test("renders the first page", async ({ electronApp }) => {
 test("simple message to custom test model", async ({ po }) => {
   await po.setUp();
   await po.sendPrompt("hi");
-  await po.dumpMessages();
+  await po.snapshotMessages();
 });
 
 test("basic message to custom test model", async ({ po }) => {
   await po.setUp();
   await po.sendPrompt("tc=basic");
-  await po.dumpMessages();
+  await po.snapshotMessages();
 });
