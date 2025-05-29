@@ -2,6 +2,8 @@ import { test as base } from "@playwright/test";
 import { findLatestBuild, parseElectronApp } from "electron-playwright-helpers";
 import { ElectronApplication, _electron as electron } from "playwright";
 
+const showDebugLogs = process.env.DEBUG_LOGS === "true";
+
 // From https://github.com/microsoft/playwright/issues/8208#issuecomment-1435475930
 //
 // Note how we mark the fixture as { auto: true }.
@@ -37,20 +39,21 @@ export const test = base.extend<{
       args: [
         appInfo.main,
         "--enable-logging",
-        "--user-data-dir=/tmp/dyad-e2e-tests",
+        `--user-data-dir=/tmp/dyad-e2e-tests-${Date.now()}`,
       ],
       executablePath: appInfo.executable,
     });
 
     console.log("electronApp launched!");
-
-    // Listen to main process output immediately
-    electronApp.process().stdout?.on("data", (data) => {
-      console.log(`MAIN_PROCESS_STDOUT: ${data.toString()}`);
-    });
-    electronApp.process().stderr?.on("data", (data) => {
-      console.error(`MAIN_PROCESS_STDERR: ${data.toString()}`);
-    });
+    if (showDebugLogs) {
+      // Listen to main process output immediately
+      electronApp.process().stdout?.on("data", (data) => {
+        console.log(`MAIN_PROCESS_STDOUT: ${data.toString()}`);
+      });
+      electronApp.process().stderr?.on("data", (data) => {
+        console.error(`MAIN_PROCESS_STDERR: ${data.toString()}`);
+      });
+    }
     electronApp.on("close", () => {
       console.log(`Electron app closed listener:`);
     });
