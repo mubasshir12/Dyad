@@ -26,7 +26,7 @@ const config: PlaywrightTestConfig = {
   },
 
   webServer: {
-    command: `cd testing/fake-llm-server && npm run build && npm start`,
+    command: `cd testing/fake-llm-server && npm start`,
     url: "http://localhost:3500/health",
   },
 };
