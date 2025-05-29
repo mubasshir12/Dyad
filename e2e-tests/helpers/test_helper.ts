@@ -45,9 +45,15 @@ class PageObject {
   }
 
   async waitForChatCompletion() {
-    await expect(
-      this.page.getByRole("button", { name: "Retry" }),
-    ).toBeVisible();
+    await expect(this.getRetryButton()).toBeVisible();
+  }
+
+  async clickRetry() {
+    await this.getRetryButton().click();
+  }
+
+  private getRetryButton() {
+    return this.page.getByRole("button", { name: "Retry" });
   }
 
   async sendPrompt(prompt: string) {
@@ -103,6 +109,56 @@ class PageObject {
 
   async goToAppsTab() {
     await this.page.getByRole("link", { name: "Apps" }).click();
+  }
+
+  ////////////////////////////////
+  // Toast assertions
+  ////////////////////////////////
+
+  async expectNoToast() {
+    await expect(this.page.locator("[data-sonner-toast]")).toHaveCount(0);
+  }
+
+  async waitForToast(
+    type?: "success" | "error" | "warning" | "info",
+    timeout = 5000,
+  ) {
+    const selector = type
+      ? `[data-sonner-toast][data-type="${type}"]`
+      : "[data-sonner-toast]";
+
+    await this.page.waitForSelector(selector, { timeout });
+  }
+
+  async waitForToastWithText(text: string, timeout = 5000) {
+    await this.page.waitForSelector(`[data-sonner-toast]:has-text("${text}")`, {
+      timeout,
+    });
+  }
+
+  async assertToastVisible(type?: "success" | "error" | "warning" | "info") {
+    const selector = type
+      ? `[data-sonner-toast][data-type="${type}"]`
+      : "[data-sonner-toast]";
+
+    await expect(this.page.locator(selector)).toBeVisible();
+  }
+
+  async assertToastWithText(text: string) {
+    await expect(
+      this.page.locator(`[data-sonner-toast]:has-text("${text}")`),
+    ).toBeVisible();
+  }
+
+  async dismissAllToasts() {
+    // Click all close buttons if they exist
+    const closeButtons = this.page.locator(
+      "[data-sonner-toast] button[data-close-button]",
+    );
+    const count = await closeButtons.count();
+    for (let i = 0; i < count; i++) {
+      await closeButtons.nth(i).click();
+    }
   }
 }
 

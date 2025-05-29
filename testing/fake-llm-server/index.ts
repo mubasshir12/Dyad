@@ -56,6 +56,8 @@ app.get("/health", (req, res) => {
   res.send("OK");
 });
 
+let globalCounter = 0;
+
 // Handle POST requests to /v1/chat/completions
 app.post("/v1/chat/completions", (req, res) => {
   const { stream = false, messages = [] } = req.body;
@@ -100,6 +102,11 @@ app.post("/v1/chat/completions", (req, res) => {
       console.error(`* Error writing dump file: ${error}`);
       messageContent = `Error: Could not write dump file: ${error}`;
     }
+  }
+
+  if (lastMessage && lastMessage.content === "[increment]") {
+    globalCounter++;
+    messageContent = `counter=${globalCounter}`;
   }
 
   // Check if the last message starts with "tc=" to load test case file
