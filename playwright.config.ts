@@ -2,6 +2,7 @@ import { PlaywrightTestConfig } from "@playwright/test";
 
 const config: PlaywrightTestConfig = {
   testDir: "./e2e-tests",
+  workers: 1,
   maxFailures: 1,
   timeout: process.env.CI ? 30_000 : 15_000,
   // Use a custom snapshot path template because Playwright's default
