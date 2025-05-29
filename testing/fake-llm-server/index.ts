@@ -82,7 +82,6 @@ app.post("/v1/chat/completions", (req, res) => {
     lastMessage.content.startsWith("tc=")
   ) {
     const testCaseName = lastMessage.content.slice(3); // Remove "tc=" prefix
-    console.log("__dirname", __dirname);
     const testFilePath = path.join(
       __dirname,
       "..",
@@ -92,7 +91,6 @@ app.post("/v1/chat/completions", (req, res) => {
       "fixtures",
       `${testCaseName}.md`,
     );
-    console.log("* Test case file path", testFilePath);
 
     try {
       if (fs.existsSync(testFilePath)) {
@@ -139,21 +137,24 @@ app.post("/v1/chat/completions", (req, res) => {
 
   // Stream each character with a delay
   let index = 0;
+  const batchSize = 8;
 
   // Send role first
   res.write(createStreamChunk("", "assistant"));
 
   const interval = setInterval(() => {
     if (index < messageChars.length) {
-      res.write(createStreamChunk(messageChars[index]));
-      index++;
+      // Get the next batch of characters (up to batchSize)
+      const batch = messageChars.slice(index, index + batchSize).join("");
+      res.write(createStreamChunk(batch));
+      index += batchSize;
     } else {
       // Send the final chunk
       res.write(createStreamChunk("", "assistant", true));
       clearInterval(interval);
       res.end();
     }
-  }, 10);
+  }, 1);
 });
 
 // Start the server
