@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useCustomLanguageModelProvider } from "@/hooks/useCustomLanguageModelProvider";
+import { IpcClient } from "@/ipc/ipc_client";
 
 interface CreateCustomProviderDialogProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export function CreateCustomProviderDialog({
     setErrorMessage("");
 
     try {
-      await createProvider({
+      await IpcClient.getInstance().llm.createCustomLanguageModelProvider({
         id: id.trim(),
         name: name.trim(),
         apiBaseUrl: apiBaseUrl.trim(),

@@ -69,7 +69,7 @@ export function ChatList({ show }: { show?: boolean }) {
     if (selectedAppId) {
       try {
         // Create a new chat with an empty title for now
-        const chatId = await IpcClient.getInstance().createChat(selectedAppId);
+        const chatId = await IpcClient.getInstance().chat.createChat(selectedAppId);
 
         // Navigate to the new chat
         setSelectedChatId(chatId);
@@ -92,7 +92,7 @@ export function ChatList({ show }: { show?: boolean }) {
 
   const handleDeleteChat = async (chatId: number) => {
     try {
-      await IpcClient.getInstance().deleteChat(chatId);
+      await IpcClient.getInstance().chat.deleteChat(chatId);
       showSuccess("Chat deleted successfully");
 
       // If the deleted chat was selected, navigate to home

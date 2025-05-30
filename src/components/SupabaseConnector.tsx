@@ -70,7 +70,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
 
   const handleProjectSelect = async (projectId: string) => {
     try {
-      await setAppProject(projectId, appId);
+      await IpcClient.getInstance().external.setSupabaseAppProject(projectId, appId);
       toast.success("Project connected to app successfully");
       await refreshApp();
     } catch (error) {
@@ -80,7 +80,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
 
   const handleUnsetProject = async () => {
     try {
-      await unsetAppProject(appId);
+      await IpcClient.getInstance().external.unsetSupabaseAppProject(appId);
       toast.success("Project disconnected from app successfully");
       await refreshApp();
     } catch (error) {
@@ -99,7 +99,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
               <Button
                 variant="outline"
                 onClick={() => {
-                  IpcClient.getInstance().openExternalUrl(
+                  IpcClient.getInstance().external.openExternalUrl(
                     `https://supabase.com/dashboard/project/${app.supabaseProjectId}`,
                   );
                 }}
@@ -203,7 +203,7 @@ export function SupabaseConnector({ appId }: { appId: number }) {
         <h2 className="text-lg font-medium">Integrations</h2>
         <img
           onClick={() => {
-            IpcClient.getInstance().openExternalUrl(
+            IpcClient.getInstance().external.openExternalUrl(
               "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
             );
           }}

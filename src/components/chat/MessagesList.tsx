@@ -82,20 +82,20 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                             versionId: previousAssistantMessage.commitHash,
                           });
                           const chat =
-                            await IpcClient.getInstance().getChat(
+                            await IpcClient.getInstance().chat.getChat(
                               selectedChatId,
                             );
                           setMessages(chat.messages);
                         }
                       } else {
                         const chat =
-                          await IpcClient.getInstance().getChat(selectedChatId);
+                          await IpcClient.getInstance().chat.getChat(selectedChatId);
                         if (chat.initialCommitHash) {
                           await revertVersion({
                             versionId: chat.initialCommitHash,
                           });
                           try {
-                            await IpcClient.getInstance().deleteMessages(
+                            await IpcClient.getInstance().chat.deleteMessages(
                               selectedChatId,
                             );
                             setMessages([]);
@@ -160,7 +160,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
                         shouldRedo = false;
                       } else {
                         const chat =
-                          await IpcClient.getInstance().getChat(selectedChatId);
+                          await IpcClient.getInstance().chat.getChat(selectedChatId);
                         if (chat.initialCommitHash) {
                           console.debug(
                             "Reverting to initial commit hash",
@@ -219,7 +219,7 @@ export const MessagesList = forwardRef<HTMLDivElement, MessagesListProps>(
               Tired of waiting on AI?
               <a
                 onClick={() =>
-                  IpcClient.getInstance().openExternalUrl(
+                  IpcClient.getInstance().external.openExternalUrl(
                     "https://dyad.sh/pro#ai",
                   )
                 }

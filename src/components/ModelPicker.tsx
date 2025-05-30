@@ -24,6 +24,7 @@ import { ChevronDown } from "lucide-react";
 import { LocalModel } from "@/ipc/ipc_types";
 import { useLanguageModelProviders } from "@/hooks/useLanguageModelProviders";
 import { useSettings } from "@/hooks/useSettings";
+import { IpcClient } from "@/ipc/ipc_client";
 
 export function ModelPicker() {
   const { settings, updateSettings } = useSettings();

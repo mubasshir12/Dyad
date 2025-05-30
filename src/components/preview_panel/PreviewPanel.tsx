@@ -183,7 +183,7 @@ export function PreviewPanel() {
     return useMutation({
       mutationFn: () => {
         const ipcClient = IpcClient.getInstance();
-        return ipcClient.clearSessionData();
+        return ipcClient.system.clearSessionData();
       },
       onSuccess: async () => {
         await refreshAppIframe();

@@ -56,7 +56,7 @@ export function CreateCustomModelDialog({
       if (contextWindow && isNaN(params.contextWindow ?? NaN))
         throw new Error("Context Window must be a valid number");
 
-      await ipcClient.createCustomLanguageModel(params);
+      await ipcClient.llm.createCustomLanguageModel(params);
     },
     onSuccess: () => {
       showSuccess("Custom model created successfully!");

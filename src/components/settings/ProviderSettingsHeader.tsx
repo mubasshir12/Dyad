@@ -47,7 +47,7 @@ export function ProviderSettingsHeader({
   const handleGetApiKeyClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (providerWebsiteUrl) {
-      IpcClient.getInstance().openExternalUrl(providerWebsiteUrl);
+      IpcClient.getInstance().external.openExternalUrl(providerWebsiteUrl);
     }
   };
 

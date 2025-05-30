@@ -63,7 +63,7 @@ export function HelpDialog({ isOpen, onClose }: HelpDialogProps) {
     setIsLoading(true);
     try {
       // Get system debug info
-      const debugInfo = await IpcClient.getInstance().getSystemDebugInfo();
+      const debugInfo = await IpcClient.getInstance().system.getSystemDebugInfo();
 
       // Create a formatted issue body with the debug info
       const issueBody = `
@@ -100,11 +100,11 @@ ${debugInfo.logs.slice(-3_500) || "No logs available"}
       const githubIssueUrl = `https://github.com/dyad-sh/dyad/issues/new?title=${encodedTitle}&labels=bug,filed-from-app&body=${encodedBody}`;
 
       // Open the pre-filled GitHub issue page
-      IpcClient.getInstance().openExternalUrl(githubIssueUrl);
+      IpcClient.getInstance().external.openExternalUrl(githubIssueUrl);
     } catch (error) {
       console.error("Failed to prepare bug report:", error);
       // Fallback to opening the regular GitHub issue page
-      IpcClient.getInstance().openExternalUrl(
+      IpcClient.getInstance().external.openExternalUrl(
         "https://github.com/dyad-sh/dyad/issues/new",
       );
     } finally {
@@ -122,7 +122,7 @@ ${debugInfo.logs.slice(-3_500) || "No logs available"}
     try {
       // Get chat logs (includes debug info, chat data, and codebase)
       const chatLogs =
-        await IpcClient.getInstance().getChatLogs(selectedChatId);
+        await IpcClient.getInstance().chat.getChatLogs(selectedChatId);
 
       // Store data for review and switch to review mode
       setChatLogsData(chatLogs);
@@ -171,7 +171,7 @@ ${debugInfo.logs.slice(-3_500) || "No logs available"}
 
       const { uploadUrl, filename } = await response.json();
 
-      await IpcClient.getInstance().uploadToSignedUrl(
+      await IpcClient.getInstance().external.uploadToSignedUrl(
         uploadUrl,
         "application/json",
         chatLogsJson,
@@ -215,7 +215,7 @@ Session ID: ${sessionId}
     const encodedTitle = encodeURIComponent("[session report] <add title>");
     const githubIssueUrl = `https://github.com/dyad-sh/dyad/issues/new?title=${encodedTitle}&labels=support&body=${encodedBody}`;
 
-    IpcClient.getInstance().openExternalUrl(githubIssueUrl);
+    IpcClient.getInstance().external.openExternalUrl(githubIssueUrl);
     handleClose();
   };
 
@@ -367,7 +367,7 @@ Session ID: ${sessionId}
             <Button
               variant="outline"
               onClick={() => {
-                IpcClient.getInstance().openExternalUrl(
+                IpcClient.getInstance().external.openExternalUrl(
                   "https://www.dyad.sh/docs",
                 );
               }}
