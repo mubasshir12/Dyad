@@ -207,3 +207,15 @@ export interface RenameBranchParams {
   oldBranchName: string;
   newBranchName: string;
 }
+
+// Vercel specific IPC types (placeholders for now)
+export interface VercelProject {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface VercelDeployParams {
+  appId: number;
+  projectId: string;
+}

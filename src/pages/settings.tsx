@@ -10,11 +10,18 @@ import { MaxChatTurnsSelector } from "@/components/MaxChatTurnsSelector";
 import { useSettings } from "@/hooks/useSettings";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Github, DatabaseZap, Rocket } from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
-import { GitHubIntegration } from "@/components/GitHubIntegration";
-import { SupabaseIntegration } from "@/components/SupabaseIntegration";
 import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { INTEGRATION_PROVIDERS } from "@/shared/integrations";
+import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
+import { vercelSettingsRoute } from "@/routes/settings/vercel";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -38,6 +45,45 @@ export default function SettingsPage() {
     } finally {
       setIsResetting(false);
       setIsResetDialogOpen(false);
+    }
+  };
+
+  const getIntegrationStatus = (integrationId: string) => {
+    switch (integrationId) {
+      case "github":
+        return settings?.githubAccessToken ? "Ready" : "Needs Setup";
+      case "supabase":
+        return settings?.supabase?.accessToken ? "Ready" : "Needs Setup";
+      case "vercel":
+        return settings?.vercel?.accessToken ? "Ready" : "Needs Setup";
+      default:
+        return "Needs Setup";
+    }
+  };
+
+  const getIntegrationIcon = (integrationId: string) => {
+    switch (integrationId) {
+      case "github":
+        return <Github className="h-10 w-10 text-muted-foreground mb-2" />;
+      case "supabase":
+        return <DatabaseZap className="h-10 w-10 text-muted-foreground mb-2" />;
+      case "vercel":
+        return <Rocket className="h-10 w-10 text-muted-foreground mb-2" />;
+      default:
+        return null;
+    }
+  };
+
+  const handleIntegrationClick = (integrationId: string) => {
+    if (integrationId === "vercel") {
+      router.navigate({ to: vercelSettingsRoute.id });
+    } else if (integrationId === "github") {
+      // GitHub doesn't have a dedicated settings page yet, it's handled in app-details
+      // For now, we can just show a toast or navigate to a placeholder if needed.
+      showError("GitHub integration is managed per-app in App Details.");
+    } else if (integrationId === "supabase") {
+      // Supabase integration is also managed per-app in App Details
+      showError("Supabase integration is managed per-app in App Details.");
     }
   };
 
@@ -117,6 +163,35 @@ export default function SettingsPage() {
             <ProviderSettingsGrid />
           </div>
 
+          {/* Deployment Integrations Section */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Deployment Integrations
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {INTEGRATION_PROVIDERS.map((integration) => (
+                <Card
+                  key={integration.id}
+                  className="relative transition-all hover:shadow-md border-border cursor-pointer"
+                  onClick={() => handleIntegrationClick(integration.id)}
+                >
+                  <CardHeader className="p-4 flex flex-col items-center justify-center h-full">
+                    {getIntegrationIcon(integration.id)}
+                    <CardTitle className="text-xl text-center">
+                      {integration.name}
+                    </CardTitle>
+                    <CardDescription className="text-center">
+                      {integration.description}
+                    </CardDescription>
+                    <span className="mt-2 text-sm font-medium text-gray-500 bg-gray-50 dark:bg-gray-900 dark:text-gray-300 px-2 py-1 rounded-full">
+                      {getIntegrationStatus(integration.id)}
+                    </span>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
@@ -135,17 +210,6 @@ export default function SettingsPage() {
                   {settings ? settings.telemetryUserId : "n/a"}
                 </span>
               </div>
-            </div>
-          </div>
-
-          {/* Integrations Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Integrations
-            </h2>
-            <div className="space-y-4">
-              <GitHubIntegration />
-              <SupabaseIntegration />
             </div>
           </div>
 
