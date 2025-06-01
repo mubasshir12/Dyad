@@ -84,7 +84,7 @@ class PageObject {
     await this.page.getByRole("button", { name: "Model: Auto" }).click();
     await this.page.getByText("Local models").click();
     await this.page.getByText("LM Studio", { exact: true }).click();
-    // Both of the elments that match "lmstudio-model-1" are the same button, so we just pick the first.
+    // Both of the elements that match "lmstudio-model-1" are the same button, so we just pick the first.
     await this.page
       .getByText("lmstudio-model-1", { exact: true })
       .first()
@@ -232,6 +232,9 @@ export const test = base.extend<{
           `--user-data-dir=/tmp/dyad-e2e-tests-${Date.now()}`,
         ],
         executablePath: appInfo.executable,
+        recordVideo: {
+          dir: "playwright-report/videos",
+        },
       });
 
       console.log("electronApp launched!");
