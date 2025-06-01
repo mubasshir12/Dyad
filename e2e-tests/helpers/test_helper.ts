@@ -28,17 +28,12 @@ class PageObject {
     await this.page.getByTestId("reject-proposal-button").click();
   }
 
-  async getPreviewIframeElement() {
+  getPreviewIframeElement() {
     return this.page.getByTestId("preview-iframe-element");
   }
 
-  async expectPreviewToBeVisible() {
-    const iframe = await this.getPreviewIframeElement();
-    await expect(iframe).toBeVisible();
-  }
-
   async snapshotPreview() {
-    const iframe = await this.getPreviewIframeElement();
+    const iframe = this.getPreviewIframeElement();
     await expect(iframe.contentFrame().locator("body")).toMatchAriaSnapshot();
   }
 
