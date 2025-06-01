@@ -20,6 +20,28 @@ class PageObject {
     await expect(this.page.getByTestId("messages-list")).toMatchAriaSnapshot();
   }
 
+  async approveProposal() {
+    await this.page.getByTestId("approve-proposal-button").click();
+  }
+
+  async rejectProposal() {
+    await this.page.getByTestId("reject-proposal-button").click();
+  }
+
+  async getPreviewIframeElement() {
+    return this.page.getByTestId("preview-iframe-element");
+  }
+
+  async expectPreviewToBeVisible() {
+    const iframe = await this.getPreviewIframeElement();
+    await expect(iframe).toBeVisible();
+  }
+
+  async snapshotPreview() {
+    const iframe = await this.getPreviewIframeElement();
+    await expect(iframe.contentFrame().locator("body")).toMatchAriaSnapshot();
+  }
+
   async snapshotServerDump() {
     // Get the text content of the messages list
     const messagesListText = await this.page
