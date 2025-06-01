@@ -17,11 +17,18 @@ defaults:
 
 jobs:
   test:
-    # Why Mac?
+    # Why Mac and Windows?
     # I can't run electron playwright on ubuntu-latest and
     # Linux support for Dyad is experimental so not as important
     # as Mac + Windows
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        os:
+          [
+            { name: "windows", image: "windows-latest" },
+            { name: "macos", image: "macos-latest" },
+          ]
+    runs-on: ${{ matrix.os.image }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
