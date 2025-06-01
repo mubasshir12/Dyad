@@ -205,11 +205,12 @@ export const test = base.extend<{
     { auto: true },
   ],
   attachScreenshotsToReport: [
-    async ({ page }, use, testInfo) => {
+    async ({ electronApp }, use, testInfo) => {
       await use();
 
       // After the test we can check whether the test passed or failed.
       if (testInfo.status !== testInfo.expectedStatus) {
+        const page = await electronApp.firstWindow();
         const screenshot = await page.screenshot();
         await testInfo.attach("screenshot", {
           body: screenshot,
