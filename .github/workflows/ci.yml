@@ -41,8 +41,12 @@ jobs:
       - name: Install node modules
         run: npm install
       - name: Presubmit check (e.g. lint, format)
+        # do not run this on Windows (it fails and not necessary)
+        if: contains(matrix.os.name, 'macos')
         run: npm run presubmit
       - name: Type-checking
+        # do not run this on windows (it's redunant)
+        if: contains(matrix.os.name, 'macos')
         run: npm run ts
       - name: Install Chromium browser for Playwright
         run: npx playwright install chromium --with-deps
