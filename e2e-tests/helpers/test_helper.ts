@@ -233,7 +233,7 @@ export const test = base.extend<{
         ],
         executablePath: appInfo.executable,
         recordVideo: {
-          dir: "playwright-report/videos",
+          dir: "test-results",
         },
       });
 
