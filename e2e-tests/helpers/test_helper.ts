@@ -280,7 +280,15 @@ function prettifyDump(dumpContent: string) {
 
   return parsedDump
     .map((message) => {
-      return `===\nrole: ${message.role}\nmessage: ${message.content}`;
+      const content = message.content
+        // We remove package.json because it's flaky.
+        // Depending on whether pnpm install is run, it will be modified,
+        // and the contents and timestamp (thus affecting order) will be affected.
+        .replace(
+          /\n<dyad-file path="package\.json">[\s\S]*?<\/dyad-file>\n/g,
+          "",
+        );
+      return `===\nrole: ${message.role}\nmessage: ${content}`;
     })
     .join("\n\n");
 }
