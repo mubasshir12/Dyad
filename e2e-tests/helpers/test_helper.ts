@@ -41,7 +41,9 @@ class PageObject {
     await expect(iframe.contentFrame().locator("body")).toMatchAriaSnapshot();
   }
 
-  async snapshotServerDump() {
+  async snapshotServerDump({
+    onlyLastMessage = false,
+  }: { onlyLastMessage?: boolean } = {}) {
     // Get the text content of the messages list
     const messagesListText = await this.page
       .getByTestId("messages-list")
@@ -62,7 +64,9 @@ class PageObject {
     const dumpContent = fs.readFileSync(dumpFilePath, "utf-8");
 
     // Perform snapshot comparison
-    expect(prettifyDump(dumpContent)).toMatchSnapshot("server-dump.txt");
+    expect(prettifyDump(dumpContent, { onlyLastMessage })).toMatchSnapshot(
+      "server-dump.txt",
+    );
   }
 
   async waitForChatCompletion() {
@@ -85,13 +89,21 @@ class PageObject {
     return this.page.getByRole("button", { name: "Undo" });
   }
 
+  getHomeChatInputContainer() {
+    return this.page.getByTestId("home-chat-input-container");
+  }
+
+  getChatInputContainer() {
+    return this.page.getByTestId("chat-input-container");
+  }
+
+  getChatInput() {
+    return this.page.getByRole("textbox", { name: "Ask Dyad to build..." });
+  }
+
   async sendPrompt(prompt: string) {
-    await this.page
-      .getByRole("textbox", { name: "Ask Dyad to build..." })
-      .click();
-    await this.page
-      .getByRole("textbox", { name: "Ask Dyad to build..." })
-      .fill(prompt);
+    await this.getChatInput().click();
+    await this.getChatInput().fill(prompt);
     await this.page.getByRole("button", { name: "Send message" }).click();
     await this.waitForChatCompletion();
   }
@@ -310,15 +322,20 @@ export const test = base.extend<{
   ],
 });
 
-function prettifyDump(dumpContent: string) {
+function prettifyDump(
+  dumpContent: string,
+  { onlyLastMessage = false }: { onlyLastMessage?: boolean } = {},
+) {
   const parsedDump = JSON.parse(dumpContent) as Array<{
     role: string;
     content: string;
   }>;
 
-  return parsedDump
+  const messages = onlyLastMessage ? parsedDump.slice(-1) : parsedDump;
+
+  return messages
     .map((message) => {
-      const content = message.content
+      const content = JSON.stringify(message.content)
         // We remove package.json because it's flaky.
         // Depending on whether pnpm install is run, it will be modified,
         // and the contents and timestamp (thus affecting order) will be affected.
