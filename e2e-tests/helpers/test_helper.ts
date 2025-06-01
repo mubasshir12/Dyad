@@ -80,6 +80,17 @@ class PageObject {
     await this.page.getByText("Testollama", { exact: true }).click();
   }
 
+  async selectTestLMStudioModel() {
+    await this.page.getByRole("button", { name: "Model: Auto" }).click();
+    await this.page.getByText("Local models").click();
+    await this.page.getByText("LM Studio", { exact: true }).click();
+    // Both of the elments that match "lmstudio-model-1" are the same button, so we just pick the first.
+    await this.page
+      .getByText("lmstudio-model-1", { exact: true })
+      .first()
+      .click();
+  }
+
   async setUpTestProvider() {
     await this.page.getByText("Add custom providerConnect to").click();
     // Fill out provider dialog
@@ -209,6 +220,8 @@ export const test = base.extend<{
       // parse the directory and find paths and other info
       const appInfo = parseElectronApp(latestBuild);
       process.env.OLLAMA_HOST = "http://localhost:3500/ollama";
+      process.env.LM_STUDIO_BASE_URL_FOR_TESTING =
+        "http://localhost:3500/lmstudio";
       process.env.E2E_TEST_BUILD = "true";
       // This is just a hack to avoid the AI setup screen.
       process.env.OPENAI_API_KEY = "sk-test";
