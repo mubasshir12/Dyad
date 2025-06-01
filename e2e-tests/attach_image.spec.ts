@@ -1,7 +1,10 @@
 import { test } from "./helpers/test_helper";
 
-// This is useful to make sure the messages are being sent correctly.
-test("attach image", async ({ po }) => {
+// attach image is implemented in two separate components
+// - HomeChatInput
+// - ChatInput
+// so we need to test both
+test("attach image - home chat", async ({ po }) => {
   await po.setUp();
 
   await po
@@ -10,4 +13,18 @@ test("attach image", async ({ po }) => {
     .setInputFiles("e2e-tests/fixtures/images/logo.png");
   await po.sendPrompt("[dump]");
   await po.snapshotServerDump({ onlyLastMessage: true });
+  await po.snapshotMessages({ replaceDumpPath: true });
+});
+
+test("attach image - chat", async ({ po }) => {
+  await po.setUp({ autoApprove: true });
+  await po.sendPrompt("basic");
+
+  await po
+    .getChatInputContainer()
+    .locator("input[type='file']")
+    .setInputFiles("e2e-tests/fixtures/images/logo.png");
+  await po.sendPrompt("[dump]");
+  await po.snapshotServerDump({ onlyLastMessage: true });
+  await po.snapshotMessages({ replaceDumpPath: true });
 });

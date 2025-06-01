@@ -20,7 +20,25 @@ class PageObject {
     await this.selectTestModel();
   }
 
-  async snapshotMessages() {
+  async snapshotMessages({
+    replaceDumpPath = false,
+  }: { replaceDumpPath?: boolean } = {}) {
+    if (replaceDumpPath) {
+      // Update page so that "[[dyad-dump-path=*]]" is replaced with a placeholder path
+      // which is stable across runs.
+      await this.page.evaluate(() => {
+        const messagesList = document.querySelector(
+          "[data-testid=messages-list]",
+        );
+        if (!messagesList) {
+          throw new Error("Messages list not found");
+        }
+        messagesList.innerHTML = messagesList.innerHTML.replace(
+          /\[\[dyad-dump-path=([^\]]+)\]\]/,
+          "[[dyad-dump-path=*]]",
+        );
+      });
+    }
     await expect(this.page.getByTestId("messages-list")).toMatchAriaSnapshot();
   }
 
