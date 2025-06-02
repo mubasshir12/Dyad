@@ -310,7 +310,11 @@ export async function extractCodebase(appPath: string): Promise<{
     const formattedContent = await formatFile(file, appPath);
 
     // Get raw content for the files array
-    const relativePath = path.relative(appPath, file);
+    const relativePath = path
+      .relative(appPath, file)
+      // Why? Normalize Windows-style paths which causes lots of weird issues (e.g. Git commit)
+      .split(path.sep)
+      .join("/");
     const fileContent = isOmittedFile(relativePath)
       ? OMITTED_FILE_CONTENT
       : await readFileWithCache(file);
