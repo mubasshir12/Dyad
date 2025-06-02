@@ -243,7 +243,11 @@ const OMITTED_FILE_CONTENT = "// Contents omitted for brevity";
  */
 async function formatFile(filePath: string, baseDir: string): Promise<string> {
   try {
-    const relativePath = path.relative(baseDir, filePath);
+    const relativePath = path
+      .relative(baseDir, filePath)
+      // Why? Normalize Windows-style paths which causes lots of weird issues (e.g. Git commit)
+      .split(path.sep)
+      .join("/");
 
     if (isOmittedFile(relativePath)) {
       return `<dyad-file path="${relativePath}">

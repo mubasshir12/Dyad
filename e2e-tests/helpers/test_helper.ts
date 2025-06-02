@@ -479,7 +479,10 @@ function prettifyDump(
   dumpContent: string,
   { onlyLastMessage = false }: { onlyLastMessage?: boolean } = {},
 ) {
-  const parsedDump = JSON.parse(dumpContent) as Array<{
+  // Normalize line endings to always use \n
+  const normalizedDumpContent = dumpContent.replace(/\r\n/g, "\n");
+
+  const parsedDump = JSON.parse(normalizedDumpContent) as Array<{
     role: string;
     content: string;
   }>;
