@@ -14,8 +14,6 @@ test("refresh app", async ({ po }) => {
       body.remove();
     });
 
-  await po.sleep(5_000);
-
   await po.clickPreviewRefresh();
   await po.snapshotPreview();
 });
