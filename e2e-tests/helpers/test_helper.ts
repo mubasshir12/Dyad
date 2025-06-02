@@ -62,6 +62,15 @@ class PageObject {
     await this.page.getByRole("button", { name: "Restart" }).click();
   }
 
+  async clickRebuild() {
+    await this.clickPreviewMoreOptions();
+    await this.page.getByText("Rebuild").click();
+  }
+
+  async clickPreviewMoreOptions() {
+    await this.page.getByTestId("preview-more-options-button").click();
+  }
+
   async clickPreviewRefresh() {
     await this.page.getByTestId("preview-refresh-button").click();
   }
@@ -216,6 +225,25 @@ class PageObject {
 
   async goToSettingsTab() {
     await this.page.getByRole("link", { name: "Settings" }).click();
+  }
+
+  getTitleBarAppNameButton() {
+    return this.page.getByTestId("title-bar-app-name-button");
+  }
+
+  async getCurrentAppName() {
+    return (await this.getTitleBarAppNameButton().textContent())?.replace(
+      "App: ",
+      "",
+    );
+  }
+
+  async getCurrentAppPath() {
+    const currentAppName = await this.getCurrentAppName();
+    if (!currentAppName) {
+      throw new Error("No current app name found");
+    }
+    return path.join("/tmp", "dyad-apps-test", currentAppName);
   }
 
   ////////////////////////////////
