@@ -22,6 +22,7 @@ jobs:
     # Linux support for Dyad is experimental so not as important
     # as Mac + Windows
     strategy:
+      fail-fast: false
       matrix:
         os:
           [
