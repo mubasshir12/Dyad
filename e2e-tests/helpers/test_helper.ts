@@ -479,12 +479,9 @@ function prettifyDump(
   dumpContent: string,
   { onlyLastMessage = false }: { onlyLastMessage?: boolean } = {},
 ) {
-  // Normalize line endings to always use \n
-  const normalizedDumpContent = dumpContent.replace(/\r\n/g, "\n");
-
-  const parsedDump = JSON.parse(normalizedDumpContent) as Array<{
+  const parsedDump = JSON.parse(dumpContent) as Array<{
     role: string;
-    content: string;
+    content: string | Array<{}>;
   }>;
 
   const messages = onlyLastMessage ? parsedDump.slice(-1) : parsedDump;
@@ -494,6 +491,8 @@ function prettifyDump(
       const content = Array.isArray(message.content)
         ? JSON.stringify(message.content)
         : message.content
+            // Normalize line endings to always use \n
+            .replace(/\r\n/g, "\n")
             // We remove package.json because it's flaky.
             // Depending on whether pnpm install is run, it will be modified,
             // and the contents and timestamp (thus affecting order) will be affected.
