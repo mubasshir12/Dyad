@@ -54,6 +54,10 @@ class PageObject {
     await this.page.getByRole("button", { name: "Restart" }).click();
   }
 
+  locateLoadingAppPreview() {
+    return this.page.getByText("Loading app preview...");
+  }
+
   getPreviewIframeElement() {
     return this.page.getByTestId("preview-iframe-element");
   }
