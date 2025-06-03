@@ -3,6 +3,7 @@ import { findLatestBuild, parseElectronApp } from "electron-playwright-helpers";
 import { ElectronApplication, _electron as electron } from "playwright";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
 const showDebugLogs = process.env.DEBUG_LOGS === "true";
 
@@ -469,7 +470,16 @@ export const test = base.extend<{
       });
 
       await use(electronApp);
-      await electronApp.close();
+      // Why are we doing a force kill on Windows?
+      //
+      // Otherwise, Playwright will just hang on the test cleanup
+      // because the electron app does NOT ever fully quit due to
+      // Windows' strict resource locking (e.g. file locking).
+      if (os.platform() === "win32") {
+        electronApp.process().kill();
+      } else {
+        await electronApp.close();
+      }
     },
     { auto: true },
   ],
