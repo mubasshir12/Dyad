@@ -244,7 +244,7 @@ class PageObject {
     if (!currentAppName) {
       throw new Error("No current app name found");
     }
-    return path.join("/tmp", "dyad-apps-test", currentAppName);
+    return path.join(this.userDataDir, "dyad-apps", currentAppName);
   }
 
   ////////////////////////////////
