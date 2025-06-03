@@ -1,4 +1,4 @@
 - paragraph: "[dump] tc=turbo-edits"
-- paragraph: /\[\[dyad-dump-path=\/Users\/will\/Documents\/GitHub\/dyad-zero\/testing\/fake-llm-server\/dist\/generated\/\d+\.json\]\]/
+- paragraph: "[[dyad-dump-path=*]]"
 - button "Retry":
   - img
