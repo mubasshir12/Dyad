@@ -139,9 +139,9 @@ class PageObject {
     });
   }
 
-  async snapshotServerDump({
-    onlyLastMessage = false,
-  }: { onlyLastMessage?: boolean } = {}) {
+  async snapshotServerDump(
+    type: "all-messages" | "last-message" | "request" = "all-messages",
+  ) {
     // Get the text content of the messages list
     const messagesListText = await this.page
       .getByTestId("messages-list")
@@ -162,9 +162,16 @@ class PageObject {
     const dumpContent = fs.readFileSync(dumpFilePath, "utf-8");
 
     // Perform snapshot comparison
-    expect(prettifyDump(dumpContent, { onlyLastMessage })).toMatchSnapshot(
-      "server-dump.txt",
-    );
+    const parsedDump = JSON.parse(dumpContent);
+    if (type === "request") {
+      expect(dumpContent).toMatchSnapshot("server-dump-request.json");
+      return;
+    }
+    expect(
+      prettifyDump(parsedDump["body"]["messages"], {
+        onlyLastMessage: type === "last-message",
+      }),
+    ).toMatchSnapshot("server-dump.txt");
   }
 
   async waitForChatCompletion() {
@@ -531,15 +538,13 @@ export const test = base.extend<{
 export const testSkipIfWindows = os.platform() === "win32" ? test.skip : test;
 
 function prettifyDump(
-  dumpContent: string,
-  { onlyLastMessage = false }: { onlyLastMessage?: boolean } = {},
-) {
-  const parsedDump = JSON.parse(dumpContent) as Array<{
+  allMessages: {
     role: string;
     content: string | Array<{}>;
-  }>;
-
-  const messages = onlyLastMessage ? parsedDump.slice(-1) : parsedDump;
+  }[],
+  { onlyLastMessage = false }: { onlyLastMessage?: boolean } = {},
+) {
+  const messages = onlyLastMessage ? allMessages.slice(-1) : allMessages;
 
   return messages
     .map((message) => {

@@ -48,7 +48,14 @@ export const createChatCompletionHandler =
       try {
         fs.writeFileSync(
           dumpFilePath,
-          JSON.stringify(messages, null, 2),
+          JSON.stringify(
+            {
+              body: req.body,
+              headers: { authorization: req.headers["authorization"] },
+            },
+            null,
+            2,
+          ),
           "utf-8",
         );
         console.log(`* Dumped messages to: ${dumpFilePath}`);

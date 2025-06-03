@@ -6,7 +6,7 @@ test("send message to engine", async ({ po }) => {
   // use engine.
   await po.selectModel({ provider: "Google", model: "Gemini 2.5 Pro" });
   await po.sendPrompt("[dump] tc=turbo-edits");
-  await po.sleep(5_000);
+
   await po.snapshotMessages();
-  await po.snapshotServerDump();
+  await po.snapshotServerDump("request");
 });
