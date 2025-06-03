@@ -491,9 +491,11 @@ export const test = base.extend<{
           `--user-data-dir=${USER_DATA_DIR}`,
         ],
         executablePath: appInfo.executable,
-        recordVideo: {
-          dir: "test-results",
-        },
+        // Strong suspicion this is causing issues on Windows with tests hanging due to error:
+        // ffmpeg failed to write: Error [ERR_STREAM_WRITE_AFTER_END]: write after end
+        // recordVideo: {
+        //   dir: "test-results",
+        // },
       });
       (electronApp as any).$dyadUserDataDir = USER_DATA_DIR;
 
