@@ -1,8 +1,3 @@
-// await page.getByRole('button', { name: 'Version' }).click();
-// await page.getByText('Init Dyad app Undo').click();
-// await page.getByRole('button', { name: 'Undo to latest version' }).click();
-// await page.getByRole('button', { name: 'Version' }).click();
-
 import { test } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
 
