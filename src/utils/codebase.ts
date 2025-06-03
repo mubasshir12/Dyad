@@ -226,7 +226,9 @@ async function collectFiles(dir: string, baseDir: string): Promise<string[]> {
 // Skip large configuration files or generated code (just include the path)
 function isOmittedFile(relativePath: string): boolean {
   return (
-    relativePath.includes(path.join("src", "components", "ui")) ||
+    // Why are we not using path.join here?
+    // Because we have already normalized the path to use /.
+    relativePath.includes("src/components/ui") ||
     relativePath.includes("eslint.config") ||
     relativePath.includes("tsconfig.json") ||
     relativePath.includes("package-lock.json") ||
