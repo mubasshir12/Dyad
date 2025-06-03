@@ -10,6 +10,7 @@ class PageObject {
   private userDataDir: string;
 
   constructor(
+    public electronApp: ElectronApplication,
     public page: Page,
     { userDataDir }: { userDataDir: string },
   ) {
@@ -358,7 +359,7 @@ export const test = base.extend<{
     async ({ electronApp }, use) => {
       const page = await electronApp.firstWindow();
 
-      const po = new PageObject(page, {
+      const po = new PageObject(electronApp, page, {
         userDataDir: (electronApp as any).$dyadUserDataDir,
       });
       await use(po);
