@@ -4,6 +4,7 @@ import { ElectronApplication, _electron as electron } from "playwright";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { execSync } from "child_process";
 
 const showDebugLogs = process.env.DEBUG_LOGS === "true";
 
@@ -527,7 +528,7 @@ export const test = base.extend<{
       // because the electron app does NOT ever fully quit due to
       // Windows' strict resource locking (e.g. file locking).
       if (os.platform() === "win32") {
-        electronApp.process().kill();
+        execSync("taskkill /f /im electron.exe");
       } else {
         await electronApp.close();
       }
