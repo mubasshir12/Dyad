@@ -479,7 +479,11 @@ export const test = base.extend<{
       process.env.E2E_TEST_BUILD = "true";
       // This is just a hack to avoid the AI setup screen.
       process.env.OPENAI_API_KEY = "sk-test";
-      const USER_DATA_DIR = `/tmp/dyad-e2e-tests-${Date.now()}`;
+      const baseTmpDir = os.tmpdir();
+      const USER_DATA_DIR = path.join(
+        baseTmpDir,
+        `dyad-e2e-tests-${Date.now()}`,
+      );
       const electronApp = await electron.launch({
         args: [
           appInfo.main,
