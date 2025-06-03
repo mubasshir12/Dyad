@@ -1,14 +1,3 @@
-// await page.locator('div').filter({ hasText: /^scaffold2$/ }).getByRole('button').click();
-// await page.getByRole('textbox', { name: 'Enter new app name' }).click();
-// await page.getByRole('textbox', { name: 'Enter new app name' }).fill('scaffold23');
-// await page.getByRole('button', { name: 'Continue' }).click();
-// await page.getByRole('button', { name: 'Recommended Rename app and' }).click();
-// await page.locator('div').filter({ hasText: /^scaffold23$/ }).getByRole('button').click();
-// await page.getByRole('textbox', { name: 'Enter new app name' }).fill('scaffold234');
-// await page.getByRole('button', { name: 'Continue' }).click();
-// await page.getByRole('button', { name: 'Rename app only The folder' }).click();
-// await page.locator('div').filter({ hasText: /^\/Users\/will\/dyad-apps\/scaffold23$/ }).click();
-
 import fs from "fs";
 import { test } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
