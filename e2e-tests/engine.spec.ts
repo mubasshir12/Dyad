@@ -10,3 +10,12 @@ test("send message to engine", async ({ po }) => {
   await po.snapshotServerDump("request");
   await po.snapshotMessages({ replaceDumpPath: true });
 });
+
+test("send message to gateway", async ({ po }) => {
+  await po.setUpDyadPro();
+  await po.selectModel({ provider: "Google", model: "Gemini 2.5 Flash" });
+  await po.sendPrompt("[dump] tc=gateway-simple");
+
+  await po.snapshotServerDump("request", { postfix: "gateway" });
+  await po.snapshotMessages({ replaceDumpPath: true });
+});
