@@ -10,7 +10,7 @@ test("delete app", async ({ po }) => {
   }
   const appPath = await po.getCurrentAppPath();
   await po.getTitleBarAppNameButton().click();
-  expect(po.getAppListItem({ appName })).toBeVisible();
+  await expect(po.getAppListItem({ appName })).toBeVisible();
 
   // Delete app
   await po.clickAppDetailsMoreOptions();
