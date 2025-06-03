@@ -528,7 +528,7 @@ export const test = base.extend<{
       // because the electron app does NOT ever fully quit due to
       // Windows' strict resource locking (e.g. file locking).
       if (os.platform() === "win32") {
-        execSync("taskkill /f /im electron.exe");
+        execSync("taskkill /f /im dyad.exe");
       } else {
         await electronApp.close();
       }
