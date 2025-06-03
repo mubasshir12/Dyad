@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer } from "http";
 import cors from "cors";
-import { chatCompletionHandler } from "./chatCompletionHandler";
+import { createChatCompletionHandler } from "./chatCompletionHandler";
 
 // Create Express app
 const app = express();
@@ -180,10 +180,15 @@ app.get("/lmstudio/api/v0/models", (req, res) => {
   res.json(lmStudioModels);
 });
 
-app.post("/lmstudio/v1/chat/completions", chatCompletionHandler);
+app.post(
+  "/lmstudio/v1/chat/completions",
+  createChatCompletionHandler("lmstudio"),
+);
+
+app.post("/engine/v1/chat/completions", createChatCompletionHandler("engine"));
 
 // Handle POST requests to /v1/chat/completions
-app.post("/v1/chat/completions", chatCompletionHandler);
+app.post("/v1/chat/completions", createChatCompletionHandler("."));
 
 // Start the server
 const server = createServer(app);

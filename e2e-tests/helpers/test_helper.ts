@@ -36,6 +36,35 @@ class PageObject {
     await this.selectTestModel();
   }
 
+  async setUpDyadPro({ autoApprove = false }: { autoApprove?: boolean } = {}) {
+    await this.goToSettingsTab();
+    if (autoApprove) {
+      await this.toggleAutoApprove();
+    }
+    await this.setUpDyadProvider();
+    await this.goToAppsTab();
+  }
+
+  async setUpDyadProvider() {
+    // await page.getByRole('link', { name: 'Settings' }).click();
+    await this.page
+      .locator("div")
+      .filter({ hasText: /^DyadNeeds Setup$/ })
+      .nth(1)
+      .click();
+    await this.page.getByRole("textbox", { name: "Set Dyad API Key" }).click();
+    await this.page
+      .getByRole("textbox", { name: "Set Dyad API Key" })
+      .fill("testdyadkey");
+    await this.page.getByRole("button", { name: "Save Key" }).click();
+    // await page.getByRole('link', { name: 'Apps' }).click();
+    // await page.getByTestId('home-chat-input-container').getByRole('button', { name: 'Pro' }).click();
+    // await page.getByRole('switch', { name: 'Turbo Edits' }).click();
+    // await page.getByRole('switch', { name: 'Turbo Edits' }).click();
+    // await page.locator('div').filter({ hasText: /^Import App$/ }).click();
+    // await page.getByRole('button', { name: 'Select Folder' }).press('Escape');
+  }
+
   async snapshotMessages({
     replaceDumpPath = false,
   }: { replaceDumpPath?: boolean } = {}) {
@@ -183,6 +212,12 @@ class PageObject {
     await this.getChatInput().fill(prompt);
     await this.page.getByRole("button", { name: "Send message" }).click();
     await this.waitForChatCompletion();
+  }
+
+  async selectModel({ provider, model }: { provider: string; model: string }) {
+    await this.page.getByRole("button", { name: "Model: Auto" }).click();
+    await this.page.getByText(provider).click();
+    await this.page.getByText(model).click();
   }
 
   async selectTestModel() {
@@ -430,6 +465,7 @@ export const test = base.extend<{
       process.env.OLLAMA_HOST = "http://localhost:3500/ollama";
       process.env.LM_STUDIO_BASE_URL_FOR_TESTING =
         "http://localhost:3500/lmstudio";
+      process.env.DYAD_LOCAL_ENGINE = "http://localhost:3500/engine/v1";
       process.env.E2E_TEST_BUILD = "true";
       // This is just a hack to avoid the AI setup screen.
       process.env.OPENAI_API_KEY = "sk-test";
