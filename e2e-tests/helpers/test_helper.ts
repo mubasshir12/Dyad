@@ -7,6 +7,12 @@ import os from "os";
 
 const showDebugLogs = process.env.DEBUG_LOGS === "true";
 
+export const Timeout = {
+  // Why make this a constant? In some platforms, perhaps locally,
+  // we may want to shorten this.
+  LONG: 30_000,
+};
+
 class PageObject {
   private userDataDir: string;
 
@@ -100,7 +106,7 @@ class PageObject {
   async snapshotPreview() {
     const iframe = this.getPreviewIframeElement();
     await expect(iframe.contentFrame().locator("body")).toMatchAriaSnapshot({
-      timeout: 30_000,
+      timeout: Timeout.LONG,
     });
   }
 
