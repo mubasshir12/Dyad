@@ -16,6 +16,6 @@ test("send message to gateway", async ({ po }) => {
   await po.selectModel({ provider: "Google", model: "Gemini 2.5 Flash" });
   await po.sendPrompt("[dump] tc=gateway-simple");
 
-  await po.snapshotServerDump("request", { postfix: "gateway" });
+  await po.snapshotServerDump("request");
   await po.snapshotMessages({ replaceDumpPath: true });
 });
