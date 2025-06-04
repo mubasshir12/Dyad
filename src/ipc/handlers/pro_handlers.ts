@@ -7,16 +7,6 @@ import { UserBudgetInfoSchema } from "../ipc_types";
 const logger = log.scope("pro_handlers");
 const handle = createLoggedHandler(logger);
 
-// Define an interface for the expected response structure, if known.
-// For now, using any.
-interface UserBudgetInfo {
-  // Define properties based on the actual API response
-  // e.g., used: number;
-  // e.g., total: number;
-  // e.g., currency: string;
-  [key: string]: any;
-}
-
 const CONVERSION_RATIO = (10 * 3) / 2;
 
 export function registerProHandlers() {
@@ -34,7 +24,7 @@ export function registerProHandlers() {
       return null;
     }
 
-    const url = `https://llm-gateway.dyad.sh/user/info?key=${apiKey}`;
+    const url = "https://llm-gateway.dyad.sh/user/info";
     const headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,

@@ -124,7 +124,7 @@ export function useStreamChat({
         setError(error instanceof Error ? error.message : String(error));
       }
     },
-    [setMessages, setIsStreaming, setIsPreviewOpen],
+    [setMessages, setIsStreaming, setIsPreviewOpen, refetchUserBudget],
   );
 
   return {
