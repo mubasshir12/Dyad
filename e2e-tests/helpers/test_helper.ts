@@ -534,7 +534,14 @@ export const test = base.extend<{
       // because the electron app does NOT ever fully quit due to
       // Windows' strict resource locking (e.g. file locking).
       if (os.platform() === "win32") {
-        execSync("taskkill /f /im dyad.exe");
+        try {
+          execSync("taskkill /f /im dyad.exe");
+        } catch (error) {
+          console.warn(
+            "Failed to kill dyad.exe: (continuing with test cleanup)",
+            error,
+          );
+        }
       } else {
         await electronApp.close();
       }
