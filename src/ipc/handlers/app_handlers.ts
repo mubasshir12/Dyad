@@ -69,7 +69,7 @@ async function executeAppLocalNode({
   event: Electron.IpcMainInvokeEvent;
 }): Promise<void> {
   const process = spawn(
-    "(pnpm install --force && pnpm run dev --port 32100) || (npm install --legacy-peer-deps && npm run dev -- --port 32100)",
+    "(pnpm install && pnpm run dev --port 32100) || (npm install --legacy-peer-deps && npm run dev -- --port 32100)",
     [],
     {
       cwd: appPath,
