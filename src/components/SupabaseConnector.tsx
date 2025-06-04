@@ -202,14 +202,23 @@ export function SupabaseConnector({ appId }: { appId: number }) {
       <div className="flex flex-col md:flex-row items-center justify-between">
         <h2 className="text-lg font-medium">Integrations</h2>
         <img
-          onClick={() => {
-            IpcClient.getInstance().openExternalUrl(
+          onClick={async () => {
+            if (settings?.isTestMode) {
+              await IpcClient.getInstance().fakeHandleSupabaseConnect({
+                appId,
+                fakeProjectId: "fake-project-id",
+              });
+              await IpcClient.getInstance().onDeepLinkReceived();
+              return;
+            }
+            await IpcClient.getInstance().openExternalUrl(
               "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
             );
           }}
           src={isDarkMode ? connectSupabaseDark : connectSupabaseLight}
           alt="Connect to Supabase"
           className="w-full h-10 min-h-8 min-w-20 cursor-pointer"
+          data-testid="connect-supabase-button"
           // className="h-10"
         />
       </div>

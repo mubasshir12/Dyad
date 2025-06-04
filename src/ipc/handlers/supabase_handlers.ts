@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { apps } from "../../db/schema";
 import { getSupabaseClient } from "../../supabase_admin/supabase_management_client";
 import { createLoggedHandler } from "./safe_handle";
+import { handleSupabaseOAuthReturn } from "../../supabase_admin/supabase_return_handler";
 
 const logger = log.scope("supabase_handlers");
 const handle = createLoggedHandler(logger);
@@ -36,4 +37,46 @@ export function registerSupabaseHandlers() {
 
     logger.info(`Removed Supabase project association for app ${app}`);
   });
+
+  handle(
+    "supabase:fake-connect-and-set-project",
+    async (
+      event,
+      { appId, fakeProjectId }: { appId: number; fakeProjectId: string },
+    ) => {
+      if (!process.env.E2E_TEST_BUILD) {
+        throw new Error("This method is only available in E2E tests.");
+      }
+
+      // Call handleSupabaseOAuthReturn with fake data
+      handleSupabaseOAuthReturn({
+        token: "fake-access-token",
+        refreshToken: "fake-refresh-token",
+        expiresIn: 3600, // 1 hour
+      });
+      logger.info(
+        `Called handleSupabaseOAuthReturn with fake data for app ${appId} during testing.`,
+      );
+
+      // Set the supabase project for the currently selected app
+      await db
+        .update(apps)
+        .set({
+          supabaseProjectId: fakeProjectId,
+        })
+        .where(eq(apps.id, appId));
+      logger.info(
+        `Set fake Supabase project ${fakeProjectId} for app ${appId} during testing.`,
+      );
+
+      // Simulate the deep link event
+      event.sender.send("deep-link-received", {
+        type: "supabase-oauth-return",
+        url: "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
+      });
+      logger.info(
+        `Sent fake deep-link-received event for app ${appId} during testing.`,
+      );
+    },
+  );
 }

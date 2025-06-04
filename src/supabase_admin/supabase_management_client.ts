@@ -122,6 +122,10 @@ export async function getSupabaseClient(): Promise<SupabaseManagementAPI> {
 export async function getSupabaseProjectName(
   projectId: string,
 ): Promise<string> {
+  if (process.env.E2E_TEST_BUILD) {
+    return "Fake Supabase Project";
+  }
+
   const supabase = await getSupabaseClient();
   const projects = await supabase.getProjects();
   const project = projects?.find((p) => p.id === projectId);

@@ -58,6 +58,7 @@ const validInvokeChannels = [
   "supabase:list-projects",
   "supabase:set-app-project",
   "supabase:unset-app-project",
+  "supabase:fake-connect-and-set-project",
   "local-models:list-ollama",
   "local-models:list-lmstudio",
   "window:minimize",

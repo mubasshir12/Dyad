@@ -643,9 +643,18 @@ export class IpcClient {
   }
 
   public async unsetSupabaseAppProject(app: number): Promise<void> {
-    await this.ipcRenderer.invoke("supabase:unset-app-project", {
-      app,
-    });
+    await this.ipcRenderer.invoke("supabase:unset-app-project", { app });
+  }
+
+  public async fakeHandleSupabaseConnect(params: {
+    appId: number;
+    fakeProjectId: string;
+  }): Promise<void> {
+    await this.ipcRenderer.invoke(
+      "supabase:fake-connect-and-set-project",
+      params,
+    );
+    // The deep-link-received event is now sent by the main process handler
   }
   // --- End Supabase Management ---
 

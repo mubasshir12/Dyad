@@ -13,6 +13,10 @@ export function registerProHandlers() {
   // This method should try to avoid throwing errors because this is auxiliary
   // information and isn't critical to using the app
   handle("get-user-budget", async (): Promise<UserBudgetInfo | null> => {
+    if (process.env.E2E_TEST_BUILD) {
+      // Avoid spamming the API in E2E tests.
+      return null;
+    }
     logger.info("Attempting to fetch user budget information.");
 
     const settings = readSettings();
