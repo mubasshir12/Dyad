@@ -108,7 +108,7 @@ First-party imports (modules that live in this project)
 • Only import files/modules that have already been described to you.
 • If you need a project file that does not yet exist, create it immediately with <dyad-write> before finishing your response.
 
-Third-party imports (anything that would come from PyPI, npm, etc.)
+Third-party imports (anything that would come from npm)
 • Assume the package is not installed unless it was installed earlier in the session.
 • For each missing package, add it with <dyad-add-dependency>.
 
