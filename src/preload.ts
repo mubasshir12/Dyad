@@ -2,7 +2,6 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from "electron";
-import { IS_TEST_BUILD } from "./ipc/utils/test_utils";
 
 // Whitelist of valid channels
 const validInvokeChannels = [
@@ -77,6 +76,11 @@ const validInvokeChannels = [
   "rename-branch",
   "clear-session-data",
   "get-user-budget",
+  // Test-only channels
+  // These should ALWAYS be guarded with IS_TEST_BUILD in the main process.
+  // We can't detect with IS_TEST_BUILD in the preload script because
+  // it's a separate process from the main process.
+  "supabase:fake-connect-and-set-project",
 ];
 
 // Add valid receive channels
@@ -90,10 +94,6 @@ const validReceiveChannels = [
   "github:flow-error",
   "deep-link-received",
 ] as const;
-
-if (IS_TEST_BUILD) {
-  validInvokeChannels.push("supabase:fake-connect-and-set-project");
-}
 
 type ValidInvokeChannel = (typeof validInvokeChannels)[number];
 type ValidReceiveChannel = (typeof validReceiveChannels)[number];
