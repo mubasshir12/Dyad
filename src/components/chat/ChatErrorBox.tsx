@@ -107,18 +107,18 @@ function ChatErrorContainer({
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                a: ({ children, ...props }) => (
+                a: ({ children: linkChildren, ...props }) => (
                   <a
+                    {...props}
                     onClick={(e) => {
                       e.preventDefault();
                       if (props.href) {
                         IpcClient.getInstance().openExternalUrl(props.href);
                       }
                     }}
-                    {...props}
                     className="text-blue-500 hover:text-blue-700"
                   >
-                    {children}
+                    {linkChildren}
                   </a>
                 ),
               }}
