@@ -1,6 +1,10 @@
 import { useNavigate, useRouter, useSearch } from "@tanstack/react-router";
-import { useAtom, useAtomValue } from "jotai";
-import { appBasePathAtom, appsListAtom } from "@/atoms/appAtoms";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import {
+  appBasePathAtom,
+  appsListAtom,
+  selectedAppIdAtom,
+} from "@/atoms/appAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
 import { useLoadApps } from "@/hooks/useLoadApps";
 import { useState } from "react";
@@ -29,6 +33,10 @@ import {
 import { GitHubConnector } from "@/components/GitHubConnector";
 import { SupabaseConnector } from "@/components/SupabaseConnector";
 import { showError } from "@/lib/toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { invalidateAppQuery } from "@/hooks/useLoadApp";
 
 export default function AppDetailsPage() {
   const navigate = useNavigate();
@@ -48,6 +56,14 @@ export default function AppDetailsPage() {
   const [newFolderName, setNewFolderName] = useState("");
   const [isRenamingFolder, setIsRenamingFolder] = useState(false);
   const appBasePath = useAtomValue(appBasePathAtom);
+
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [newCopyAppName, setNewCopyAppName] = useState("");
+
+  const [nameExists, setNameExists] = useState<boolean>(false);
+  const [isCheckingName, setIsCheckingName] = useState<boolean>(false);
+  const queryClient = useQueryClient();
+  const setSelectedAppId = useSetAtom(selectedAppIdAtom);
 
   // Get the appId from search params and find the corresponding app
   const appId = search.appId ? Number(search.appId) : null;
@@ -139,6 +155,64 @@ export default function AppDetailsPage() {
     }
   };
 
+  const checkAppName = async (name: string): Promise<void> => {
+    if (!name.trim()) {
+      setNameExists(false);
+      return;
+    }
+    setIsCheckingName(true);
+    try {
+      const result = await IpcClient.getInstance().checkAppName({
+        appName: name,
+      });
+      setNameExists(result.exists);
+    } catch (error: unknown) {
+      showError(error);
+    } finally {
+      setIsCheckingName(false);
+    }
+  };
+
+  const handleAppNameChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const newName = e.target.value;
+    setNewCopyAppName(newName);
+    await checkAppName(newName);
+  };
+
+  const handleOpenCopyDialog = () => {
+    if (selectedApp) {
+      setNewCopyAppName(`${selectedApp.name}-copy`);
+      setNameExists(false); // Reset on open
+      setIsCopyDialogOpen(true);
+      checkAppName(`${selectedApp.name}-copy`); // Check default name
+    }
+  };
+
+  const copyAppMutation = useMutation({
+    mutationFn: async ({ withHistory }: { withHistory: boolean }) => {
+      if (!appId || !newCopyAppName.trim()) {
+        throw new Error("Invalid app ID or name for copying.");
+      }
+      return IpcClient.getInstance().copyApp({
+        appId,
+        newAppName: newCopyAppName,
+        withHistory,
+      });
+    },
+    onSuccess: async (data) => {
+      setSelectedAppId(data.app.id);
+      await invalidateAppQuery(queryClient, { appId: data.app.id });
+      await refreshApps();
+      setIsCopyDialogOpen(false);
+      navigate({ to: "/app-details", search: { appId: data.app.id } });
+    },
+    onError: (error) => {
+      showError(error);
+    },
+  });
+
   if (!selectedApp) {
     return (
       <div className="relative min-h-screen p-8">
@@ -211,6 +285,14 @@ export default function AppDetailsPage() {
                   className="h-8 justify-start text-xs"
                 >
                   Rename folder
+                </Button>
+                <Button
+                  onClick={handleOpenCopyDialog}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 justify-start text-xs"
+                >
+                  Copy app
                 </Button>
                 <Button
                   onClick={() => setIsDeleteDialogOpen(true)}
@@ -438,6 +520,123 @@ export default function AppDetailsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Copy App Dialog */}
+        {selectedApp && (
+          <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
+            <DialogContent className="max-w-md p-4">
+              <DialogHeader className="pb-2">
+                <DialogTitle>Copy "{selectedApp.name}"</DialogTitle>
+                <DialogDescription className="text-sm">
+                  <p>Create a copy of this app.</p>
+                  <p>
+                    Note: this does not copy over the Supabase project or GitHub
+                    project.
+                  </p>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 my-2">
+                <div>
+                  <Label htmlFor="newAppName">New app name</Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="newAppName"
+                      value={newCopyAppName}
+                      onChange={handleAppNameChange}
+                      placeholder="Enter new app name"
+                      className="pr-8"
+                      disabled={copyAppMutation.isPending}
+                    />
+                    {isCheckingName && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+
+                  {nameExists && (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
+                      An app with this name already exists. Please choose
+                      another name.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start p-2 h-auto relative text-sm"
+                    onClick={() =>
+                      copyAppMutation.mutate({ withHistory: true })
+                    }
+                    disabled={
+                      copyAppMutation.isPending ||
+                      nameExists ||
+                      !newCopyAppName.trim() ||
+                      isCheckingName
+                    }
+                  >
+                    {copyAppMutation.isPending &&
+                      copyAppMutation.variables?.withHistory === true && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                    <div className="absolute top-1 right-1">
+                      <span className="bg-blue-100 text-blue-800 text-xs font-medium px-1.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 text-[10px]">
+                        Recommended
+                      </span>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-xs">
+                        Copy app with history
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Copies the entire app, including the Git version
+                        history.
+                      </p>
+                    </div>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start p-2 h-auto text-sm"
+                    onClick={() =>
+                      copyAppMutation.mutate({ withHistory: false })
+                    }
+                    disabled={
+                      copyAppMutation.isPending ||
+                      nameExists ||
+                      !newCopyAppName.trim() ||
+                      isCheckingName
+                    }
+                  >
+                    {copyAppMutation.isPending &&
+                      copyAppMutation.variables?.withHistory === false && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                    <div className="text-left">
+                      <p className="font-medium text-xs">
+                        Copy app without history
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Useful if the current app has a Git-related issue.
+                      </p>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+              <DialogFooter className="pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCopyDialogOpen(false)}
+                  disabled={copyAppMutation.isPending}
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
