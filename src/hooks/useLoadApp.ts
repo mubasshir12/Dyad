@@ -7,7 +7,6 @@ import { App } from "@/ipc/ipc_types";
 
 export function useLoadApp(appId: number | null) {
   const [, setApp] = useAtom(currentAppAtom);
-  // const queryClient = useQueryClient(); // This instance is local to the hook
 
   const {
     data: appData,
@@ -24,7 +23,6 @@ export function useLoadApp(appId: number | null) {
       return ipcClient.getApp(appId);
     },
     enabled: appId !== null,
-    initialData: null,
     meta: { showErrorToast: true },
   });
 
@@ -35,15 +33,6 @@ export function useLoadApp(appId: number | null) {
       setApp(appData);
     }
   }, [appId, appData, setApp]);
-
-  // This effect handles the case where the query is disabled (appId is null)
-  // and ensures the app state is reset. It might be redundant with the above useEffect
-  // but ensures clarity for the disabled state.
-  useEffect(() => {
-    if (appId === null) {
-      setApp(null);
-    }
-  }, [appId, setApp]);
 
   return { app: appData, loading, error, refreshApp };
 }

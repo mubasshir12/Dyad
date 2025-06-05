@@ -208,12 +208,11 @@ export function SupabaseConnector({ appId }: { appId: number }) {
                 appId,
                 fakeProjectId: "fake-project-id",
               });
-              await IpcClient.getInstance().onDeepLinkReceived();
-              return;
+            } else {
+              await IpcClient.getInstance().openExternalUrl(
+                "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
+              );
             }
-            await IpcClient.getInstance().openExternalUrl(
-              "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
-            );
           }}
           src={isDarkMode ? connectSupabaseDark : connectSupabaseLight}
           alt="Connect to Supabase"

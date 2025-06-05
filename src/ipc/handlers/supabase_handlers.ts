@@ -3,11 +3,15 @@ import { db } from "../../db";
 import { eq } from "drizzle-orm";
 import { apps } from "../../db/schema";
 import { getSupabaseClient } from "../../supabase_admin/supabase_management_client";
-import { createLoggedHandler } from "./safe_handle";
+import {
+  createLoggedHandler,
+  createTestOnlyLoggedHandler,
+} from "./safe_handle";
 import { handleSupabaseOAuthReturn } from "../../supabase_admin/supabase_return_handler";
 
 const logger = log.scope("supabase_handlers");
 const handle = createLoggedHandler(logger);
+const testOnlyHandle = createTestOnlyLoggedHandler(logger);
 
 export function registerSupabaseHandlers() {
   handle("supabase:list-projects", async () => {
@@ -38,16 +42,12 @@ export function registerSupabaseHandlers() {
     logger.info(`Removed Supabase project association for app ${app}`);
   });
 
-  handle(
+  testOnlyHandle(
     "supabase:fake-connect-and-set-project",
     async (
       event,
       { appId, fakeProjectId }: { appId: number; fakeProjectId: string },
     ) => {
-      if (!process.env.E2E_TEST_BUILD) {
-        throw new Error("This method is only available in E2E tests.");
-      }
-
       // Call handleSupabaseOAuthReturn with fake data
       handleSupabaseOAuthReturn({
         token: "fake-access-token",

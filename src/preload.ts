@@ -2,6 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from "electron";
+import { IS_TEST_BUILD } from "./ipc/utils/test_utils";
 
 // Whitelist of valid channels
 const validInvokeChannels = [
@@ -58,7 +59,6 @@ const validInvokeChannels = [
   "supabase:list-projects",
   "supabase:set-app-project",
   "supabase:unset-app-project",
-  "supabase:fake-connect-and-set-project",
   "local-models:list-ollama",
   "local-models:list-lmstudio",
   "window:minimize",
@@ -77,7 +77,7 @@ const validInvokeChannels = [
   "rename-branch",
   "clear-session-data",
   "get-user-budget",
-] as const;
+];
 
 // Add valid receive channels
 const validReceiveChannels = [
@@ -90,6 +90,10 @@ const validReceiveChannels = [
   "github:flow-error",
   "deep-link-received",
 ] as const;
+
+if (IS_TEST_BUILD) {
+  validInvokeChannels.push("supabase:fake-connect-and-set-project");
+}
 
 type ValidInvokeChannel = (typeof validInvokeChannels)[number];
 type ValidReceiveChannel = (typeof validReceiveChannels)[number];
