@@ -378,12 +378,20 @@ export class PageObject {
     await this.page.getByTestId(`app-list-item-${appName}`).click();
   }
 
+  async clickOpenInChatButton() {
+    await this.page.getByRole("button", { name: "Open in Chat" }).click();
+  }
+
   async clickAppDetailsRenameAppButton() {
     await this.page.getByTestId("app-details-rename-app-button").click();
   }
 
   async clickAppDetailsMoreOptions() {
     await this.page.getByTestId("app-details-more-options-button").click();
+  }
+
+  async clickAppDetailsCopyAppButton() {
+    await this.page.getByRole("button", { name: "Copy app" }).click();
   }
 
   async clickConnectSupabaseButton() {
