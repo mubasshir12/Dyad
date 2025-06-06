@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { execSync } from "child_process";
+import { generateAppFilesSnapshotData } from "./generateAppFilesSnapshotData";
 
 const showDebugLogs = process.env.DEBUG_LOGS === "true";
 
@@ -80,14 +81,7 @@ export class PageObject {
     }
 
     await expect(() => {
-      const filesData = generateAppFilesSnapshotData(appPath, appPath, [
-        ".git",
-        "node_modules",
-        // Avoid snapshotting lock files because they are getting generated
-        // automatically and cause noise, and not super important anyways.
-        "package-lock.json",
-        "pnpm-lock.yaml",
-      ]);
+      const filesData = generateAppFilesSnapshotData(appPath, appPath);
 
       // Sort by relative path to ensure deterministic output
       filesData.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
@@ -97,7 +91,7 @@ export class PageObject {
         .join("\n\n");
 
       if (name) {
-        expect(snapshotContent).toMatchSnapshot(name);
+        expect(snapshotContent).toMatchSnapshot(name + ".txt");
       } else {
         expect(snapshotContent).toMatchSnapshot();
       }
@@ -659,49 +653,4 @@ function prettifyDump(
       return `===\nrole: ${message.role}\nmessage: ${content}`;
     })
     .join("\n\n");
-}
-
-interface FileSnapshotData {
-  relativePath: string;
-  content: string;
-}
-
-function generateAppFilesSnapshotData(
-  currentPath: string,
-  basePath: string,
-  ignorePatterns: string[],
-): FileSnapshotData[] {
-  const entries = fs.readdirSync(currentPath, { withFileTypes: true });
-  let files: FileSnapshotData[] = [];
-
-  // Sort entries for deterministic order
-  entries.sort((a, b) => a.name.localeCompare(b.name));
-
-  for (const entry of entries) {
-    const entryPath = path.join(currentPath, entry.name);
-    if (ignorePatterns.includes(entry.name)) {
-      continue;
-    }
-
-    if (entry.isDirectory()) {
-      files = files.concat(
-        generateAppFilesSnapshotData(entryPath, basePath, ignorePatterns),
-      );
-    } else if (entry.isFile()) {
-      const relativePath = path.relative(basePath, entryPath);
-      try {
-        const content = fs.readFileSync(entryPath, "utf-8");
-        files.push({ relativePath, content });
-      } catch (error) {
-        // Could be a binary file or permission issue, log and add a placeholder
-        const e = error as Error;
-        console.warn(`Could not read file ${entryPath}: ${e.message}`);
-        files.push({
-          relativePath,
-          content: `[Error reading file: ${e.message}]`,
-        });
-      }
-    }
-  }
-  return files;
 }
