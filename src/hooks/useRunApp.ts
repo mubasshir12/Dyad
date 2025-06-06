@@ -101,7 +101,8 @@ export function useRunApp() {
 
   const onHotModuleReload = useCallback(() => {
     setPreviewPanelKey((prevKey) => prevKey + 1);
-  }, [setPreviewPanelKey]);
+    setPreviewErrorMessage(undefined);
+  }, [setPreviewErrorMessage, setPreviewPanelKey]);
 
   const restartApp = useCallback(
     async ({

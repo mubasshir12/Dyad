@@ -171,6 +171,20 @@ export class PageObject {
     return this.page.getByTestId("preview-iframe-element");
   }
 
+  async clickFixErrorWithAI() {
+    await this.page.getByRole("button", { name: "Fix error with AI" }).click();
+  }
+
+  async snapshotPreviewErrorBanner() {
+    await expect(this.locatePreviewErrorBanner()).toMatchAriaSnapshot({
+      timeout: Timeout.MEDIUM,
+    });
+  }
+
+  locatePreviewErrorBanner() {
+    return this.page.getByTestId("preview-error-banner");
+  }
+
   async snapshotPreview({ name }: { name?: string } = {}) {
     const iframe = this.getPreviewIframeElement();
     await expect(iframe.contentFrame().locator("body")).toMatchAriaSnapshot({
