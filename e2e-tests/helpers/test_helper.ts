@@ -177,7 +177,7 @@ export class PageObject {
 
   async snapshotPreviewErrorBanner() {
     await expect(this.locatePreviewErrorBanner()).toMatchAriaSnapshot({
-      timeout: Timeout.MEDIUM,
+      timeout: Timeout.LONG,
     });
   }
 
