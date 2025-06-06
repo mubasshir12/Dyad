@@ -78,7 +78,6 @@ export function ChatInput({ chatId }: { chatId?: number }) {
   const [, setMessages] = useAtom<Message[]>(chatMessagesAtom);
   const setIsPreviewOpen = useSetAtom(isPreviewOpenAtom);
   const [showTokenBar, setShowTokenBar] = useAtom(showTokenBarAtom);
-  const { refreshAppIframe } = useRunApp();
 
   // Use the attachments hook
   const {
@@ -199,7 +198,6 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       setIsApproving(false);
       setIsPreviewOpen(true);
       refreshVersions();
-      refreshAppIframe();
 
       // Keep same as handleReject
       refreshProposal();
