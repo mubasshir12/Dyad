@@ -9,10 +9,9 @@ import { execSync } from "child_process";
 const showDebugLogs = process.env.DEBUG_LOGS === "true";
 
 export const Timeout = {
-  // Why make this a constant? In some platforms, perhaps locally,
-  // we may want to shorten this.
-  LONG: os.platform() === "win32" ? 60_000 : 30_000,
-  MEDIUM: os.platform() === "win32" ? 30_000 : 15_000,
+  // Things generally take longer on CI, so we make them longer.
+  LONG: process.env.CI ? 60_000 : 30_000,
+  MEDIUM: process.env.CI ? 30_000 : 15_000,
 };
 
 export class PageObject {
