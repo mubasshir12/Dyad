@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { test } from "./helpers/test_helper";
+import { test, Timeout } from "./helpers/test_helper";
 
 const tests = [
   {
@@ -36,7 +36,10 @@ for (const { testName, newAppName, buttonName, expectedVersion } of tests) {
     // Expect to be on the new app's detail page
     await expect(
       po.page.getByRole("heading", { name: newAppName }),
-    ).toBeVisible();
+    ).toBeVisible({
+      // Potentially takes a while for the copy to complete
+      timeout: Timeout.MEDIUM,
+    });
 
     const currentAppName = await po.getCurrentAppName();
     expect(currentAppName).toBe(newAppName);
