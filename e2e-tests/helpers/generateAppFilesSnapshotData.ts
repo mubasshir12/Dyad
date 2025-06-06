@@ -85,7 +85,11 @@ export function generateAppFilesSnapshotData(
     if (entry.isDirectory()) {
       files = files.concat(generateAppFilesSnapshotData(entryPath, basePath));
     } else if (entry.isFile()) {
-      const relativePath = path.relative(basePath, entryPath);
+      const relativePath = path
+        .relative(basePath, entryPath)
+        // Normalize path separators to always use /
+        // to prevent diffs on Windows.
+        .replace(/\\/g, "/");
       try {
         if (isBinaryFile(entryPath)) {
           const fileBuffer = fs.readFileSync(entryPath);
