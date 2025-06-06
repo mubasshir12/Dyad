@@ -1,6 +1,6 @@
-import { test } from "./helpers/test_helper";
+import { testSkipIfWindows } from "./helpers/test_helper";
 
-test("fix error with AI", async ({ po }) => {
+testSkipIfWindows("fix error with AI", async ({ po }) => {
   await po.setUp({ autoApprove: true });
   await po.sendPrompt("tc=create-error");
 
