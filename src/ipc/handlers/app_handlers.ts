@@ -232,7 +232,7 @@ export function registerAppHandlers() {
 
   handle(
     "copy-app",
-    async (_, params: CopyAppParams): Promise<{ app: any; chatId: number }> => {
+    async (_, params: CopyAppParams): Promise<{ app: any }> => {
       const { appId, newAppName, withHistory } = params;
 
       // 1. Check if an app with the new name already exists
@@ -305,15 +305,7 @@ export function registerAppHandlers() {
         })
         .returning();
 
-      // 5. Create a new chat for the new app
-      const [chat] = await db
-        .insert(chats)
-        .values({
-          appId: newDbApp.id,
-        })
-        .returning();
-
-      return { app: newDbApp, chatId: chat.id };
+      return { app: newDbApp };
     },
   );
 

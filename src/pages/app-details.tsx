@@ -37,6 +37,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { invalidateAppQuery } from "@/hooks/useLoadApp";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useCheckName } from "@/hooks/useCheckName";
 
 export default function AppDetailsPage() {
   const navigate = useNavigate();
@@ -60,10 +62,14 @@ export default function AppDetailsPage() {
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [newCopyAppName, setNewCopyAppName] = useState("");
 
-  const [nameExists, setNameExists] = useState<boolean>(false);
-  const [isCheckingName, setIsCheckingName] = useState<boolean>(false);
   const queryClient = useQueryClient();
   const setSelectedAppId = useSetAtom(selectedAppIdAtom);
+
+  const debouncedNewCopyAppName = useDebounce(newCopyAppName, 150);
+  const { data: checkNameResult, isLoading: isCheckingName } = useCheckName(
+    debouncedNewCopyAppName,
+  );
+  const nameExists = checkNameResult?.exists ?? false;
 
   // Get the appId from search params and find the corresponding app
   const appId = search.appId ? Number(search.appId) : null;
@@ -155,38 +161,14 @@ export default function AppDetailsPage() {
     }
   };
 
-  const checkAppName = async (name: string): Promise<void> => {
-    if (!name.trim()) {
-      setNameExists(false);
-      return;
-    }
-    setIsCheckingName(true);
-    try {
-      const result = await IpcClient.getInstance().checkAppName({
-        appName: name,
-      });
-      setNameExists(result.exists);
-    } catch (error: unknown) {
-      showError(error);
-    } finally {
-      setIsCheckingName(false);
-    }
-  };
-
-  const handleAppNameChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const newName = e.target.value;
-    setNewCopyAppName(newName);
-    await checkAppName(newName);
+  const handleAppNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewCopyAppName(e.target.value);
   };
 
   const handleOpenCopyDialog = () => {
     if (selectedApp) {
       setNewCopyAppName(`${selectedApp.name}-copy`);
-      setNameExists(false); // Reset on open
       setIsCopyDialogOpen(true);
-      checkAppName(`${selectedApp.name}-copy`); // Check default name
     }
   };
 
@@ -202,11 +184,13 @@ export default function AppDetailsPage() {
       });
     },
     onSuccess: async (data) => {
-      setSelectedAppId(data.app.id);
-      await invalidateAppQuery(queryClient, { appId: data.app.id });
+      const appId = data.app.id;
+      setSelectedAppId(appId);
+      await invalidateAppQuery(queryClient, { appId });
       await refreshApps();
+      await IpcClient.getInstance().createChat(appId);
       setIsCopyDialogOpen(false);
-      navigate({ to: "/app-details", search: { appId: data.app.id } });
+      navigate({ to: "/app-details", search: { appId } });
     },
     onError: (error) => {
       showError(error);

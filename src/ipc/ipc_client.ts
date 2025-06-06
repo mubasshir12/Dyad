@@ -466,9 +466,7 @@ export class IpcClient {
     });
   }
 
-  public async copyApp(
-    params: CopyAppParams,
-  ): Promise<{ app: any; chatId: number }> {
+  public async copyApp(params: CopyAppParams): Promise<{ app: App }> {
     return this.ipcRenderer.invoke("copy-app", params);
   }
 
