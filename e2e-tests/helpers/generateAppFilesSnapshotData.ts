@@ -100,7 +100,10 @@ export function generateAppFilesSnapshotData(
           continue;
         }
 
-        let content = fs.readFileSync(entryPath, "utf-8");
+        let content = fs
+          .readFileSync(entryPath, "utf-8")
+          // Normalize line endings to always use \n
+          .replace(/\r\n/g, "\n");
         if (entry.name === "package.json") {
           const packageJson = JSON.parse(content);
           packageJson.packageManager = "<scrubbed>";
