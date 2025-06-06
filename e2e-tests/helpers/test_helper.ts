@@ -408,10 +408,13 @@ export class PageObject {
     const settings = path.join(this.userDataDir, "user-settings.json");
     const settingsContent = fs.readFileSync(settings, "utf-8");
     //  Sanitize the "telemetryUserId" since it's a UUID
-    const sanitizedSettingsContent = settingsContent.replace(
-      /"telemetryUserId": "[^"]*"/g,
-      '"telemetryUserId": "[UUID]"',
-    );
+    const sanitizedSettingsContent = settingsContent
+      .replace(/"telemetryUserId": "[^"]*"/g, '"telemetryUserId": "[UUID]"')
+      // Don't snapshot this otherwise it'll diff with every release.
+      .replace(
+        /"lastShownReleaseNotesVersion": "[^"]*"/g,
+        '"lastShownReleaseNotesVersion": "[scrubbed]"',
+      );
 
     expect(sanitizedSettingsContent).toMatchSnapshot();
   }
