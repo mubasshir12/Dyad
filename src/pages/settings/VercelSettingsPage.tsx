@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ArrowLeft, KeyRound, ExternalLink, Rocket } from "lucide-react";
+import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2 } from "lucide-react"; // Added Info and Trash2
 import { useSettings } from "@/hooks/useSettings";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { IpcClient } from "@/ipc/ipc_client"; // Added IpcClient import
 
 export function VercelSettingsPage() {
   const router = useRouter();
