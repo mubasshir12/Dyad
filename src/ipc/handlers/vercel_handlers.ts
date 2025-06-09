@@ -151,8 +151,6 @@ export function registerVercelHandlers() {
         throw new Error(`Dyad app ${appId} must be connected to a GitHub repository before deploying to Vercel.`);
     }
 
-    // Fetch Vercel project details to get its name, as Vercel API prefers name for deployments if not using projectId directly in some contexts.
-    // However, for /v13/deployments, projectId is fine. We'll use the name for the payload.
     const vercelProjectName = await getVercelProjectName(dyadApp.vercelProjectId);
     if (!vercelProjectName) {
         throw new Error(`Could not fetch Vercel project name for ID ${dyadApp.vercelProjectId}.`);
@@ -162,10 +160,14 @@ export function registerVercelHandlers() {
 
     try {
       const deployPayload = {
-        name: vercelProjectName, // Name of the Vercel project
-        target: "production",    // Deploy to production
-        // Vercel will use the Git repository linked to the project.
-        // We ensure the latest commit on 'main' is pushed to GitHub before this.
+        name: vercelProjectName,
+        target: "production",
+        gitSource: {
+          type: "github",
+          org: dyadApp.githubOrg,
+          repo: dyadApp.githubRepo,
+          ref: "main", // Assumendo che il branch di default sia 'main'
+        },
       };
 
       const response = await fetch(`${VERCEL_API_BASE_URL}/v13/deployments`, {
