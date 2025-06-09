@@ -1,35 +1,91 @@
-import { useState } from "react";
-import { useTheme } from "../contexts/ThemeContext";
-import { ProviderSettingsGrid } from "@/components/ProviderSettings";
-import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { IpcClient } from "@/ipc/ipc_client";
-import { showSuccess, showError } from "@/lib/toast";
-import { AutoApproveSwitch } from "@/components/AutoApproveSwitch";
-import { TelemetrySwitch } from "@/components/TelemetrySwitch";
-import { MaxChatTurnsSelector } from "@/components/MaxChatTurnsSelector";
-import { useSettings } from "@/hooks/useSettings";
-import { useAppVersion } from "@/hooks/useAppVersion";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Github, DatabaseZap, Rocket } from "lucide-react";
-import { useRouter } from "@tanstack/react-router";
-import { Switch } from "@/components/ui/switch";
+import { useState, useEffect }_from_ "react";
+import { useTheme } _from_ "../contexts/ThemeContext";
+import { ProviderSettingsGrid } _from_ "@/components/ProviderSettings";
+import ConfirmationDialog _from_ "@/components/ConfirmationDialog";
+import { IpcClient, GitHubDeviceFlowUpdateData, GitHubDeviceFlowErrorData, GitHubDeviceFlowSuccessData } _from_ "@/ipc/ipc_client";
+import { showSuccess, showError } _from_ "@/lib/toast";
+import { AutoApproveSwitch } _from_ "@/components/AutoApproveSwitch";
+import { TelemetrySwitch } _from_ "@/components/TelemetrySwitch";
+import { MaxChatTurnsSelector } _from_ "@/components/MaxChatTurnsSelector";
+import { useSettings } _from_ "@/hooks/useSettings";
+import { useAppVersion } _from_ "@/hooks/useAppVersion";
+import { Button } _from_ "@/components/ui/button";
+import { ArrowLeft, Github, DatabaseZap, Rocket, ExternalLink, Clipboard, Check, Loader2 } _from_ "lucide-react";
+import { useRouter } _from_ "@tanstack/react-router";
+import { Switch } _from_ "@/components/ui/switch";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { INTEGRATION_PROVIDERS } from "@/shared/integrations";
-import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
-import { vercelSettingsRoute } from "@/routes/settings/vercel";
+  CardContent,
+} _from_ "@/components/ui/card";
+import { INTEGRATION_PROVIDERS } _from_ "@/shared/integrations";
+import { providerSettingsRoute } _from_ "@/routes/settings/providers/$provider";
+import { vercelSettingsRoute } _from_ "@/routes/settings/vercel";
+import { GitHubIntegration } _from_ "@/components/GitHubIntegration"; // Per il pulsante Disconnect
+import { SupabaseIntegration } _from_ "@/components/SupabaseIntegration"; // Per il pulsante Disconnect
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const appVersion = useAppVersion();
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, refreshSettings } = useSettings();
   const router = useRouter();
+
+  // State per il GitHub Device Flow
+  const [githubUserCode, setGithubUserCode] = useState<string | null>(null);
+  const [githubVerificationUri, setGithubVerificationUri] = useState<string | null>(null);
+  const [githubError, setGithubError] = useState<string | null>(null);
+  const [isConnectingToGithub, setIsConnectingToGithub] = useState(false);
+  const [githubStatusMessage, setGithubStatusMessage] = useState<string | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [showGithubAuthModal, setShowGithubAuthModal] = useState(false);
+
+
+  useEffect(() => {
+    const cleanupFunctions: (() => void)[] = [];
+
+    if (isConnectingToGithub) {
+      const removeUpdateListener =
+        IpcClient.getInstance().onGithubDeviceFlowUpdate((data: GitHubDeviceFlowUpdateData) => {
+          if (data.userCode) setGithubUserCode(data.userCode);
+          if (data.verificationUri) setGithubVerificationUri(data.verificationUri);
+          if (data.message) setGithubStatusMessage(data.message);
+          setGithubError(null);
+        });
+      cleanupFunctions.push(removeUpdateListener);
+
+      const removeSuccessListener =
+        IpcClient.getInstance().onGithubDeviceFlowSuccess((data: GitHubDeviceFlowSuccessData) => {
+          setGithubStatusMessage(data.message || "Successfully connected to GitHub!");
+          setGithubUserCode(null);
+          setGithubVerificationUri(null);
+          setGithubError(null);
+          setIsConnectingToGithub(false);
+          setShowGithubAuthModal(false);
+          refreshSettings();
+        });
+      cleanupFunctions.push(removeSuccessListener);
+
+      const removeErrorListener = IpcClient.getInstance().onGithubDeviceFlowError(
+        (data: GitHubDeviceFlowErrorData) => {
+          setGithubError(data.error || "An unknown error occurred.");
+          setGithubStatusMessage(null);
+          setGithubUserCode(null);
+          setGithubVerificationUri(null);
+          setIsConnectingToGithub(false);
+          // Non chiudere il modale in caso di errore, così l'utente vede il messaggio
+        },
+      );
+      cleanupFunctions.push(removeErrorListener);
+    }
+    return () => {
+      cleanupFunctions.forEach((cleanup) => cleanup());
+    };
+  }, [isConnectingToGithub, refreshSettings]);
+
 
   const handleResetEverything = async () => {
     setIsResetting(true);
@@ -51,13 +107,13 @@ export default function SettingsPage() {
   const getIntegrationStatus = (integrationId: string) => {
     switch (integrationId) {
       case "github":
-        return settings?.githubAccessToken ? "Ready" : "Needs Setup";
+        return settings?.githubAccessToken ? "Connected" : "Not Connected";
       case "supabase":
-        return settings?.supabase?.accessToken ? "Ready" : "Needs Setup";
+        return settings?.supabase?.accessToken ? "Connected" : "Not Connected";
       case "vercel":
-        return settings?.vercel?.accessToken ? "Ready" : "Needs Setup";
+        return settings?.vercel?.accessToken ? "Connected" : "Not Connected";
       default:
-        return "Needs Setup";
+        return "Not Connected";
     }
   };
 
@@ -78,12 +134,25 @@ export default function SettingsPage() {
     if (integrationId === "vercel") {
       router.navigate({ to: vercelSettingsRoute.id });
     } else if (integrationId === "github") {
-      // GitHub doesn't have a dedicated settings page yet, it's handled in app-details
-      // For now, we can just show a toast or navigate to a placeholder if needed.
-      showError("GitHub integration is managed per-app in App Details.");
+      if (!settings?.githubAccessToken) {
+        setIsConnectingToGithub(true);
+        setGithubError(null);
+        setGithubUserCode(null);
+        setGithubVerificationUri(null);
+        setGithubStatusMessage("Requesting device code from GitHub...");
+        setShowGithubAuthModal(true);
+        IpcClient.getInstance().startGithubDeviceFlow(null); // null appId per contesto globale
+      } else {
+        // Già connesso, potrebbe mostrare un messaggio o permettere la disconnessione qui
+        // Per ora, la disconnessione è gestita dal componente GitHubIntegration
+        showInfo("Already connected to GitHub. You can manage the connection below.");
+      }
     } else if (integrationId === "supabase") {
-      // Supabase integration is also managed per-app in App Details
-      showError("Supabase integration is managed per-app in App Details.");
+      if (!settings?.supabase?.accessToken) {
+        IpcClient.getInstance().openExternalUrl("https://supabase-oauth.dyad.sh/api/connect-supabase/login");
+      } else {
+        showInfo("Already connected to Supabase. You can manage the connection below.");
+      }
     }
   };
 
@@ -103,8 +172,6 @@ export default function SettingsPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Settings
           </h1>
-
-          {/* App Version Section */}
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <span className="mr-2 font-medium">App Version:</span>
             <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-800 dark:text-gray-200 font-mono">
@@ -118,13 +185,11 @@ export default function SettingsPage() {
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               General Settings
             </h2>
-
             <div className="space-y-4 mb-4">
               <div className="flex items-center gap-4">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Theme
                 </label>
-
                 <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex">
                   {(["system", "light", "dark"] as const).map((option) => (
                     <button
@@ -146,14 +211,12 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-
             <div className="space-y-1">
               <AutoApproveSwitch showToast={false} />
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 This will automatically approve code changes and run them.
               </div>
             </div>
-
             <div className="mt-4">
               <MaxChatTurnsSelector />
             </div>
@@ -163,10 +226,9 @@ export default function SettingsPage() {
             <ProviderSettingsGrid />
           </div>
 
-          {/* Deployment Integrations Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              Deployment Integrations
+              Integrations
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {INTEGRATION_PROVIDERS.map((integration) => (
@@ -190,6 +252,10 @@ export default function SettingsPage() {
                 </Card>
               ))}
             </div>
+            <div className="mt-6 space-y-4">
+              <GitHubIntegration />
+              <SupabaseIntegration />
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -203,7 +269,6 @@ export default function SettingsPage() {
                   This records anonymous usage data to improve the product.
                 </div>
               </div>
-
               <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <span className="mr-2 font-medium">Telemetry ID:</span>
                 <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-800 dark:text-gray-200 font-mono">
@@ -213,13 +278,11 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Experiments Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Experiments
             </h2>
             <div className="space-y-4">
-              {/* Enable File Editing Experiment */}
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="enable-file-editing"
@@ -247,12 +310,10 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Danger Zone */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-red-200 dark:border-red-800">
             <h2 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
               Danger Zone
             </h2>
-
             <div className="space-y-4">
               <div className="flex items-start justify-between flex-col sm:flex-row sm:items-center gap-4">
                 <div>
@@ -286,6 +347,90 @@ export default function SettingsPage() {
         onConfirm={handleResetEverything}
         onCancel={() => setIsResetDialogOpen(false)}
       />
+
+      {/* GitHub Device Flow Modal */}
+      <Dialog open={showGithubAuthModal} onOpenChange={(open) => {
+        if (!open) {
+          // Se l'utente chiude il modale, interrompiamo il tentativo di connessione
+          setIsConnectingToGithub(false);
+          setGithubUserCode(null);
+          setGithubVerificationUri(null);
+          setGithubError(null);
+          setGithubStatusMessage(null);
+        }
+        setShowGithubAuthModal(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Github className="mr-2 h-5 w-5" /> Connect to GitHub
+            </DialogTitle>
+            <DialogDescription>
+              Follow these steps to authorize Dyad with your GitHub account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            {githubError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                Error: {githubError}
+              </p>
+            )}
+            {isConnectingToGithub && !githubUserCode && !githubError && (
+              <div className="flex items-center justify-center text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {githubStatusMessage || "Requesting authorization code..."}
+              </div>
+            )}
+            {githubUserCode && githubVerificationUri && (
+              <div className="space-y-2 text-sm">
+                <p>
+                  1. Open this URL in your browser:
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto ml-1 text-blue-600 dark:text-blue-400"
+                    onClick={() => IpcClient.getInstance().openExternalUrl(githubVerificationUri)}
+                  >
+                    {githubVerificationUri} <ExternalLink className="ml-1 h-3 w-3" />
+                  </Button>
+                </p>
+                <div>
+                  2. Enter this code:
+                  <div className="flex items-center gap-2 mt-1">
+                    <strong className="font-mono text-lg tracking-wider bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-md">
+                      {githubUserCode}
+                    </strong>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => {
+                        navigator.clipboard.writeText(githubUserCode).then(() => {
+                          setCodeCopied(true);
+                          setTimeout(() => setCodeCopied(false), 2000);
+                        });
+                      }}
+                      title="Copy code"
+                    >
+                      {codeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Clipboard className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {githubStatusMessage && !githubUserCode && (
+              <p className="text-sm text-muted-foreground">{githubStatusMessage}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsConnectingToGithub(false); // Interrompi il tentativo
+              setShowGithubAuthModal(false);
+            }}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
