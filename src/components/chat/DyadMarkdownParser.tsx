@@ -46,7 +46,7 @@ const customLink = ({
       const url = props.href;
       if (url) {
         e.preventDefault();
-        IpcClient.getInstance().openExternalUrl(url);
+        IpcClient.getInstance().external.openExternalUrl(url);
       }
     }}
   />
