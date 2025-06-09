@@ -75,6 +75,8 @@ const validInvokeChannels = [
   "check-app-name",
   "rename-branch",
   "clear-session-data",
+  "vercel:list-projects", // Added Vercel channel
+  "vercel:deploy-project", // Added Vercel channel
 ] as const;
 
 // Add valid receive channels

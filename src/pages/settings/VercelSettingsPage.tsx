@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2, LinkIcon, UploadCloudIcon } from "lucide-react";
+import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2, LinkIcon, UploadCloudIcon, Loader2 } from "lucide-react"; // Added Loader2
 import { useSettings } from "@/hooks/useSettings";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { IpcClient } from "@/ipc/ipc_client";
-import { VercelProject } from "@/ipc/ipc_types"; // Assuming VercelProject type is defined
+import { VercelProject } from "@/ipc/ipc_types";
 
 export function VercelSettingsPage() {
   const router = useRouter();
@@ -41,8 +41,6 @@ export function VercelSettingsPage() {
 
   useEffect(() => {
     if (isConfigured && activeAccessToken) {
-      // Placeholder: In a real scenario, you'd fetch projects here
-      // For now, we'll use the placeholder data from the IPC handler
       const fetchProjects = async () => {
         setIsLoadingProjects(true);
         try {
@@ -342,7 +340,10 @@ export function VercelSettingsPage() {
           <div className="mt-8 border-t pt-6">
             <h2 className="text-xl font-semibold mb-2">Link to Vercel Project</h2>
             {isLoadingProjects ? (
-              <Skeleton className="h-10 w-full mb-4" />
+              <div className="space-y-2">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
             ) : vercelProjects.length > 0 ? (
               <div className="space-y-2 mb-4">
                 {vercelProjects.map(project => (
@@ -358,7 +359,9 @@ export function VercelSettingsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground mb-4">No Vercel projects found or failed to load.</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                No Vercel projects found. Ensure your Access Token is correct and has permission to list projects.
+              </p>
             )}
 
             <h2 className="text-xl font-semibold mb-2 mt-6">Deploy</h2>
@@ -367,7 +370,7 @@ export function VercelSettingsPage() {
               disabled={!selectedVercelProject || isDeploying}
               className="w-full"
             >
-              <UploadCloudIcon className="mr-2 h-4 w-4" />
+              {isDeploying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloudIcon className="mr-2 h-4 w-4" />}
               {isDeploying ? "Deploying..." : "Deploy to Vercel"}
             </Button>
             {isDeploying && <p className="text-sm text-muted-foreground mt-2 text-center">Deployment in progress...</p>}
