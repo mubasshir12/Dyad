@@ -4,7 +4,7 @@
   "description": "Dyad is a local, open-source AI app builder.",
   "main": "src/main.ts",
   "scripts": {
-    "start": "electron-forge start",
+    "start": "node -r esbuild-register electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
