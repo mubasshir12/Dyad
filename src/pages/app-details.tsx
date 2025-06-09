@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { GitHubConnector } from "@/components/GitHubConnector";
 import { SupabaseConnector } from "@/components/SupabaseConnector";
+import { VercelConnector } from "@/components/VercelConnector"; // Import VercelConnector
 import { showError } from "@/lib/toast";
 
 export default function AppDetailsPage() {
@@ -266,6 +267,7 @@ export default function AppDetailsPage() {
           </Button>
           <GitHubConnector appId={appId} folderName={selectedApp.path} />
           {appId && <SupabaseConnector appId={appId} />}
+          {appId && <VercelConnector appId={appId} />} {/* Add VercelConnector here */}
         </div>
 
         {/* Rename Dialog */}
