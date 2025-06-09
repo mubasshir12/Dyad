@@ -1,30 +1,37 @@
-import { useState, useEffect }_from_ "react";
-import { useTheme } _from_ "../contexts/ThemeContext";
-import { ProviderSettingsGrid } _from_ "@/components/ProviderSettings";
-import ConfirmationDialog _from_ "@/components/ConfirmationDialog";
-import { IpcClient, GitHubDeviceFlowUpdateData, GitHubDeviceFlowErrorData, GitHubDeviceFlowSuccessData } _from_ "@/ipc/ipc_client";
-import { showSuccess, showError } _from_ "@/lib/toast";
-import { AutoApproveSwitch } _from_ "@/components/AutoApproveSwitch";
-import { TelemetrySwitch } _from_ "@/components/TelemetrySwitch";
-import { MaxChatTurnsSelector } _from_ "@/components/MaxChatTurnsSelector";
-import { useSettings } _from_ "@/hooks/useSettings";
-import { useAppVersion } _from_ "@/hooks/useAppVersion";
-import { Button } _from_ "@/components/ui/button";
-import { ArrowLeft, Github, DatabaseZap, Rocket, ExternalLink, Clipboard, Check, Loader2 } _from_ "lucide-react";
-import { useRouter } _from_ "@tanstack/react-router";
-import { Switch } _from_ "@/components/ui/switch";
+import { useState, useEffect } from "react";
+import { useTheme } from "../contexts/ThemeContext";
+import { ProviderSettingsGrid } from "@/components/ProviderSettings";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
+import { IpcClient, GitHubDeviceFlowUpdateData, GitHubDeviceFlowErrorData, GitHubDeviceFlowSuccessData } from "@/ipc/ipc_client";
+import { showSuccess, showError, showInfo } from "@/lib/toast";
+import { AutoApproveSwitch } from "@/components/AutoApproveSwitch";
+import { TelemetrySwitch } from "@/components/TelemetrySwitch";
+import { MaxChatTurnsSelector } from "@/components/MaxChatTurnsSelector";
+import { useSettings } from "@/hooks/useSettings";
+import { useAppVersion } from "@/hooks/useAppVersion";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Github, DatabaseZap, Rocket, ExternalLink, Clipboard, Check, Loader2 } from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardContent,
-} _from_ "@/components/ui/card";
-import { INTEGRATION_PROVIDERS } _from_ "@/shared/integrations";
-import { providerSettingsRoute } _from_ "@/routes/settings/providers/$provider";
-import { vercelSettingsRoute } _from_ "@/routes/settings/vercel";
-import { GitHubIntegration } _from_ "@/components/GitHubIntegration"; // Per il pulsante Disconnect
-import { SupabaseIntegration } _from_ "@/components/SupabaseIntegration"; // Per il pulsante Disconnect
+} from "@/components/ui/card";
+import { INTEGRATION_PROVIDERS } from "@/shared/integrations";
+import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
+import { vercelSettingsRoute } from "@/routes/settings/vercel";
+import { GitHubIntegration } from "@/components/GitHubIntegration"; // Per il pulsante Disconnect
+import { SupabaseIntegration } from "@/components/SupabaseIntegration"; // Per il pulsante Disconnect
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
