@@ -79,12 +79,15 @@ async function getSystemDebugInfo({
         // [2025-06-09 13:55:05.209] [debug] (runShellCommand) Command "which node" succeeded with code 0: /usr/local/bin/node
         const logLevelRegex = /\[.*?\] \[(\w+)\]/;
         const match = line.match(logLevelRegex);
-        if (match) {
-          const logLevel = match[1];
-          if (level === "warn") {
-            return logLevel === "warn" || logLevel === "error";
-          }
+        if (!match) {
+          // Include non-matching lines (like stack traces) when filtering for warnings
+          return true;
         }
+        const logLevel = match[1];
+        if (level === "warn") {
+          return logLevel === "warn" || logLevel === "error";
+        }
+        return true;
       });
 
       logs = logLines.slice(-linesOfLogs).join("\n");
