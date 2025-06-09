@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2 } from "lucide-react"; // Added Info and Trash2
+import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2, LinkIcon, UploadCloudIcon } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { showError } from "@/lib/toast";
+import { showError, showSuccess } from "@/lib/toast";
 import { INTEGRATION_PROVIDERS } from "@/shared/integrations";
 import {
   Accordion,
@@ -14,7 +14,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { IpcClient } from "@/ipc/ipc_client"; // Added IpcClient import
+import { IpcClient } from "@/ipc/ipc_client";
+import { VercelProject } from "@/ipc/ipc_types"; // Assuming VercelProject type is defined
 
 export function VercelSettingsPage() {
   const router = useRouter();
@@ -26,10 +27,40 @@ export function VercelSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  const [vercelProjects, setVercelProjects] = useState<VercelProject[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [selectedVercelProject, setSelectedVercelProject] = useState<string | null>(null);
+  const [isDeploying, setIsDeploying] = useState(false);
+
+
   const userAccessToken = settings?.vercel?.accessToken?.value;
   const envAccessToken = vercelDetails?.envVarName ? envVars[vercelDetails.envVarName] : undefined;
+  const activeAccessToken = userAccessToken || envAccessToken;
 
-  const isConfigured = !!userAccessToken || !!envAccessToken;
+  const isConfigured = !!activeAccessToken;
+
+  useEffect(() => {
+    if (isConfigured && activeAccessToken) {
+      // Placeholder: In a real scenario, you'd fetch projects here
+      // For now, we'll use the placeholder data from the IPC handler
+      const fetchProjects = async () => {
+        setIsLoadingProjects(true);
+        try {
+          const projects = await IpcClient.getInstance().listVercelProjects();
+          setVercelProjects(projects);
+        } catch (err) {
+          showError("Failed to load Vercel projects: " + (err as Error).message);
+          setVercelProjects([]);
+        } finally {
+          setIsLoadingProjects(false);
+        }
+      };
+      fetchProjects();
+    } else {
+      setVercelProjects([]);
+    }
+  }, [isConfigured, activeAccessToken]);
+
 
   const handleSaveKey = async () => {
     if (!accessTokenInput) {
@@ -47,9 +78,11 @@ export function VercelSettingsPage() {
         },
       });
       setAccessTokenInput(""); // Clear input on success
+      showSuccess("Vercel Access Token saved successfully!");
     } catch (error: any) {
       console.error("Error saving Vercel access token:", error);
       setSaveError(error.message || "Failed to save Vercel access token.");
+      showError(error.message || "Failed to save Vercel access token.");
     } finally {
       setIsSaving(false);
     }
@@ -64,13 +97,41 @@ export function VercelSettingsPage() {
           accessToken: undefined,
         },
       });
+      showSuccess("Vercel Access Token deleted successfully!");
     } catch (error: any) {
       console.error("Error deleting Vercel access token:", error);
       setSaveError(error.message || "Failed to delete Vercel access token.");
+      showError(error.message || "Failed to delete Vercel access token.");
     } finally {
       setIsSaving(false);
     }
   };
+
+  const handleLinkProject = (projectId: string) => {
+    // Placeholder: In a real scenario, you'd save this link to your app's settings
+    setSelectedVercelProject(projectId);
+    showSuccess(`Project ${projectId} linked (placeholder).`);
+    console.log("Selected Vercel Project ID:", projectId);
+  };
+
+  const handleDeploy = async () => {
+    if (!selectedVercelProject) {
+      showError("Please link a Vercel project first.");
+      return;
+    }
+    setIsDeploying(true);
+    try {
+      // Placeholder: In a real scenario, you'd get the current Dyad app ID
+      const currentDyadAppId = 1; // Replace with actual app ID logic
+      await IpcClient.getInstance().deployVercelProject({ appId: currentDyadAppId, projectId: selectedVercelProject });
+      showSuccess("Deployment to Vercel initiated (placeholder).");
+    } catch (err) {
+      showError("Failed to initiate deployment: " + (err as Error).message);
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
 
   useEffect(() => {
     if (saveError) {
@@ -276,6 +337,43 @@ export function VercelSettingsPage() {
             )}
           </Accordion>
         )}
+
+        {isConfigured && (
+          <div className="mt-8 border-t pt-6">
+            <h2 className="text-xl font-semibold mb-2">Link to Vercel Project</h2>
+            {isLoadingProjects ? (
+              <Skeleton className="h-10 w-full mb-4" />
+            ) : vercelProjects.length > 0 ? (
+              <div className="space-y-2 mb-4">
+                {vercelProjects.map(project => (
+                  <Button
+                    key={project.id}
+                    variant={selectedVercelProject === project.id ? "default" : "outline"}
+                    onClick={() => handleLinkProject(project.id)}
+                    className="w-full justify-start"
+                  >
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    {project.name}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground mb-4">No Vercel projects found or failed to load.</p>
+            )}
+
+            <h2 className="text-xl font-semibold mb-2 mt-6">Deploy</h2>
+            <Button
+              onClick={handleDeploy}
+              disabled={!selectedVercelProject || isDeploying}
+              className="w-full"
+            >
+              <UploadCloudIcon className="mr-2 h-4 w-4" />
+              {isDeploying ? "Deploying..." : "Deploy to Vercel"}
+            </Button>
+            {isDeploying && <p className="text-sm text-muted-foreground mt-2 text-center">Deployment in progress...</p>}
+          </div>
+        )}
+
         <div className="h-24"></div>
       </div>
     </div>
