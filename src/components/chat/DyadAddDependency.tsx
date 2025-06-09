@@ -45,7 +45,7 @@ export const DyadAddDependency: React.FC<DyadAddDependencyProps> = ({
                     className="cursor-pointer text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                     key={p}
                     onClick={() => {
-                      IpcClient.getInstance().external.openExternalUrl(
+                      IpcClient.getInstance().openExternalUrl(
                         `https://www.npmjs.com/package/${p}`,
                       );
                     }}

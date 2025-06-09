@@ -127,7 +127,7 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
       isSavingRef.current = true;
 
       const ipcClient = IpcClient.getInstance();
-      await ipcClient.app.editAppFile(appId, filePath, currentValueRef.current);
+      await ipcClient.editAppFile(appId, filePath, currentValueRef.current);
 
       originalValueRef.current = currentValueRef.current;
       needsSaveRef.current = false;

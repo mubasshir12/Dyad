@@ -76,7 +76,7 @@ function ExternalLink({
   return (
     <a
       className="underline cursor-pointer text-blue-500 hover:text-blue-700"
-      onClick={() => IpcClient.getInstance().external.openExternalUrl(href)}
+      onClick={() => IpcClient.getInstance().openExternalUrl(href)}
     >
       {children}
     </a>

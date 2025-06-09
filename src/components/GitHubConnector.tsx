@@ -35,7 +35,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
     setGithubStatusMessage("Requesting device code from GitHub...");
 
     // Send IPC message to main process to start the flow
-    IpcClient.getInstance().external.startGithubDeviceFlow(appId);
+    IpcClient.getInstance().startGithubDeviceFlow(appId);
   };
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
 
     // Listener for updates (user code, verification uri, status messages)
     const removeUpdateListener =
-      IpcClient.getInstance().external.onGithubDeviceFlowUpdate((data) => {
+      IpcClient.getInstance().onGithubDeviceFlowUpdate((data) => {
         console.log("Received github:flow-update", data);
         if (data.userCode) {
           setGithubUserCode(data.userCode);
@@ -70,7 +70,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
 
     // Listener for success
     const removeSuccessListener =
-      IpcClient.getInstance().external.onGithubDeviceFlowSuccess((data) => {
+      IpcClient.getInstance().onGithubDeviceFlowSuccess((data) => {
         console.log("Received github:flow-success", data);
         setGithubStatusMessage("Successfully connected to GitHub!");
         setGithubUserCode(null); // Clear user-facing info
@@ -83,7 +83,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
     cleanupFunctions.push(removeSuccessListener);
 
     // Listener for errors
-    const removeErrorListener = IpcClient.getInstance().external.onGithubDeviceFlowError(
+    const removeErrorListener = IpcClient.getInstance().onGithubDeviceFlowError(
       (data) => {
         console.log("Received github:flow-error", data);
         setGithubError(data.error || "An unknown error occurred.");
@@ -132,7 +132,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
     if (!repoName) return;
     setIsCheckingRepo(true);
     try {
-      const result = await IpcClient.getInstance().external.checkGithubRepoAvailable(
+      const result = await IpcClient.getInstance().checkGithubRepoAvailable(
         githubOrg,
         repoName,
       );
@@ -153,7 +153,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
     setIsCreatingRepo(true);
     setCreateRepoSuccess(false);
     try {
-      await IpcClient.getInstance().external.createGithubRepo(
+      await IpcClient.getInstance().createGithubRepo(
         githubOrg,
         repoName,
         appId!,
@@ -176,7 +176,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
     setIsDisconnecting(true);
     setDisconnectError(null);
     try {
-      await IpcClient.getInstance().external.disconnectGithubRepo(appId);
+      await IpcClient.getInstance().disconnectGithubRepo(appId);
       refreshApp();
     } catch (err: any) {
       setDisconnectError(err.message || "Failed to disconnect repository.");
@@ -238,7 +238,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
                     href={githubVerificationUri} // Make it a direct link
                     onClick={(e) => {
                       e.preventDefault();
-                      IpcClient.getInstance().external.openExternalUrl(
+                      IpcClient.getInstance().openExternalUrl(
                         githubVerificationUri,
                       );
                     }}
@@ -297,7 +297,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
       setSyncError(null);
       setSyncSuccess(false);
       try {
-        const result = await IpcClient.getInstance().external.syncGithubRepo(appId!);
+        const result = await IpcClient.getInstance().syncGithubRepo(appId!);
         if (result.success) {
           setSyncSuccess(true);
         } else {
@@ -316,7 +316,7 @@ export function GitHubConnector({ appId, folderName }: GitHubConnectorProps) {
         <a
           onClick={(e) => {
             e.preventDefault();
-            IpcClient.getInstance().external.openExternalUrl(
+            IpcClient.getInstance().openExternalUrl(
               `https://github.com/${app.githubOrg}/${app.githubRepo}`,
             );
           }}

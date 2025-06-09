@@ -16,7 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { IpcClient } from "@/ipc/ipc_client";
 
 interface ModelsSectionProps {
   providerId: string;

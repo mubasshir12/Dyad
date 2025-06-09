@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Github } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { showSuccess, showError } from "@/lib/toast";
-import { IpcClient } from "@/ipc/ipc_client";
 
 export function GitHubIntegration() {
   const { settings, updateSettings } = useSettings();

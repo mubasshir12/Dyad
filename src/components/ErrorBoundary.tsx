@@ -18,7 +18,7 @@ export function ErrorBoundary({ error }: ErrorComponentProps) {
     setIsLoading(true);
     try {
       // Get system debug info
-      const debugInfo = await IpcClient.getInstance().system.getSystemDebugInfo();
+      const debugInfo = await IpcClient.getInstance().getSystemDebugInfo();
 
       // Create a formatted issue body with the debug info and error information
       const issueBody = `
@@ -62,11 +62,11 @@ ${debugInfo.logs.slice(-3_500) || "No logs available"}
       const githubIssueUrl = `https://github.com/dyad-sh/dyad/issues/new?title=${encodedTitle}&labels=bug,filed-from-app,client-error&body=${encodedBody}`;
 
       // Open the pre-filled GitHub issue page
-      await IpcClient.getInstance().external.openExternalUrl(githubIssueUrl);
+      await IpcClient.getInstance().openExternalUrl(githubIssueUrl);
     } catch (err) {
       console.error("Failed to prepare bug report:", err);
       // Fallback to opening the regular GitHub issue page
-      IpcClient.getInstance().external.openExternalUrl(
+      IpcClient.getInstance().openExternalUrl(
         "https://github.com/dyad-sh/dyad/issues/new",
       );
     } finally {

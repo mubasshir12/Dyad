@@ -431,7 +431,7 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
           <button
             onClick={() => {
               if (originalUrl) {
-                IpcClient.getInstance().external.openExternalUrl(originalUrl);
+                IpcClient.getInstance().openExternalUrl(originalUrl);
               }
             }}
             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-300"

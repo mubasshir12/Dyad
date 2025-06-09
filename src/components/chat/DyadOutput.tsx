@@ -9,7 +9,6 @@ import {
 import { useAtomValue } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useStreamChat } from "@/hooks/useStreamChat";
-import { IpcClient } from "@/ipc/ipc_client";
 interface DyadOutputProps {
   type: "error" | "warning";
   message?: string;

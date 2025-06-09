@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { DatabaseZap } from "lucide-react"; // Using DatabaseZap as a placeholder
 import { useSettings } from "@/hooks/useSettings";
 import { showSuccess, showError } from "@/lib/toast";
-import { IpcClient } from "@/ipc/ipc_client";
 
 export function SupabaseIntegration() {
   const { settings, updateSettings } = useSettings();

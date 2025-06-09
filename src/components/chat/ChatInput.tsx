@@ -126,7 +126,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       setMessages([]);
       return;
     }
-    const chat = await IpcClient.getInstance().chat.getChat(chatId);
+    const chat = await IpcClient.getInstance().getChat(chatId);
     setMessages(chat.messages);
   }, [chatId, setMessages]);
 
@@ -162,7 +162,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
   const handleCancel = () => {
     if (chatId) {
-      IpcClient.getInstance().chat.cancelChatStream(chatId);
+      IpcClient.getInstance().cancelChatStream(chatId);
     }
     setIsStreaming(false);
   };
@@ -180,7 +180,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     setIsApproving(true);
     posthog.capture("chat:approve");
     try {
-      const result = await IpcClient.getInstance().chat.approveProposal({
+      const result = await IpcClient.getInstance().approveProposal({
         chatId,
         messageId,
       });
@@ -213,7 +213,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     setIsRejecting(true);
     posthog.capture("chat:reject");
     try {
-      await IpcClient.getInstance().chat.rejectProposal({
+      await IpcClient.getInstance().rejectProposal({
         chatId,
         messageId,
       });
@@ -397,7 +397,7 @@ function SummarizeInNewChatButton() {
       return;
     }
     try {
-      const newChatId = await IpcClient.getInstance().chat.createChat(appId);
+      const newChatId = await IpcClient.getInstance().createChat(appId);
       // navigate to new chat
       await navigate({ to: "/chat", search: { id: newChatId } });
       await streamMessage({
@@ -751,7 +751,7 @@ function ChatInputActions({
                       key={index}
                       className="flex items-center space-x-2"
                       onClick={() => {
-                        IpcClient.getInstance().external.openExternalUrl(
+                        IpcClient.getInstance().openExternalUrl(
                           `https://www.npmjs.com/package/${pkg}`,
                         );
                       }}

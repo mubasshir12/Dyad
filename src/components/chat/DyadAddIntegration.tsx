@@ -7,7 +7,6 @@ import { showError } from "@/lib/toast";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useLoadApp } from "@/hooks/useLoadApp";
-import { IpcClient } from "@/ipc/ipc_client";
 
 interface DyadAddIntegrationProps {
   node: {

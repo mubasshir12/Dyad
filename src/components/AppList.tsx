@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { useLoadApps } from "@/hooks/useLoadApps";
-import { IpcClient } from "@/ipc/ipc_client";
 
 export function AppList({ show }: { show?: boolean }) {
   const navigate = useNavigate();

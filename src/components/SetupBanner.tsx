@@ -45,7 +45,7 @@ export function SetupBanner() {
   const checkNode = useCallback(async () => {
     try {
       setNodeCheckError(false);
-      const status = await IpcClient.getInstance().system.getNodejsStatus();
+      const status = await IpcClient.getInstance().getNodejsStatus();
       setNodeSystemInfo(status);
     } catch (error) {
       console.error("Failed to check Node.js status:", error);
@@ -76,13 +76,13 @@ export function SetupBanner() {
   const handleNodeInstallClick = useCallback(async () => {
     posthog.capture("setup-flow:start-node-install-click");
     setNodeInstallStep("waiting-for-continue");
-    IpcClient.getInstance().external.openExternalUrl(nodeSystemInfo!.nodeDownloadUrl);
+    IpcClient.getInstance().openExternalUrl(nodeSystemInfo!.nodeDownloadUrl);
   }, [nodeSystemInfo, setNodeInstallStep]);
 
   const finishNodeInstall = useCallback(async () => {
     posthog.capture("setup-flow:continue-node-install-click");
     setNodeInstallStep("continue-processing");
-    await IpcClient.getInstance().system.reloadEnvPath();
+    await IpcClient.getInstance().reloadEnvPath();
     await checkNode();
     setNodeInstallStep("finished-checking");
   }, [checkNode, setNodeInstallStep]);
@@ -179,7 +179,7 @@ export function SetupBanner() {
                       <a
                         className="text-blue-500 dark:text-blue-400 hover:underline"
                         onClick={() => {
-                          IpcClient.getInstance().external.openExternalUrl(
+                          IpcClient.getInstance().openExternalUrl(
                             "https://nodejs.org/en/download",
                           );
                         }}
@@ -289,7 +289,7 @@ function NodeJsHelpCallout() {
         If you run into issues, read our{" "}
         <a
           onClick={() => {
-            IpcClient.getInstance().external.openExternalUrl(
+            IpcClient.getInstance().openExternalUrl(
               "https://www.dyad.sh/docs/help/nodejs",
             );
           }}

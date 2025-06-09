@@ -47,7 +47,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
   const checkAppName = async (name: string): Promise<void> => {
     setIsCheckingName(true);
     try {
-      const result = await IpcClient.getInstance().app.checkAppName({
+      const result = await IpcClient.getInstance().checkAppName({
         appName: name,
       });
       setNameExists(result.exists);
@@ -60,11 +60,11 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
 
   const selectFolderMutation = useMutation({
     mutationFn: async () => {
-      const result = await IpcClient.getInstance().app.selectAppFolder();
+      const result = await IpcClient.getInstance().selectAppFolder();
       if (!result.path || !result.name) {
         throw new Error("No folder selected");
       }
-      const aiRulesCheck = await IpcClient.getInstance().app.checkAiRules({
+      const aiRulesCheck = await IpcClient.getInstance().checkAiRules({
         path: result.path,
       });
       setHasAiRules(aiRulesCheck.exists);
@@ -86,7 +86,7 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
   const importAppMutation = useMutation({
     mutationFn: async () => {
       if (!selectedPath) throw new Error("No folder selected");
-      return IpcClient.getInstance().app.importApp({
+      return IpcClient.getInstance().importApp({
         path: selectedPath,
         appName: customAppName,
       });
