@@ -18,6 +18,7 @@ export const apps = sqliteTable("apps", {
   vercelProjectId: text("vercel_project_id"),
   vercelDeploymentId: text("vercel_deployment_id"),
   vercelDeploymentUrl: text("vercel_deployment_url"),
+  vercelInspectorUrl: text("vercel_inspector_url"),
   vercelDeploymentTimestamp: integer("vercel_deployment_timestamp", { mode: "timestamp" }),
 });
 

@@ -45,28 +45,13 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
   const [newProjectName, setNewProjectName] = useState("");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   
-  // Utilizza lo stato persistente per l'ultimo deploy
-  const [lastDeployment, setLastDeployment] = useState<VercelDeploymentResult | null>(null);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
 
   const isVercelConfigured = !!settings?.vercel?.accessToken?.value;
   const linkedVercelProjectId = currentDyadApp?.vercelProjectId;
   const linkedVercelProjectName = currentDyadApp?.vercelProjectName;
-
-  // Effetto per caricare lo stato del deploy persistente
-  useEffect(() => {
-    if (currentDyadApp?.vercelDeploymentUrl && currentDyadApp?.vercelDeploymentId) {
-      setLastDeployment({
-        deploymentUrl: currentDyadApp.vercelDeploymentUrl,
-        // Assumiamo che l'inspector URL non sia salvato, o che si possa costruire se necessario
-        // Per semplicità, qui lo omettiamo o usiamo un placeholder se strettamente necessario
-        inspectorUrl: `https://vercel.com/${settings?.githubUser?.email || currentDyadApp.githubOrg || '_'}/${currentDyadApp.vercelProjectName || '_'}/${currentDyadApp.vercelDeploymentId}`
-      });
-    } else {
-      setLastDeployment(null);
-    }
-    setDeploymentError(null); // Resetta l'errore quando l'app cambia
-  }, [currentDyadApp, settings?.githubUser?.email]);
+  const lastDeploymentInspectorUrl = currentDyadApp?.vercelInspectorUrl;
+  const lastDeploymentUrl = currentDyadApp?.vercelDeploymentUrl;
 
 
   const fetchVercelProjects = async () => {
@@ -95,7 +80,6 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
       await IpcClient.getInstance().setVercelAppProject(appId, projectId);
       await refreshDyadApp();
       showSuccess(`Project "${vercelProjects.find(p => p.id === projectId)?.name || projectId}" linked successfully.`);
-      setLastDeployment(null); 
       setDeploymentError(null);
     } catch (err) {
       showError("Failed to link Vercel project: " + (err as Error).message);
@@ -105,7 +89,7 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
   const handleUnlinkProject = async () => {
     try {
       await IpcClient.getInstance().unsetVercelAppProject(appId);
-      await refreshDyadApp(); // Questo aggiornerà currentDyadApp, e l'useEffect sopra resetterà lastDeployment
+      await refreshDyadApp(); 
       showSuccess("Vercel project unlinked successfully.");
     } catch (err) {
       showError("Failed to unlink Vercel project: " + (err as Error).message);
@@ -144,7 +128,6 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
     }
 
     setIsDeploying(true);
-    setLastDeployment(null); // Resetta il deploy precedente prima di iniziarne uno nuovo
     setDeploymentError(null);
     try {
       showSuccess("Pushing latest changes to GitHub...");
@@ -154,9 +137,7 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
       }
       showSuccess("Successfully pushed to GitHub. Initiating Vercel deployment...");
 
-      const deploymentResult = await IpcClient.getInstance().deployVercelProject({ appId, projectId: linkedVercelProjectId });
-      // Non impostare setLastDeployment qui, perché l'handler IPC ora salva nel DB
-      // e refreshDyadApp aggiornerà currentDyadApp, che a sua volta aggiornerà lastDeployment tramite useEffect.
+      await IpcClient.getInstance().deployVercelProject({ appId, projectId: linkedVercelProjectId });
       await refreshDyadApp(); 
       showSuccess("Deployment to Vercel initiated successfully!");
     } catch (err) {
@@ -224,9 +205,9 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
         <CardContent className="space-y-3">
           <Button onClick={handleDeploy} disabled={isDeploying} className="w-full">
             {isDeploying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloudIcon className="mr-2 h-4 w-4" />}
-            {isDeploying ? "Deploying..." : (lastDeployment ? "Redeploy to Vercel" : "Deploy to Vercel")}
+            {isDeploying ? "Deploying..." : (lastDeploymentUrl ? "Redeploy to Vercel" : "Deploy to Vercel")}
           </Button>
-          {lastDeployment && (
+          {lastDeploymentUrl && lastDeploymentInspectorUrl && (
             <Alert variant="default" className="border-green-500/30 text-green-700 dark:text-green-300">
               <CheckCircle className="h-4 w-4 !text-green-600 dark:!text-green-400" />
               <AlertTitle>Deployment Active/Initiated</AlertTitle>
@@ -236,10 +217,10 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
                   You can monitor the progress or view the live site.
                 </p>
                 <div className="flex space-x-2 mt-1">
-                  <Button variant="link" size="sm" className="p-0 h-auto text-green-700 dark:text-green-300" onClick={() => IpcClient.getInstance().openExternalUrl(lastDeployment.inspectorUrl)}>
+                  <Button variant="link" size="sm" className="p-0 h-auto text-green-700 dark:text-green-300" onClick={() => IpcClient.getInstance().openExternalUrl(lastDeploymentInspectorUrl)}>
                     View Build Logs <ExternalLink className="ml-1 h-3 w-3" />
                   </Button>
-                  <Button variant="link" size="sm" className="p-0 h-auto text-green-700 dark:text-green-300" onClick={() => IpcClient.getInstance().openExternalUrl(lastDeployment.deploymentUrl)}>
+                  <Button variant="link" size="sm" className="p-0 h-auto text-green-700 dark:text-green-300" onClick={() => IpcClient.getInstance().openExternalUrl(lastDeploymentUrl)}>
                     View Deployment <ExternalLink className="ml-1 h-3 w-3" />
                   </Button>
                 </div>

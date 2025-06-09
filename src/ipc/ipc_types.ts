@@ -73,6 +73,7 @@ export interface App {
   vercelProjectName: string | null;
   vercelDeploymentId: string | null;
   vercelDeploymentUrl: string | null;
+  vercelInspectorUrl: string | null;
   vercelDeploymentTimestamp: Date | null;
 }
 

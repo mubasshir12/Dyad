@@ -265,6 +265,7 @@ export function registerAppHandlers() {
       vercelProjectName,
       vercelDeploymentId: app.vercelDeploymentId,
       vercelDeploymentUrl: app.vercelDeploymentUrl,
+      vercelInspectorUrl: app.vercelInspectorUrl,
       vercelDeploymentTimestamp: app.vercelDeploymentTimestamp,
     };
   });
@@ -862,6 +863,7 @@ export function registerAppHandlers() {
         vercelProjectId: null,
         vercelDeploymentId: null,
         vercelDeploymentUrl: null,
+        vercelInspectorUrl: null,
         vercelDeploymentTimestamp: null,
       })
       .where(eq(apps.id, appId));

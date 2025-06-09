@@ -186,7 +186,7 @@ export function registerVercelHandlers() {
       }
 
       const deploymentData = await response.json() as VercelDeploymentResponse;
-      logger.info(`Successfully initiated Vercel deployment for project "${vercelProjectName}". Deployment ID: ${deploymentData.id}, URL: ${deploymentData.url}`);
+      logger.info(`Successfully initiated Vercel deployment for project "${vercelProjectName}". Deployment ID: ${deploymentData.id}, URL: ${deploymentData.url}, Inspector URL: ${deploymentData.inspectorUrl}`);
       
       const finalDeploymentUrl = deploymentData.alias?.[0] ? `https://${deploymentData.alias[0]}` : `https://${deploymentData.url}`;
 
@@ -194,6 +194,7 @@ export function registerVercelHandlers() {
       await db.update(apps).set({
         vercelDeploymentId: deploymentData.id,
         vercelDeploymentUrl: finalDeploymentUrl,
+        vercelInspectorUrl: deploymentData.inspectorUrl,
         vercelDeploymentTimestamp: sql`(unixepoch())`,
       }).where(eq(apps.id, appId));
       logger.info(`Saved Vercel deployment info for app ${appId} to database.`);
