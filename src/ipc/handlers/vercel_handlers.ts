@@ -16,6 +16,30 @@ async function getVercelAccessToken(): Promise<string | undefined> {
   return settings.vercel?.accessToken?.value || process.env.VERCEL_ACCESS_TOKEN;
 }
 
+export async function getVercelProjectName(projectId: string): Promise<string | null> {
+  const accessToken = await getVercelAccessToken();
+  if (!accessToken) {
+    logger.warn("Vercel Access Token not configured, cannot fetch project name.");
+    return null;
+  }
+  try {
+    const response = await fetch(`${VERCEL_API_BASE_URL}/v9/projects/${projectId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (!response.ok) {
+      logger.error(`Failed to fetch Vercel project ${projectId}: ${response.statusText}`);
+      return null;
+    }
+    const projectData: any = await response.json();
+    return projectData.name || null;
+  } catch (error) {
+    logger.error(`Error fetching Vercel project name for ${projectId}:`, error);
+    return null;
+  }
+}
+
 export function registerVercelHandlers() {
   handle("vercel:list-projects", async (): Promise<VercelProject[]> => {
     logger.info("IPC: vercel:list-projects called");

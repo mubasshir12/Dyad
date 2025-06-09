@@ -69,6 +69,8 @@ export interface App {
   githubRepo: string | null;
   supabaseProjectId: string | null;
   supabaseProjectName: string | null;
+  vercelProjectId: string | null; // Added Vercel Project ID
+  vercelProjectName: string | null; // Added Vercel Project Name
 }
 
 export interface Version {

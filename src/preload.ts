@@ -77,7 +77,9 @@ const validInvokeChannels = [
   "clear-session-data",
   "vercel:list-projects",
   "vercel:deploy-project",
-  "vercel:create-project", // Added Vercel create project channel
+  "vercel:create-project",
+  "app:set-vercel-project", // Added
+  "app:unset-vercel-project", // Added
 ] as const;
 
 // Add valid receive channels
