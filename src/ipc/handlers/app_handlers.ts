@@ -262,7 +262,10 @@ export function registerAppHandlers() {
       ...app,
       files,
       supabaseProjectName,
-      vercelProjectName, // Include Vercel project name
+      vercelProjectName,
+      vercelDeploymentId: app.vercelDeploymentId,
+      vercelDeploymentUrl: app.vercelDeploymentUrl,
+      vercelDeploymentTimestamp: app.vercelDeploymentTimestamp,
     };
   });
 
@@ -855,7 +858,12 @@ export function registerAppHandlers() {
   handle("app:unset-vercel-project", async (_, { appId }: { appId: number }) => {
     await db
       .update(apps)
-      .set({ vercelProjectId: null })
+      .set({ 
+        vercelProjectId: null,
+        vercelDeploymentId: null,
+        vercelDeploymentUrl: null,
+        vercelDeploymentTimestamp: null,
+      })
       .where(eq(apps.id, appId));
     logger.info(`Removed Vercel project association for app ${appId}`);
   });

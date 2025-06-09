@@ -6,7 +6,7 @@ import { readSettings } from "@/main/settings";
 import fetch from "node-fetch"; // Import node-fetch
 import { db } from "@/db";
 import { apps } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const logger = log.scope("vercel_handlers");
 const handle = createLoggedHandler(logger);
@@ -166,7 +166,7 @@ export function registerVercelHandlers() {
           type: "github",
           org: dyadApp.githubOrg,
           repo: dyadApp.githubRepo,
-          ref: "main", // Assumendo che il branch di default sia 'main'
+          ref: "main", 
         },
       };
 
@@ -188,8 +188,18 @@ export function registerVercelHandlers() {
       const deploymentData = await response.json() as VercelDeploymentResponse;
       logger.info(`Successfully initiated Vercel deployment for project "${vercelProjectName}". Deployment ID: ${deploymentData.id}, URL: ${deploymentData.url}`);
       
+      const finalDeploymentUrl = deploymentData.alias?.[0] ? `https://${deploymentData.alias[0]}` : `https://${deploymentData.url}`;
+
+      // Save deployment info to Dyad's database
+      await db.update(apps).set({
+        vercelDeploymentId: deploymentData.id,
+        vercelDeploymentUrl: finalDeploymentUrl,
+        vercelDeploymentTimestamp: sql`(unixepoch())`,
+      }).where(eq(apps.id, appId));
+      logger.info(`Saved Vercel deployment info for app ${appId} to database.`);
+
       return {
-        deploymentUrl: deploymentData.alias?.[0] || deploymentData.url,
+        deploymentUrl: finalDeploymentUrl,
         inspectorUrl: deploymentData.inspectorUrl,
       };
 

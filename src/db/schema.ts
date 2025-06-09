@@ -15,7 +15,10 @@ export const apps = sqliteTable("apps", {
   githubOrg: text("github_org"),
   githubRepo: text("github_repo"),
   supabaseProjectId: text("supabase_project_id"),
-  vercelProjectId: text("vercel_project_id"), // Added Vercel Project ID
+  vercelProjectId: text("vercel_project_id"),
+  vercelDeploymentId: text("vercel_deployment_id"),
+  vercelDeploymentUrl: text("vercel_deployment_url"),
+  vercelDeploymentTimestamp: integer("vercel_deployment_timestamp", { mode: "timestamp" }),
 });
 
 export const chats = sqliteTable("chats", {

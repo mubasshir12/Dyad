@@ -71,6 +71,9 @@ export interface App {
   supabaseProjectName: string | null;
   vercelProjectId: string | null;
   vercelProjectName: string | null;
+  vercelDeploymentId: string | null;
+  vercelDeploymentUrl: string | null;
+  vercelDeploymentTimestamp: Date | null;
 }
 
 export interface Version {
