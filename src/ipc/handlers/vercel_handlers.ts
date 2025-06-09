@@ -52,6 +52,52 @@ export function registerVercelHandlers() {
     }
   });
 
+  handle("vercel:create-project", async (_, { projectName }: { projectName: string }): Promise<VercelProject> => {
+    logger.info(`IPC: vercel:create-project called for project name: ${projectName}`);
+    const accessToken = await getVercelAccessToken();
+
+    if (!accessToken) {
+      throw new Error("Vercel Access Token not configured.");
+    }
+    if (!projectName || projectName.trim() === "") {
+      throw new Error("Project name cannot be empty.");
+    }
+
+    try {
+      const response = await fetch(`${VERCEL_API_BASE_URL}/v9/projects`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: projectName,
+          // Vercel might require other fields like 'framework' or git repository details
+          // For now, we'll try creating a minimal project.
+          // framework: "vite", // Example, might need to be more dynamic or let Vercel auto-detect
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json();
+        logger.error(`Vercel API error during project creation (${response.status}):`, errorBody);
+        throw new Error(errorBody.error?.message || `Failed to create Vercel project: ${response.statusText}`);
+      }
+
+      const projectData: any = await response.json();
+      const newProject: VercelProject = {
+        id: projectData.id,
+        name: projectData.name,
+        url: `https://${projectData.targets?.production?.alias?.[0] || projectData.alias?.[0] || `${projectData.name}.vercel.app`}`,
+      };
+      logger.info(`Successfully created Vercel project: ${newProject.name} (ID: ${newProject.id})`);
+      return newProject;
+    } catch (error) {
+      logger.error("Error creating Vercel project:", error);
+      throw error;
+    }
+  });
+
   handle("vercel:deploy-project", async (_, params: VercelDeployParams): Promise<void> => {
     logger.info("IPC: vercel:deploy-project called (placeholder)", params);
     // Placeholder for actual Vercel deployment logic

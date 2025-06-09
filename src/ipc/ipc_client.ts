@@ -30,8 +30,8 @@ import type {
   ImportAppResult,
   ImportAppParams,
   RenameBranchParams,
-  VercelProject, // Import Vercel types
-  VercelDeployParams, // Import Vercel types
+  VercelProject,
+  VercelDeployParams,
 } from "./ipc_types";
 import type { ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -650,16 +650,16 @@ export class IpcClient {
   }
   // --- End Supabase Management ---
 
-  // --- Vercel Management (Placeholders) ---
+  // --- Vercel Management ---
   public async listVercelProjects(): Promise<VercelProject[]> {
-    // Placeholder: Implement actual IPC call to Vercel API
-    console.warn("listVercelProjects: Not yet implemented.");
     return this.ipcRenderer.invoke("vercel:list-projects");
   }
 
+  public async createVercelProject(projectName: string): Promise<VercelProject> {
+    return this.ipcRenderer.invoke("vercel:create-project", { projectName });
+  }
+
   public async deployVercelProject(params: VercelDeployParams): Promise<void> {
-    // Placeholder: Implement actual IPC call to Vercel API
-    console.warn("deployVercelProject: Not yet implemented.");
     return this.ipcRenderer.invoke("vercel:deploy-project", params);
   }
   // --- End Vercel Management ---

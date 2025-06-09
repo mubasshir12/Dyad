@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2, LinkIcon, UploadCloudIcon, Loader2 } from "lucide-react"; // Added Loader2
+import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2, LinkIcon, UploadCloudIcon, Loader2, PlusCircle } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +14,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { IpcClient } from "@/ipc/ipc_client";
 import { VercelProject } from "@/ipc/ipc_types";
 
@@ -32,6 +41,10 @@ export function VercelSettingsPage() {
   const [selectedVercelProject, setSelectedVercelProject] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
 
+  const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+
 
   const userAccessToken = settings?.vercel?.accessToken?.value;
   const envAccessToken = vercelDetails?.envVarName ? envVars[vercelDetails.envVarName] : undefined;
@@ -39,24 +52,25 @@ export function VercelSettingsPage() {
 
   const isConfigured = !!activeAccessToken;
 
-  useEffect(() => {
+  const fetchVercelProjects = async () => {
     if (isConfigured && activeAccessToken) {
-      const fetchProjects = async () => {
-        setIsLoadingProjects(true);
-        try {
-          const projects = await IpcClient.getInstance().listVercelProjects();
-          setVercelProjects(projects);
-        } catch (err) {
-          showError("Failed to load Vercel projects: " + (err as Error).message);
-          setVercelProjects([]);
-        } finally {
-          setIsLoadingProjects(false);
-        }
-      };
-      fetchProjects();
+      setIsLoadingProjects(true);
+      try {
+        const projects = await IpcClient.getInstance().listVercelProjects();
+        setVercelProjects(projects);
+      } catch (err) {
+        showError("Failed to load Vercel projects: " + (err as Error).message);
+        setVercelProjects([]);
+      } finally {
+        setIsLoadingProjects(false);
+      }
     } else {
       setVercelProjects([]);
     }
+  };
+
+  useEffect(() => {
+    fetchVercelProjects();
   }, [isConfigured, activeAccessToken]);
 
 
@@ -106,10 +120,30 @@ export function VercelSettingsPage() {
   };
 
   const handleLinkProject = (projectId: string) => {
-    // Placeholder: In a real scenario, you'd save this link to your app's settings
     setSelectedVercelProject(projectId);
-    showSuccess(`Project ${projectId} linked (placeholder).`);
+    showSuccess(`Project "${vercelProjects.find(p => p.id === projectId)?.name || projectId}" linked (placeholder).`);
     console.log("Selected Vercel Project ID:", projectId);
+  };
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjectName.trim()) {
+      showError("Project name cannot be empty.");
+      return;
+    }
+    setIsCreatingProject(true);
+    try {
+      const newProject = await IpcClient.getInstance().createVercelProject(newProjectName.trim());
+      showSuccess(`Vercel project "${newProject.name}" created successfully!`);
+      setNewProjectName("");
+      setIsCreateProjectDialogOpen(false);
+      await fetchVercelProjects(); // Refresh the project list
+      setSelectedVercelProject(newProject.id); // Optionally auto-select the new project
+    } catch (err) {
+      showError("Failed to create Vercel project: " + (err as Error).message);
+    } finally {
+      setIsCreatingProject(false);
+    }
   };
 
   const handleDeploy = async () => {
@@ -119,8 +153,7 @@ export function VercelSettingsPage() {
     }
     setIsDeploying(true);
     try {
-      // Placeholder: In a real scenario, you'd get the current Dyad app ID
-      const currentDyadAppId = 1; // Replace with actual app ID logic
+      const currentDyadAppId = 1; // Placeholder
       await IpcClient.getInstance().deployVercelProject({ appId: currentDyadAppId, projectId: selectedVercelProject });
       showSuccess("Deployment to Vercel initiated (placeholder).");
     } catch (err) {
@@ -338,14 +371,50 @@ export function VercelSettingsPage() {
 
         {isConfigured && (
           <div className="mt-8 border-t pt-6">
-            <h2 className="text-xl font-semibold mb-2">Link to Vercel Project</h2>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-semibold">Link to Vercel Project</h2>
+              <Dialog open={isCreateProjectDialogOpen} onOpenChange={setIsCreateProjectDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Create New Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Vercel Project</DialogTitle>
+                    <DialogDescription>
+                      Enter a name for your new Vercel project.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateProject} className="space-y-4">
+                    <Input
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      placeholder="my-awesome-project"
+                      disabled={isCreatingProject}
+                    />
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setIsCreateProjectDialogOpen(false)} disabled={isCreatingProject}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={isCreatingProject || !newProjectName.trim()}>
+                        {isCreatingProject && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isCreatingProject ? "Creating..." : "Create Project"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             {isLoadingProjects ? (
               <div className="space-y-2">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
               </div>
             ) : vercelProjects.length > 0 ? (
-              <div className="space-y-2 mb-4">
+              <div className="space-y-2 mb-4 max-h-60 overflow-y-auto border rounded-md p-2">
                 {vercelProjects.map(project => (
                   <Button
                     key={project.id}
@@ -360,7 +429,7 @@ export function VercelSettingsPage() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground mb-4">
-                No Vercel projects found. Ensure your Access Token is correct and has permission to list projects.
+                No Vercel projects found. Ensure your Access Token is correct and has permission to list projects, or create a new one.
               </p>
             )}
 
