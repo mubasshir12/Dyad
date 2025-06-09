@@ -4,6 +4,9 @@ import { createLoggedHandler } from "./safe_handle";
 import { VercelProject, VercelDeployParams } from "../ipc_types";
 import { readSettings } from "@/main/settings";
 import fetch from "node-fetch"; // Import node-fetch
+import { db } from "@/db";
+import { apps } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 const logger = log.scope("vercel_handlers");
 const handle = createLoggedHandler(logger);
@@ -12,7 +15,6 @@ const VERCEL_API_BASE_URL = "https://api.vercel.com";
 
 async function getVercelAccessToken(): Promise<string | undefined> {
   const settings = readSettings();
-  // Prioritize token from settings, then environment variable
   return settings.vercel?.accessToken?.value || process.env.VERCEL_ACCESS_TOKEN;
 }
 
@@ -38,6 +40,16 @@ export async function getVercelProjectName(projectId: string): Promise<string | 
     logger.error(`Error fetching Vercel project name for ${projectId}:`, error);
     return null;
   }
+}
+
+interface VercelDeploymentResponse {
+  id: string;
+  projectId: string;
+  url: string; // Unique deployment URL
+  inspectorUrl: string;
+  alias?: string[]; // Production aliases
+  readyState: "BUILDING" | "ERROR" | "INITIALIZING" | "QUEUED" | "READY" | "CANCELED";
+  // ... other fields
 }
 
 export function registerVercelHandlers() {
@@ -66,13 +78,13 @@ export function registerVercelHandlers() {
       const projects: VercelProject[] = data.projects.map((project: any) => ({
         id: project.id,
         name: project.name,
-        url: `https://${project.targets?.production?.alias?.[0] || project.alias?.[0] || `${project.name}.vercel.app`}`, // Attempt to get a production URL
+        url: `https://${project.targets?.production?.alias?.[0] || project.alias?.[0] || `${project.name}.vercel.app`}`,
       }));
       logger.info(`Successfully fetched ${projects.length} Vercel projects.`);
       return projects;
     } catch (error) {
       logger.error("Error fetching Vercel projects:", error);
-      throw error; // Re-throw to be caught by the client
+      throw error;
     }
   });
 
@@ -96,9 +108,6 @@ export function registerVercelHandlers() {
         },
         body: JSON.stringify({
           name: projectName,
-          // Vercel might require other fields like 'framework' or git repository details
-          // For now, we'll try creating a minimal project.
-          // framework: "vite", // Example, might need to be more dynamic or let Vercel auto-detect
         }),
       });
 
@@ -122,15 +131,70 @@ export function registerVercelHandlers() {
     }
   });
 
-  handle("vercel:deploy-project", async (_, params: VercelDeployParams): Promise<void> => {
-    logger.info("IPC: vercel:deploy-project called (placeholder)", params);
-    // Placeholder for actual Vercel deployment logic
-    // This will require more complex interactions with Vercel's API or CLI
-    // For now, we'll keep the placeholder behavior
-    console.log(`Deploying app ${params.appId} to Vercel project ${params.projectId}`);
-    // Simulate a delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    logger.info("Deployment simulated successfully.");
+  handle("vercel:deploy-project", async (_, params: VercelDeployParams): Promise<{ deploymentUrl: string; inspectorUrl: string }> => {
+    logger.info("IPC: vercel:deploy-project called", params);
+    const { appId, projectId: vercelProjectIdToDeploy } = params;
+
+    const accessToken = await getVercelAccessToken();
+    if (!accessToken) {
+      throw new Error("Vercel Access Token not configured.");
+    }
+
+    const dyadApp = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
+    if (!dyadApp) {
+      throw new Error(`Dyad app with ID ${appId} not found.`);
+    }
+    if (!dyadApp.vercelProjectId || dyadApp.vercelProjectId !== vercelProjectIdToDeploy) {
+      throw new Error(`Dyad app ${appId} is not linked to Vercel project ${vercelProjectIdToDeploy}.`);
+    }
+    if (!dyadApp.githubOrg || !dyadApp.githubRepo) {
+        throw new Error(`Dyad app ${appId} must be connected to a GitHub repository before deploying to Vercel.`);
+    }
+
+    // Fetch Vercel project details to get its name, as Vercel API prefers name for deployments if not using projectId directly in some contexts.
+    // However, for /v13/deployments, projectId is fine. We'll use the name for the payload.
+    const vercelProjectName = await getVercelProjectName(dyadApp.vercelProjectId);
+    if (!vercelProjectName) {
+        throw new Error(`Could not fetch Vercel project name for ID ${dyadApp.vercelProjectId}.`);
+    }
+
+    logger.info(`Attempting to deploy Dyad app "${dyadApp.name}" (GitHub: ${dyadApp.githubOrg}/${dyadApp.githubRepo}) to Vercel project "${vercelProjectName}" (ID: ${dyadApp.vercelProjectId})`);
+
+    try {
+      const deployPayload = {
+        name: vercelProjectName, // Name of the Vercel project
+        target: "production",    // Deploy to production
+        // Vercel will use the Git repository linked to the project.
+        // We ensure the latest commit on 'main' is pushed to GitHub before this.
+      };
+
+      const response = await fetch(`${VERCEL_API_BASE_URL}/v13/deployments`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(deployPayload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.json();
+        logger.error(`Vercel API error during deployment (${response.status}):`, errorBody);
+        throw new Error(errorBody.error?.message || `Failed to initiate Vercel deployment: ${response.statusText}`);
+      }
+
+      const deploymentData = await response.json() as VercelDeploymentResponse;
+      logger.info(`Successfully initiated Vercel deployment for project "${vercelProjectName}". Deployment ID: ${deploymentData.id}, URL: ${deploymentData.url}`);
+      
+      return {
+        deploymentUrl: deploymentData.alias?.[0] || deploymentData.url,
+        inspectorUrl: deploymentData.inspectorUrl,
+      };
+
+    } catch (error) {
+      logger.error(`Error deploying to Vercel project "${vercelProjectName}":`, error);
+      throw error;
+    }
   });
 
   logger.debug("Registered Vercel IPC handlers");

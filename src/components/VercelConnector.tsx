@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Rocket, LinkIcon, PlusCircle, Unlink, UploadCloudIcon, Loader2, ExternalLink, Info } from "lucide-react";
+import { Rocket, LinkIcon, PlusCircle, Unlink, UploadCloudIcon, Loader2, ExternalLink, Info, CheckCircle, AlertTriangle } from "lucide-react";
 import { IpcClient } from "@/ipc/ipc_client";
 import { useSettings } from "@/hooks/useSettings";
 import { useLoadApp } from "@/hooks/useLoadApp";
-import { VercelProject } from "@/ipc/ipc_types";
+import { VercelProject, VercelDeploymentResult } from "@/ipc/ipc_types";
 import {
   Card,
   CardContent,
@@ -43,6 +43,9 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
   const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [lastDeployment, setLastDeployment] = useState<VercelDeploymentResult | null>(null);
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
+
 
   const isVercelConfigured = !!settings?.vercel?.accessToken?.value;
   const linkedVercelProjectId = currentDyadApp?.vercelProjectId;
@@ -74,6 +77,8 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
       await IpcClient.getInstance().setVercelAppProject(appId, projectId);
       await refreshDyadApp();
       showSuccess(`Project "${vercelProjects.find(p => p.id === projectId)?.name || projectId}" linked successfully.`);
+      setLastDeployment(null); // Reset deployment status on new link
+      setDeploymentError(null);
     } catch (err) {
       showError("Failed to link Vercel project: " + (err as Error).message);
     }
@@ -84,6 +89,8 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
       await IpcClient.getInstance().unsetVercelAppProject(appId);
       await refreshDyadApp();
       showSuccess("Vercel project unlinked successfully.");
+      setLastDeployment(null);
+      setDeploymentError(null);
     } catch (err) {
       showError("Failed to unlink Vercel project: " + (err as Error).message);
     }
@@ -115,13 +122,30 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
       showError("Please link a Vercel project first.");
       return;
     }
+    if (!currentDyadApp?.githubOrg || !currentDyadApp?.githubRepo) {
+        showError("Please connect this app to a GitHub repository first before deploying to Vercel.");
+        return;
+    }
+
     setIsDeploying(true);
+    setLastDeployment(null);
+    setDeploymentError(null);
     try {
-      // Placeholder for actual deployment logic
-      await IpcClient.getInstance().deployVercelProject({ appId, projectId: linkedVercelProjectId });
-      showSuccess("Deployment to Vercel initiated (placeholder).");
+      // First, ensure the latest code is pushed to GitHub
+      showSuccess("Pushing latest changes to GitHub...");
+      const syncResult = await IpcClient.getInstance().syncGithubRepo(appId);
+      if (!syncResult.success) {
+        throw new Error(syncResult.error || "Failed to sync with GitHub.");
+      }
+      showSuccess("Successfully pushed to GitHub. Initiating Vercel deployment...");
+
+      const deploymentResult = await IpcClient.getInstance().deployVercelProject({ appId, projectId: linkedVercelProjectId });
+      setLastDeployment(deploymentResult);
+      showSuccess("Deployment to Vercel initiated successfully!");
     } catch (err) {
-      showError("Failed to initiate deployment: " + (err as Error).message);
+      const errorMessage = (err as Error).message;
+      showError("Deployment failed: " + errorMessage);
+      setDeploymentError(errorMessage);
     } finally {
       setIsDeploying(false);
     }
@@ -161,9 +185,11 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
               onClick={() => {
                 const projectUrl = vercelProjects.find(p => p.id === linkedVercelProjectId)?.url;
                 if (projectUrl) {
-                  IpcClient.getInstance().openExternalUrl(projectUrl);
+                  IpcClient.getInstance().openExternalUrl(`https://${projectUrl.replace(/^https?:\/\//, '')}`);
+                } else if (settings?.githubUser?.email) {
+                     IpcClient.getInstance().openExternalUrl(`https://vercel.com/${settings.githubUser.email}/${linkedVercelProjectName}`);
                 } else {
-                  IpcClient.getInstance().openExternalUrl(`https://vercel.com/${settings?.githubUser?.email || ""}/${linkedVercelProjectName}`);
+                    IpcClient.getInstance().openExternalUrl(`https://vercel.com`); // Fallback
                 }
               }}
               className="ml-2 px-2 py-1 h-auto"
@@ -180,6 +206,32 @@ export function VercelConnector({ appId }: VercelConnectorProps) {
             {isDeploying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloudIcon className="mr-2 h-4 w-4" />}
             {isDeploying ? "Deploying..." : "Deploy to Vercel"}
           </Button>
+          {lastDeployment && (
+            <Alert variant="default" className="border-green-500/30 text-green-700 dark:text-green-300">
+              <CheckCircle className="h-4 w-4 !text-green-600 dark:!text-green-400" />
+              <AlertTitle>Deployment Initiated</AlertTitle>
+              <AlertDescription className="space-y-1">
+                <p>Your app is being deployed. You can monitor the progress or view the live site (once ready).</p>
+                <div className="flex space-x-2 mt-1">
+                  <Button variant="link" size="sm" className="p-0 h-auto text-green-700 dark:text-green-300" onClick={() => IpcClient.getInstance().openExternalUrl(lastDeployment.inspectorUrl)}>
+                    View Build Logs <ExternalLink className="ml-1 h-3 w-3" />
+                  </Button>
+                  <Button variant="link" size="sm" className="p-0 h-auto text-green-700 dark:text-green-300" onClick={() => IpcClient.getInstance().openExternalUrl(lastDeployment.deploymentUrl)}>
+                    View Deployment <ExternalLink className="ml-1 h-3 w-3" />
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          {deploymentError && (
+             <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Deployment Error</AlertTitle>
+                <AlertDescription>
+                    {deploymentError}
+                </AlertDescription>
+            </Alert>
+          )}
           <Button variant="outline" onClick={handleUnlinkProject} className="w-full">
             <Unlink className="mr-2 h-4 w-4" /> Unlink Project
           </Button>

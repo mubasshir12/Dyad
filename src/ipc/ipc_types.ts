@@ -69,8 +69,8 @@ export interface App {
   githubRepo: string | null;
   supabaseProjectId: string | null;
   supabaseProjectName: string | null;
-  vercelProjectId: string | null; // Added Vercel Project ID
-  vercelProjectName: string | null; // Added Vercel Project Name
+  vercelProjectId: string | null;
+  vercelProjectName: string | null;
 }
 
 export interface Version {
@@ -210,7 +210,6 @@ export interface RenameBranchParams {
   newBranchName: string;
 }
 
-// Vercel specific IPC types (placeholders for now)
 export interface VercelProject {
   id: string;
   name: string;
@@ -220,4 +219,9 @@ export interface VercelProject {
 export interface VercelDeployParams {
   appId: number;
   projectId: string;
+}
+
+export interface VercelDeploymentResult {
+  deploymentUrl: string;
+  inspectorUrl: string;
 }
