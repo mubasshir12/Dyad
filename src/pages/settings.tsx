@@ -32,6 +32,7 @@ import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
 import { vercelSettingsRoute } from "@/routes/settings/vercel";
 import { GitHubIntegration } from "@/components/GitHubIntegration"; // Per il pulsante Disconnect
 import { SupabaseIntegration } from "@/components/SupabaseIntegration"; // Per il pulsante Disconnect
+import { VercelIntegration } from "@/components/VercelIntegration"; // Importa il nuovo componente
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -262,6 +263,7 @@ export default function SettingsPage() {
             <div className="mt-6 space-y-4">
               <GitHubIntegration />
               <SupabaseIntegration />
+              <VercelIntegration />
             </div>
           </div>
 
