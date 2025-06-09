@@ -1,4 +1,25 @@
 {
+  "name": "dyad",
+  "version": "0.7.0",
+  "description": "Dyad is a local, open-source AI app builder.",
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "eslint --ext .ts,.tsx .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Dyad",
+    "email": "hello@dyad.sh"
+  },
+  "license": "Apache-2.0",
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.8",
     "@ai-sdk/google": "^1.2.10",
@@ -99,31 +120,5 @@
     "typescript": "^5.8.3",
     "vite": "^5.4.17",
     "vitest": "^3.1.1"
-  },
-  "name": "dyad",
-  "productName": "dyad",
-  "version": "0.7.0",
-  "description": "My Electron application description",
-  "main": ".webpack/main",
-  "scripts": {
-    "start": "node -r esbuild-register electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx .",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
-    "e2e": "playwright test",
-    "drizzle:migrate": "drizzle-kit migrate",
-    "drizzle:push": "drizzle-kit push",
-    "drizzle:studio": "drizzle-kit studio",
-    "prepare": "husky"
-  },
-  "keywords": [],
-  "author": {
-    "name": "Dyad",
-    "email": "dyad@dyad.sh"
-  },
-  "license": "MIT"
+  }
 }
