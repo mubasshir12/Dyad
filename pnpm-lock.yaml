@@ -149,6 +149,9 @@ importers:
       monaco-editor:
         specifier: ^0.52.2
         version: 0.52.2
+      node-fetch:
+        specifier: 2.7.0
+        version: 2.7.0(encoding@0.1.13)
       ollama-ai-provider:
         specifier: ^1.2.0
         version: 1.2.0(zod@3.25.42)
