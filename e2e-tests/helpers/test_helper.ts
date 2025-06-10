@@ -302,12 +302,13 @@ export class PageObject {
           if (message.role === "system") {
             message.content = "[[SYSTEM_MESSAGE]]";
           }
+          if (typeof message.content === "string") {
+            message.content = message.content.replace(/\r\n/g, "\n");
+          }
           return message;
         },
       );
-      expect(
-        JSON.stringify(parsedDump, null, 2).replace(/\r\n/g, "\n"),
-      ).toMatchSnapshot(name);
+      expect(JSON.stringify(parsedDump, null, 2)).toMatchSnapshot(name);
       return;
     }
     expect(
