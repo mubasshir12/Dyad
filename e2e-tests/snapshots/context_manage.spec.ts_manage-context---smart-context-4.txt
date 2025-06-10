@@ -39,7 +39,7 @@
         },
         {
           "path": "AI_RULES.md",
-          "content": "# AI_RULES.md",
+          "content": "# AI_RULES.md\n",
           "force": false
         },
         {
@@ -74,7 +74,7 @@
         },
         {
           "path": "src/dir/some.css",
-          "content": "/* some.css */",
+          "content": "/* some.css */\n",
           "force": false
         },
         {
