@@ -365,7 +365,10 @@ export async function extractCodebase({
   // Add files from contextPaths
   if (contextPaths && contextPaths.length > 0) {
     for (const p of contextPaths) {
-      const pattern = path.join(appPath, p.globPath);
+      const pattern = createFullGlobPath({
+        appPath,
+        globPath: p.globPath,
+      });
       const matches = await glob(pattern, {
         nodir: true,
         absolute: true,
@@ -385,7 +388,10 @@ export async function extractCodebase({
     smartContextAutoIncludes.length > 0
   ) {
     for (const p of smartContextAutoIncludes) {
-      const pattern = path.join(appPath, p.globPath);
+      const pattern = createFullGlobPath({
+        appPath,
+        globPath: p.globPath,
+      });
       const matches = await glob(pattern, {
         nodir: true,
         absolute: true,
@@ -483,4 +489,16 @@ async function sortFilesByModificationTime(files: string[]): Promise<string[]> {
   }
   // Sort by modification time (oldest first)
   return fileStats.sort((a, b) => a.mtime - b.mtime).map((item) => item.file);
+}
+
+function createFullGlobPath({
+  appPath,
+  globPath,
+}: {
+  appPath: string;
+  globPath: string;
+}): string {
+  // By default the glob package treats "\" as an escape character.
+  // We want the path to use forward slash for all platforms.
+  return `${appPath.replace(/\\/g, "/")}/${globPath}`;
 }
