@@ -31,6 +31,7 @@ import { getDyadAppPath } from "../../paths/paths";
 import { withLock } from "../utils/lock_utils";
 import { createLoggedHandler } from "./safe_handle";
 import { ApproveProposalResult } from "../ipc_types";
+import { validateContextPaths } from "../utils/context_paths_utils";
 
 const logger = log.scope("proposal_handlers");
 const handle = createLoggedHandler(logger);
@@ -74,6 +75,7 @@ async function getCodebaseTokenCount(
   messageId: number,
   messageContent: string,
   appPath: string,
+  contextPaths: unknown,
 ): Promise<number> {
   // Clean up expired cache entries first
   cleanupExpiredCacheEntries();
@@ -94,8 +96,12 @@ async function getCodebaseTokenCount(
 
   // Calculate and cache the token count
   logger.log(`Calculating codebase token count for chatId: ${chatId}`);
-  const codebase = (await extractCodebase(getDyadAppPath(appPath)))
-    .formattedOutput;
+  const codebase = (
+    await extractCodebase({
+      appPath: getDyadAppPath(appPath),
+      contextPaths: validateContextPaths(contextPaths),
+    })
+  ).formattedOutput;
   const tokenCount = estimateTokens(codebase);
 
   // Store in cache
@@ -277,6 +283,7 @@ const getProposalHandler = async (
           latestAssistantMessage.id,
           latestAssistantMessage.content || "",
           chat.app.path,
+          chat.app.contextPaths,
         );
 
         const totalTokens = messagesTokenCount + codebaseTokenCount;

@@ -15,6 +15,7 @@ export const apps = sqliteTable("apps", {
   githubOrg: text("github_org"),
   githubRepo: text("github_repo"),
   supabaseProjectId: text("supabase_project_id"),
+  contextPaths: text("context_paths", { mode: "json" }),
 });
 
 export const chats = sqliteTable("chats", {

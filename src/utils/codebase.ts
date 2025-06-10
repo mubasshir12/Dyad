@@ -4,6 +4,8 @@ import path from "node:path";
 import { isIgnored } from "isomorphic-git";
 import log from "electron-log";
 import { IS_TEST_BUILD } from "../ipc/utils/test_utils";
+import { glob } from "glob";
+import { ContextPath } from "../lib/schemas";
 
 const logger = log.scope("utils/codebase");
 
@@ -51,7 +53,7 @@ const gitIgnoreMtimes = new Map<string, number>();
 /**
  * Check if a path should be ignored based on git ignore rules
  */
-async function isGitIgnored(
+export async function isGitIgnored(
   filePath: string,
   baseDir: string,
 ): Promise<boolean> {
@@ -315,14 +317,26 @@ ${content}
   }
 }
 
+export type CodebaseFile = {
+  path: string;
+  content: string;
+  force?: boolean;
+};
+
 /**
  * Extract and format codebase files as a string to be included in prompts
  * @param appPath - Path to the codebase to extract
  * @returns Object containing formatted output and individual files
  */
-export async function extractCodebase(appPath: string): Promise<{
+export async function extractCodebase({
+  appPath,
+  contextPaths,
+}: {
+  appPath: string;
+  contextPaths: ContextPath[];
+}): Promise<{
   formattedOutput: string;
-  files: { path: string; content: string }[];
+  files: CodebaseFile[];
 }> {
   try {
     await fsAsync.access(appPath);
@@ -335,14 +349,37 @@ export async function extractCodebase(appPath: string): Promise<{
   const startTime = Date.now();
 
   // Collect all relevant files
-  const files = await collectFiles(appPath, appPath);
+  let files = await collectFiles(appPath, appPath);
+
+  // If contextPaths are provided, filter the files
+  const forcedFiles = new Set<string>();
+  if (contextPaths && contextPaths.length > 0) {
+    const includedFiles = new Set<string>();
+
+    for (const p of contextPaths) {
+      const pattern = path.join(appPath, p.globPath);
+      const matches = await glob(pattern, {
+        nodir: true,
+        absolute: true,
+        ignore: "**/node_modules/**",
+      });
+      matches.forEach((file) => {
+        const normalizedFile = path.normalize(file);
+        includedFiles.add(normalizedFile);
+        if (p.force) {
+          forcedFiles.add(normalizedFile);
+        }
+      });
+    }
+    files = files.filter((file) => includedFiles.has(path.normalize(file)));
+  }
 
   // Sort files by modification time (oldest first)
   // This is important for cache-ability.
   const sortedFiles = await sortFilesByModificationTime(files);
 
   // Format files and collect individual file contents
-  const filesArray: { path: string; content: string }[] = [];
+  const filesArray: CodebaseFile[] = [];
   const formatPromises = sortedFiles.map(async (file) => {
     const formattedContent = await formatFile(file, appPath);
 
@@ -352,6 +389,9 @@ export async function extractCodebase(appPath: string): Promise<{
       // Why? Normalize Windows-style paths which causes lots of weird issues (e.g. Git commit)
       .split(path.sep)
       .join("/");
+
+    const isForced = forcedFiles.has(path.normalize(file));
+
     const fileContent = isOmittedFile(relativePath)
       ? OMITTED_FILE_CONTENT
       : await readFileWithCache(file);
@@ -359,6 +399,7 @@ export async function extractCodebase(appPath: string): Promise<{
       filesArray.push({
         path: relativePath,
         content: fileContent,
+        force: isForced,
       });
     }
 

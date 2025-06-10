@@ -17,42 +17,57 @@ import {
 } from "./ui/tooltip";
 import { useSettings } from "@/hooks/useSettings";
 import { Badge } from "./ui/badge";
+import { useContextPaths } from "@/hooks/useContextPaths";
 
-interface ContextFile {
-  id: string;
-  path: string;
-  fileCount: number;
-  tokenCount: number;
-  force: boolean;
-}
+// This type is now coming from the backend via the hook
+// interface ContextFile {
+//   id: string;
+//   path: string;
+//   fileCount: number;
+//   tokenCount: number;
+//   force: boolean;
+// }
 
 export function ContextFilesPicker() {
   const { settings } = useSettings();
+  const { contextPaths, updateContextPaths } = useContextPaths();
   const [isOpen, setIsOpen] = useState(false);
-  const [paths, setPaths] = useState<ContextFile[]>([]);
   const [newPath, setNewPath] = useState("");
 
   const addPath = () => {
-    if (newPath.trim() === "") return;
-    setPaths([
-      ...paths,
+    if (
+      newPath.trim() === "" ||
+      contextPaths.find((p) => p.globPath === newPath)
+    ) {
+      setNewPath("");
+      return;
+    }
+    const newPaths = [
+      ...contextPaths.map(({ globPath, force }) => ({ globPath, force })),
       {
-        id: crypto.randomUUID(),
-        path: newPath,
-        fileCount: Math.floor(Math.random() * 10), // Mock
-        tokenCount: Math.floor(Math.random() * 5000), // Mock
+        globPath: newPath,
         force: false,
       },
-    ]);
+    ];
+    updateContextPaths(newPaths);
     setNewPath("");
   };
 
-  const removePath = (id: string) => {
-    setPaths(paths.filter((p) => p.id !== id));
+  const removePath = (pathToRemove: string) => {
+    const newPaths = contextPaths
+      .filter((p) => p.globPath !== pathToRemove)
+      .map(({ globPath, force }) => ({ globPath, force }));
+    updateContextPaths(newPaths);
   };
 
-  const toggleForce = (id: string) => {
-    setPaths(paths.map((p) => (p.id === id ? { ...p, force: !p.force } : p)));
+  const toggleForce = (pathToToggle: string) => {
+    const newPaths = contextPaths.map(({ globPath, force }) => {
+      if (globPath === pathToToggle) {
+        return { globPath, force: !force };
+      }
+      return { globPath, force };
+    });
+    updateContextPaths(newPaths);
   };
 
   return (
@@ -114,26 +129,26 @@ export function ContextFilesPicker() {
           </div>
 
           <TooltipProvider>
-            {paths.length > 0 ? (
+            {contextPaths.length > 0 ? (
               <div className="space-y-2">
-                {paths.map((p) => (
+                {contextPaths.map((p) => (
                   <div
-                    key={p.id}
+                    key={p.globPath}
                     className="flex items-center justify-between gap-2 rounded-md border p-2"
                   >
                     <div className="flex flex-1 flex-col overflow-hidden">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="truncate font-mono text-sm">
-                            {p.path}
+                            {p.globPath}
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{p.path}</p>
+                          <p>{p.globPath}</p>
                         </TooltipContent>
                       </Tooltip>
                       <span className="text-xs text-muted-foreground">
-                        {p.fileCount} files, ~{p.tokenCount} tokens
+                        {p.files} files, ~{p.tokens} tokens
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -141,11 +156,11 @@ export function ContextFilesPicker() {
                         <div className="flex items-center gap-2">
                           <Checkbox
                             checked={p.force}
-                            onCheckedChange={() => toggleForce(p.id)}
-                            id={`force-${p.id}`}
+                            onCheckedChange={() => toggleForce(p.globPath)}
+                            id={`force-${p.globPath}`}
                           />
                           <label
-                            htmlFor={`force-${p.id}`}
+                            htmlFor={`force-${p.globPath}`}
                             className="text-xs text-muted-foreground"
                           >
                             Always
@@ -155,7 +170,7 @@ export function ContextFilesPicker() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => removePath(p.id)}
+                        onClick={() => removePath(p.globPath)}
                       >
                         <Trash2 className="size-4" />
                       </Button>

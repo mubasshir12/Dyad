@@ -3,9 +3,9 @@ import {
   type ChatSummary,
   ChatSummariesSchema,
   type UserSettings,
+  type ContextPath,
 } from "../lib/schemas";
 import type {
-  App,
   AppOutput,
   Chat,
   ChatResponseEnd,
@@ -32,6 +32,7 @@ import type {
   RenameBranchParams,
   UserBudgetInfo,
   CopyAppParams,
+  App,
 } from "./ipc_types";
 import type { ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -69,6 +70,11 @@ interface DeleteCustomModelParams {
   providerId: string;
   modelApiName: string;
 }
+
+export type ContextPathResult = ContextPath & {
+  files: number;
+  tokens: number;
+};
 
 export class IpcClient {
   private static instance: IpcClient;
@@ -846,5 +852,19 @@ export class IpcClient {
   // Method to get user budget information
   public async getUserBudget(): Promise<UserBudgetInfo | null> {
     return this.ipcRenderer.invoke("get-user-budget");
+  }
+
+  public async getContextPaths(appId: number): Promise<ContextPathResult[]> {
+    return this.ipcRenderer.invoke("get-context-paths", { appId });
+  }
+
+  public async setContextPaths(
+    appId: number,
+    contextPaths: ContextPath[],
+  ): Promise<void> {
+    return this.ipcRenderer.invoke("set-context-paths", {
+      appId,
+      contextPaths,
+    });
   }
 }
