@@ -171,11 +171,11 @@ export default function SettingsPage() {
   const getIntegrationIcon = (integrationId: string) => {
     switch (integrationId) {
       case "github":
-        return <Github className="h-10 w-10 text-muted-foreground mb-2" />;
+        return <Github className="mb-2 h-10 w-10 text-muted-foreground" />;
       case "supabase":
-        return <DatabaseZap className="h-10 w-10 text-muted-foreground mb-2" />;
+        return <DatabaseZap className="mb-2 h-10 w-10 text-muted-foreground" />;
       case "vercel":
-        return <Rocket className="h-10 w-10 text-muted-foreground mb-2" />;
+        return <Rocket className="mb-2 h-10 w-10 text-muted-foreground" />;
       default:
         return null;
     }
@@ -213,50 +213,50 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen px-8 py-4">
-      <div className="max-w-5xl mx-auto">
+      <div className="mx-auto max-w-5xl">
         <Button
           onClick={() => router.history.back()}
           variant="outline"
           size="sm"
-          className="flex items-center gap-2 mb-4 bg-(--background-lightest) py-5"
+          className="mb-4 flex items-center gap-2 bg-(--background-lightest) py-5"
         >
           <ArrowLeft className="h-4 w-4" />
           Go Back
         </Button>
-        <div className="flex justify-between mb-4">
+        <div className="mb-4 flex justify-between">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             Settings
           </h1>
           <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
             <span className="mr-2 font-medium">App Version:</span>
-            <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-800 dark:text-gray-200 font-mono">
+            <span className="rounded bg-gray-100 px-2 py-0.5 font-mono text-gray-800 dark:bg-gray-700 dark:text-gray-200">
               {appVersion ? appVersion : "-"}
             </span>
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+            <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
               General Settings
             </h2>
-            <div className="space-y-4 mb-4">
+            <div className="mb-4 space-y-4">
               <div className="flex items-center gap-4">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Theme
                 </label>
-                <div className="relative bg-gray-100 dark:bg-gray-700 rounded-lg p-1 flex">
+                <div className="relative flex rounded-lg bg-gray-100 p-1 dark:bg-gray-700">
                   {(["system", "light", "dark"] as const).map((option) => (
                     <button
                       key={option}
                       onClick={() => setTheme(option)}
                       className={`
-                        px-4 py-1.5 text-sm font-medium rounded-md
+                        rounded-md px-4 py-1.5 text-sm font-medium
                         transition-all duration-200
                         ${
                           theme === option
-                            ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                            : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                            ? "bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white"
+                            : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
                         }
                       `}
                     >
@@ -277,30 +277,30 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+          <div className="rounded-xl bg-white shadow-sm dark:bg-gray-800">
             <ProviderSettingsGrid />
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+            <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
               Integrations
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {INTEGRATION_PROVIDERS.map((integration) => (
                 <Card
                   key={integration.id}
-                  className="relative transition-all hover:shadow-md border-border cursor-pointer"
+                  className="group relative cursor-pointer overflow-hidden rounded-xl border-border shadow-sm transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
                   onClick={() => handleIntegrationClick(integration.id)}
                 >
-                  <CardHeader className="p-4 flex flex-col items-center justify-center h-full">
+                  <CardHeader className="flex h-full flex-col items-center justify-center p-4">
                     {getIntegrationIcon(integration.id)}
-                    <CardTitle className="text-xl text-center">
+                    <CardTitle className="text-center text-xl">
                       {integration.name}
                     </CardTitle>
                     <CardDescription className="text-center">
                       {integration.description}
                     </CardDescription>
-                    <span className="mt-2 text-sm font-medium text-gray-500 bg-gray-50 dark:bg-gray-900 dark:text-gray-300 px-2 py-1 rounded-full">
+                    <span className="mt-2 rounded-full bg-gray-50 px-2 py-1 text-sm font-medium text-gray-500 dark:bg-gray-900 dark:text-gray-300">
                       {getIntegrationStatus(integration.id)}
                     </span>
                   </CardHeader>
@@ -315,8 +315,8 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+              <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
                 Telemetry
               </h2>
               <div className="space-y-2">
@@ -327,15 +327,15 @@ export default function SettingsPage() {
               </div>
               <div className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <span className="mr-2 font-medium">Telemetry ID:</span>
-                <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-800 dark:text-gray-200 font-mono">
+                <span className="rounded bg-gray-100 px-2 py-0.5 font-mono text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                   {settings ? settings.telemetryUserId : "n/a"}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-gray-800">
+            <h2 className="mb-4 text-lg font-medium text-gray-900 dark:text-white">
               Experiments
             </h2>
             <div className="space-y-4">
@@ -359,24 +359,24 @@ export default function SettingsPage() {
                   }}
                 />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 File editing is not reliable and requires you to manually commit
                 changes and update Supabase edge functions.
               </p>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-red-200 dark:border-red-800">
-            <h2 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
+          <div className="rounded-xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-800 dark:bg-gray-800">
+            <h2 className="mb-4 text-lg font-medium text-red-600 dark:text-red-400">
               Danger Zone
             </h2>
             <div className="space-y-4">
-              <div className="flex items-start justify-between flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                     Reset Everything
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     This will delete all your apps, chats, and settings. This
                     action cannot be undone.
                   </p>
@@ -384,7 +384,7 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setIsResetDialogOpen(true)}
                   disabled={isResetting}
-                  className="rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isResetting ? "Resetting..." : "Reset Everything"}
                 </button>
@@ -426,7 +426,7 @@ export default function SettingsPage() {
               Follow these steps to authorize Dyad with your GitHub account.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-3">
+          <div className="space-y-3 py-4">
             {githubError && (
               <p className="text-sm text-red-600 dark:text-red-400">
                 Error: {githubError}
@@ -444,7 +444,7 @@ export default function SettingsPage() {
                   1. Open this URL in your browser:
                   <Button
                     variant="link"
-                    className="p-0 h-auto ml-1 text-blue-600 dark:text-blue-400"
+                    className="ml-1 h-auto p-0 text-blue-600 dark:text-blue-400"
                     onClick={() =>
                       IpcClient.getInstance().openExternalUrl(
                         githubVerificationUri,
@@ -457,8 +457,8 @@ export default function SettingsPage() {
                 </p>
                 <div>
                   2. Enter this code:
-                  <div className="flex items-center gap-2 mt-1">
-                    <strong className="font-mono text-lg tracking-wider bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-md">
+                  <div className="mt-1 flex items-center gap-2">
+                    <strong className="rounded-md bg-gray-100 px-3 py-1 font-mono text-lg tracking-wider dark:bg-gray-700">
                       {githubUserCode}
                     </strong>
                     <Button
