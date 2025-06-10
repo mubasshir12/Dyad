@@ -44,9 +44,10 @@ import {
 import { INTEGRATION_PROVIDERS } from "@/shared/integrations";
 
 import { vercelSettingsRoute } from "@/routes/settings/vercel";
-import { GitHubIntegration } from "@/components/GitHubIntegration"; // Per il pulsante Disconnect
-import { SupabaseIntegration } from "@/components/SupabaseIntegration"; // Per il pulsante Disconnect
-import { VercelIntegration } from "@/components/VercelIntegration"; // Importa il nuovo componente
+import { GitHubIntegration } from "@/components/GitHubIntegration";
+import { SupabaseIntegration } from "@/components/SupabaseIntegration";
+import { VercelIntegration } from "@/components/VercelIntegration";
+import { useDeepLink } from "@/contexts/DeepLinkContext"; // Import useDeepLink
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const appVersion = useAppVersion();
   const { settings, updateSettings, refreshSettings } = useSettings();
   const router = useRouter();
+  const { lastDeepLink } = useDeepLink(); // Use the deep link context
 
   // State per il GitHub Device Flow
   const [githubUserCode, setGithubUserCode] = useState<string | null>(null);
@@ -68,6 +70,24 @@ export default function SettingsPage() {
   );
   const [codeCopied, setCodeCopied] = useState(false);
   const [showGithubAuthModal, setShowGithubAuthModal] = useState(false);
+
+  // Effect to refresh settings when a relevant deep link is processed
+  useEffect(() => {
+    const handleDeepLinkEffect = async () => {
+      if (
+        lastDeepLink?.type === "supabase-oauth-return" ||
+        lastDeepLink?.type === "dyad-pro-return" // Also useful for other settings changes
+      ) {
+        console.log(
+          `SettingsPage: Deep link ${lastDeepLink.type} detected. Refreshing settings.`,
+        );
+        await refreshSettings();
+      }
+    };
+    if (lastDeepLink) {
+      handleDeepLinkEffect();
+    }
+  }, [lastDeepLink, refreshSettings]);
 
   useEffect(() => {
     const cleanupFunctions: (() => void)[] = [];
@@ -109,7 +129,6 @@ export default function SettingsPage() {
             setGithubUserCode(null);
             setGithubVerificationUri(null);
             setIsConnectingToGithub(false);
-            // Non chiudere il modale in caso di errore, così l'utente vede il messaggio
           },
         );
       cleanupFunctions.push(removeErrorListener);
@@ -173,10 +192,8 @@ export default function SettingsPage() {
         setGithubVerificationUri(null);
         setGithubStatusMessage("Requesting device code from GitHub...");
         setShowGithubAuthModal(true);
-        IpcClient.getInstance().startGithubDeviceFlow(null); // null appId per contesto globale
+        IpcClient.getInstance().startGithubDeviceFlow(null);
       } else {
-        // Già connesso, potrebbe mostrare un messaggio o permettere la disconnessione qui
-        // Per ora, la disconnessione è gestita dal componente GitHubIntegration
         showInfo(
           "Already connected to GitHub. You can manage the connection below.",
         );
@@ -387,12 +404,10 @@ export default function SettingsPage() {
         onCancel={() => setIsResetDialogOpen(false)}
       />
 
-      {/* GitHub Device Flow Modal */}
       <Dialog
         open={showGithubAuthModal}
         onOpenChange={(open) => {
           if (!open) {
-            // Se l'utente chiude il modale, interrompiamo il tentativo di connessione
             setIsConnectingToGithub(false);
             setGithubUserCode(null);
             setGithubVerificationUri(null);
@@ -480,7 +495,7 @@ export default function SettingsPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setIsConnectingToGithub(false); // Interrompi il tentativo
+                setIsConnectingToGithub(false);
                 setShowGithubAuthModal(false);
               }}
             >
