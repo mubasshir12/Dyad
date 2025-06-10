@@ -3,7 +3,8 @@ import {
   type ChatSummary,
   ChatSummariesSchema,
   type UserSettings,
-  type ContextPath,
+  type GlobPath,
+  type ContextPathResults,
 } from "../lib/schemas";
 import type {
   AppOutput,
@@ -71,7 +72,7 @@ interface DeleteCustomModelParams {
   modelApiName: string;
 }
 
-export type ContextPathResult = ContextPath & {
+export type ContextPathResult = GlobPath & {
   files: number;
   tokens: number;
 };
@@ -854,17 +855,21 @@ export class IpcClient {
     return this.ipcRenderer.invoke("get-user-budget");
   }
 
-  public async getContextPaths(appId: number): Promise<ContextPathResult[]> {
+  public async getContextPaths(appId: number): Promise<ContextPathResults> {
     return this.ipcRenderer.invoke("get-context-paths", { appId });
   }
 
   public async setContextPaths(
     appId: number,
-    contextPaths: ContextPath[],
+    contextPaths: GlobPath[],
+    smartContextAutoIncludes?: GlobPath[],
   ): Promise<void> {
     return this.ipcRenderer.invoke("set-context-paths", {
       appId,
-      contextPaths,
+      chatContext: {
+        contextPaths,
+        smartContextAutoIncludes: smartContextAutoIncludes || [],
+      },
     });
   }
 }

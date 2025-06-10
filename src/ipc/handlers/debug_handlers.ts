@@ -13,6 +13,7 @@ import { chats, apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { getDyadAppPath } from "../../paths/paths";
 import { LargeLanguageModel } from "@/lib/schemas";
+import { validateChatContext } from "../utils/context_paths_utils";
 
 // Shared function to get system debug info
 async function getSystemDebugInfo({
@@ -178,7 +179,7 @@ export function registerDebugHandlers() {
         const codebase = (
           await extractCodebase({
             appPath,
-            contextPaths: [],
+            chatContext: validateChatContext(app.chatContext),
           })
         ).formattedOutput;
 

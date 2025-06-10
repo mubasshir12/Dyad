@@ -3,16 +3,16 @@ import { apps } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import {
-  ContextPathsSchema,
-  ContextPathResult,
-  ContextPath,
+  AppChatContext,
+  AppChatContextSchema,
+  ContextPathResults,
 } from "@/lib/schemas";
 import { estimateTokens } from "../utils/token_utils";
 import { createLoggedHandler } from "./safe_handle";
 import log from "electron-log";
 import { getDyadAppPath } from "@/paths/paths";
 import { extractCodebase } from "@/utils/codebase";
-import { validateContextPaths } from "../utils/context_paths_utils";
+import { validateChatContext } from "../utils/context_paths_utils";
 
 const logger = log.scope("context_paths_handlers");
 const handle = createLoggedHandler(logger);
@@ -20,7 +20,7 @@ const handle = createLoggedHandler(logger);
 export function registerContextPathsHandlers() {
   handle(
     "get-context-paths",
-    async (_, { appId }: { appId: number }): Promise<ContextPathResult[]> => {
+    async (_, { appId }: { appId: number }): Promise<ContextPathResults> => {
       z.object({ appId: z.number() }).parse({ appId });
 
       const app = await db.query.apps.findFirst({
@@ -36,15 +36,41 @@ export function registerContextPathsHandlers() {
       }
       const appPath = getDyadAppPath(app.path);
 
-      const results: ContextPathResult[] = [];
-      for (const contextPath of validateContextPaths(app.contextPaths)) {
+      const results: ContextPathResults = {
+        contextPaths: [],
+        smartContextAutoIncludes: [],
+      };
+      const { contextPaths, smartContextAutoIncludes } = validateChatContext(
+        app.chatContext,
+      );
+      for (const contextPath of contextPaths) {
         const { formattedOutput, files } = await extractCodebase({
           appPath,
-          contextPaths: [contextPath],
+          chatContext: {
+            contextPaths: [contextPath],
+            smartContextAutoIncludes: [],
+          },
         });
         const totalTokens = estimateTokens(formattedOutput);
 
-        results.push({
+        results.contextPaths.push({
+          ...contextPath,
+          files: files.length,
+          tokens: totalTokens,
+        });
+      }
+
+      for (const contextPath of smartContextAutoIncludes) {
+        const { formattedOutput, files } = await extractCodebase({
+          appPath,
+          chatContext: {
+            contextPaths: [contextPath],
+            smartContextAutoIncludes: [],
+          },
+        });
+        const totalTokens = estimateTokens(formattedOutput);
+
+        results.smartContextAutoIncludes.push({
           ...contextPath,
           files: files.length,
           tokens: totalTokens,
@@ -58,15 +84,15 @@ export function registerContextPathsHandlers() {
     "set-context-paths",
     async (
       _,
-      { appId, contextPaths }: { appId: number; contextPaths: ContextPath[] },
+      { appId, chatContext }: { appId: number; chatContext: AppChatContext },
     ) => {
       const schema = z.object({
         appId: z.number(),
-        contextPaths: ContextPathsSchema,
+        chatContext: AppChatContextSchema,
       });
-      schema.parse({ appId, contextPaths });
+      schema.parse({ appId, chatContext });
 
-      await db.update(apps).set({ contextPaths }).where(eq(apps.id, appId));
+      await db.update(apps).set({ chatContext }).where(eq(apps.id, appId));
 
       return { success: true };
     },

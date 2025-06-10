@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "84788152-17d5-48a6-bffa-8af11e338f6a",
+  "id": "164b6b9d-8df1-41f0-b3d2-5fe479312bdc",
   "prevId": "0a47ec41-9477-4457-b3e8-e5ecb3e3a855",
   "tables": {
     "apps": {
@@ -65,8 +65,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "context_paths": {
-          "name": "context_paths",
+        "chat_context": {
+          "name": "chat_context",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

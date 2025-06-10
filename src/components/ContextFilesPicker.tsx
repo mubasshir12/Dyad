@@ -5,10 +5,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { FileCode, InfoIcon, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -16,23 +15,19 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { useSettings } from "@/hooks/useSettings";
-import { Badge } from "./ui/badge";
 import { useContextPaths } from "@/hooks/useContextPaths";
-
-// This type is now coming from the backend via the hook
-// interface ContextFile {
-//   id: string;
-//   path: string;
-//   fileCount: number;
-//   tokenCount: number;
-//   force: boolean;
-// }
 
 export function ContextFilesPicker() {
   const { settings } = useSettings();
-  const { contextPaths, updateContextPaths } = useContextPaths();
+  const {
+    contextPaths,
+    smartContextAutoIncludes,
+    updateContextPaths,
+    updateSmartContextAutoIncludes,
+  } = useContextPaths();
   const [isOpen, setIsOpen] = useState(false);
   const [newPath, setNewPath] = useState("");
+  const [newAutoIncludePath, setNewAutoIncludePath] = useState("");
 
   const addPath = () => {
     if (
@@ -43,10 +38,9 @@ export function ContextFilesPicker() {
       return;
     }
     const newPaths = [
-      ...contextPaths.map(({ globPath, force }) => ({ globPath, force })),
+      ...contextPaths.map(({ globPath }) => ({ globPath })),
       {
         globPath: newPath,
-        force: false,
       },
     ];
     updateContextPaths(newPaths);
@@ -56,18 +50,33 @@ export function ContextFilesPicker() {
   const removePath = (pathToRemove: string) => {
     const newPaths = contextPaths
       .filter((p) => p.globPath !== pathToRemove)
-      .map(({ globPath, force }) => ({ globPath, force }));
+      .map(({ globPath }) => ({ globPath }));
     updateContextPaths(newPaths);
   };
 
-  const toggleForce = (pathToToggle: string) => {
-    const newPaths = contextPaths.map(({ globPath, force }) => {
-      if (globPath === pathToToggle) {
-        return { globPath, force: !force };
-      }
-      return { globPath, force };
-    });
-    updateContextPaths(newPaths);
+  const addAutoIncludePath = () => {
+    if (
+      newAutoIncludePath.trim() === "" ||
+      smartContextAutoIncludes.find((p) => p.globPath === newAutoIncludePath)
+    ) {
+      setNewAutoIncludePath("");
+      return;
+    }
+    const newPaths = [
+      ...smartContextAutoIncludes.map(({ globPath }) => ({ globPath })),
+      {
+        globPath: newAutoIncludePath,
+      },
+    ];
+    updateSmartContextAutoIncludes(newPaths);
+    setNewAutoIncludePath("");
+  };
+
+  const removeAutoIncludePath = (pathToRemove: string) => {
+    const newPaths = smartContextAutoIncludes
+      .filter((p) => p.globPath !== pathToRemove)
+      .map(({ globPath }) => ({ globPath }));
+    updateSmartContextAutoIncludes(newPaths);
   };
 
   return (
@@ -80,14 +89,6 @@ export function ContextFilesPicker() {
       </PopoverTrigger>
       <PopoverContent className="w-96" align="start">
         <div className="relative space-y-4">
-          {settings?.enableProSmartFilesContextMode && (
-            <Badge
-              variant="outline"
-              className="absolute top-0 right-0 -translate-y-1/2"
-            >
-              Smart Context
-            </Badge>
-          )}
           <div>
             <h3 className="font-medium">Codebase Context</h3>
             <p className="text-sm text-muted-foreground">
@@ -152,21 +153,6 @@ export function ContextFilesPicker() {
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {settings?.enableProSmartFilesContextMode && (
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={p.force}
-                            onCheckedChange={() => toggleForce(p.globPath)}
-                            id={`force-${p.globPath}`}
-                          />
-                          <label
-                            htmlFor={`force-${p.globPath}`}
-                            className="text-xs text-muted-foreground"
-                          >
-                            Always
-                          </label>
-                        </div>
-                      )}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -188,6 +174,88 @@ export function ContextFilesPicker() {
               </div>
             )}
           </TooltipProvider>
+
+          {settings?.enableProSmartFilesContextMode && (
+            <div className="pt-2">
+              <div>
+                <h3 className="font-medium">Smart Context Auto-includes</h3>
+                <p className="text-sm text-muted-foreground">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1 cursor-help">
+                          These files will always be included in the context.{" "}
+                          <InfoIcon className="ml-2 size-4" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[300px]">
+                        <p>
+                          Auto-include files are always included in the context
+                          in addition to the files selected as relevant by Smart
+                          Context.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </p>
+              </div>
+
+              <div className="flex w-full max-w-sm items-center space-x-2 mt-4">
+                <Input
+                  type="text"
+                  placeholder="src/**/*.config.ts"
+                  value={newAutoIncludePath}
+                  onChange={(e) => setNewAutoIncludePath(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      addAutoIncludePath();
+                    }
+                  }}
+                />
+                <Button type="submit" onClick={addAutoIncludePath}>
+                  Add
+                </Button>
+              </div>
+
+              <TooltipProvider>
+                {smartContextAutoIncludes.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    {smartContextAutoIncludes.map((p) => (
+                      <div
+                        key={p.globPath}
+                        className="flex items-center justify-between gap-2 rounded-md border p-2"
+                      >
+                        <div className="flex flex-1 flex-col overflow-hidden">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="truncate font-mono text-sm">
+                                {p.globPath}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{p.globPath}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <span className="text-xs text-muted-foreground">
+                            {p.files} files, ~{p.tokens} tokens
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeAutoIncludePath(p.globPath)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TooltipProvider>
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

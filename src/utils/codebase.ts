@@ -5,7 +5,7 @@ import { isIgnored } from "isomorphic-git";
 import log from "electron-log";
 import { IS_TEST_BUILD } from "../ipc/utils/test_utils";
 import { glob } from "glob";
-import { ContextPath } from "../lib/schemas";
+import { AppChatContext } from "../lib/schemas";
 
 const logger = log.scope("utils/codebase");
 
@@ -330,10 +330,10 @@ export type CodebaseFile = {
  */
 export async function extractCodebase({
   appPath,
-  contextPaths,
+  chatContext,
 }: {
   appPath: string;
-  contextPaths: ContextPath[];
+  chatContext: AppChatContext;
 }): Promise<{
   formattedOutput: string;
   files: CodebaseFile[];
@@ -352,7 +352,7 @@ export async function extractCodebase({
   let files = await collectFiles(appPath, appPath);
 
   // If contextPaths are provided, filter the files
-  const forcedFiles = new Set<string>();
+  const { contextPaths, smartContextAutoIncludes } = chatContext;
   if (contextPaths && contextPaths.length > 0) {
     const includedFiles = new Set<string>();
 
@@ -366,12 +366,25 @@ export async function extractCodebase({
       matches.forEach((file) => {
         const normalizedFile = path.normalize(file);
         includedFiles.add(normalizedFile);
-        if (p.force) {
-          forcedFiles.add(normalizedFile);
-        }
       });
     }
     files = files.filter((file) => includedFiles.has(path.normalize(file)));
+  }
+
+  const autoIncludedFiles = new Set<string>();
+
+  if (smartContextAutoIncludes && smartContextAutoIncludes.length > 0) {
+    for (const p of smartContextAutoIncludes) {
+      const pattern = path.join(appPath, p.globPath);
+      const matches = await glob(pattern, {
+        nodir: true,
+        absolute: true,
+      });
+      matches.forEach((file) => {
+        const normalizedFile = path.normalize(file);
+        autoIncludedFiles.add(normalizedFile);
+      });
+    }
   }
 
   // Sort files by modification time (oldest first)
@@ -390,7 +403,7 @@ export async function extractCodebase({
       .split(path.sep)
       .join("/");
 
-    const isForced = forcedFiles.has(path.normalize(file));
+    const isForced = autoIncludedFiles.has(path.normalize(file));
 
     const fileContent = isOmittedFile(relativePath)
       ? OMITTED_FILE_CONTENT

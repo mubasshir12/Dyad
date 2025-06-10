@@ -96,18 +96,26 @@ export type Experiments = z.infer<typeof ExperimentsSchema>;
 
 export const DyadProBudgetSchema = z.enum(["low", "medium", "high"]);
 
-export const ContextPathSchema = z.object({
+export const GlobPathSchema = z.object({
   globPath: z.string(),
-  force: z.boolean(),
 });
 
-export type ContextPath = z.infer<typeof ContextPathSchema>;
+export type GlobPath = z.infer<typeof GlobPathSchema>;
 
-export const ContextPathsSchema = z.array(ContextPathSchema);
+export const AppChatContextSchema = z.object({
+  contextPaths: z.array(GlobPathSchema),
+  smartContextAutoIncludes: z.array(GlobPathSchema),
+});
+export type AppChatContext = z.infer<typeof AppChatContextSchema>;
 
-export type ContextPathResult = ContextPath & {
+export type ContextPathResult = GlobPath & {
   files: number;
   tokens: number;
+};
+
+export type ContextPathResults = {
+  contextPaths: ContextPathResult[];
+  smartContextAutoIncludes: ContextPathResult[];
 };
 
 /**
