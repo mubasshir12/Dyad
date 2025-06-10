@@ -305,7 +305,9 @@ export class PageObject {
           return message;
         },
       );
-      expect(JSON.stringify(parsedDump, null, 2)).toMatchSnapshot(name);
+      expect(
+        JSON.stringify(parsedDump, null, 2).replace(/\r\n/g, "\n"),
+      ).toMatchSnapshot(name);
       return;
     }
     expect(
