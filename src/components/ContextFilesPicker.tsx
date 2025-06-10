@@ -79,6 +79,9 @@ export function ContextFilesPicker() {
     updateSmartContextAutoIncludes(newPaths);
   };
 
+  const isSmartContextEnabled =
+    settings?.enableDyadPro && settings?.enableProSmartFilesContextMode;
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -101,11 +104,14 @@ export function ContextFilesPicker() {
                     </span>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[300px]">
-                    <p>By default, Dyad uses your whole codebase.</p>
-                    <p>
-                      With Smart Context, Dyad uses the most relevant files as
-                      context.
-                    </p>
+                    {isSmartContextEnabled ? (
+                      <p>
+                        With Smart Context, Dyad uses the most relevant files as
+                        context.
+                      </p>
+                    ) : (
+                      <p>By default, Dyad uses your whole codebase.</p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -114,6 +120,7 @@ export function ContextFilesPicker() {
 
           <div className="flex w-full max-w-sm items-center space-x-2">
             <Input
+              data-testid="manual-context-files-input"
               type="text"
               placeholder="src/**/*.tsx"
               value={newPath}
@@ -124,7 +131,11 @@ export function ContextFilesPicker() {
                 }
               }}
             />
-            <Button type="submit" onClick={addPath}>
+            <Button
+              type="submit"
+              onClick={addPath}
+              data-testid="manual-context-files-add-button"
+            >
               Add
             </Button>
           </div>
@@ -157,6 +168,7 @@ export function ContextFilesPicker() {
                         variant="ghost"
                         size="icon"
                         onClick={() => removePath(p.globPath)}
+                        data-testid="manual-context-files-remove-button"
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -167,7 +179,7 @@ export function ContextFilesPicker() {
             ) : (
               <div className="rounded-md border border-dashed p-4 text-center">
                 <p className="text-sm text-muted-foreground">
-                  {settings?.enableProSmartFilesContextMode
+                  {isSmartContextEnabled
                     ? "Dyad will use Smart Context to automatically find the most relevant files to use as context."
                     : "Dyad will use the entire codebase as context."}
                 </p>
@@ -175,7 +187,7 @@ export function ContextFilesPicker() {
             )}
           </TooltipProvider>
 
-          {settings?.enableProSmartFilesContextMode && (
+          {isSmartContextEnabled && (
             <div className="pt-2">
               <div>
                 <h3 className="font-medium">Smart Context Auto-includes</h3>
@@ -202,6 +214,7 @@ export function ContextFilesPicker() {
 
               <div className="flex w-full max-w-sm items-center space-x-2 mt-4">
                 <Input
+                  data-testid="auto-include-context-files-input"
                   type="text"
                   placeholder="src/**/*.config.ts"
                   value={newAutoIncludePath}
@@ -212,7 +225,11 @@ export function ContextFilesPicker() {
                     }
                   }}
                 />
-                <Button type="submit" onClick={addAutoIncludePath}>
+                <Button
+                  type="submit"
+                  onClick={addAutoIncludePath}
+                  data-testid="auto-include-context-files-add-button"
+                >
                   Add
                 </Button>
               </div>
@@ -245,6 +262,7 @@ export function ContextFilesPicker() {
                             variant="ghost"
                             size="icon"
                             onClick={() => removeAutoIncludePath(p.globPath)}
+                            data-testid="auto-include-context-files-remove-button"
                           >
                             <Trash2 className="size-4" />
                           </Button>

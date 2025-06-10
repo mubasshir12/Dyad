@@ -6,6 +6,7 @@ import log from "electron-log";
 import { IS_TEST_BUILD } from "../ipc/utils/test_utils";
 import { glob } from "glob";
 import { AppChatContext } from "../lib/schemas";
+import { readSettings } from "@/main/settings";
 
 const logger = log.scope("utils/codebase");
 
@@ -338,6 +339,10 @@ export async function extractCodebase({
   formattedOutput: string;
   files: CodebaseFile[];
 }> {
+  const settings = readSettings();
+  const isSmartContextEnabled =
+    settings?.enableDyadPro && settings?.enableProSmartFilesContextMode;
+
   try {
     await fsAsync.access(appPath);
   } catch {
@@ -349,13 +354,16 @@ export async function extractCodebase({
   const startTime = Date.now();
 
   // Collect all relevant files
-  let files = await collectFiles(appPath, appPath);
+  const allFiles = await collectFiles(appPath, appPath);
+  let files = allFiles;
 
-  // If contextPaths are provided, filter the files
+  // Collect files from contextPaths and smartContextAutoIncludes
   const { contextPaths, smartContextAutoIncludes } = chatContext;
-  if (contextPaths && contextPaths.length > 0) {
-    const includedFiles = new Set<string>();
+  const includedFiles = new Set<string>();
+  const autoIncludedFiles = new Set<string>();
 
+  // Add files from contextPaths
+  if (contextPaths && contextPaths.length > 0) {
     for (const p of contextPaths) {
       const pattern = path.join(appPath, p.globPath);
       const matches = await glob(pattern, {
@@ -368,12 +376,14 @@ export async function extractCodebase({
         includedFiles.add(normalizedFile);
       });
     }
-    files = files.filter((file) => includedFiles.has(path.normalize(file)));
   }
 
-  const autoIncludedFiles = new Set<string>();
-
-  if (smartContextAutoIncludes && smartContextAutoIncludes.length > 0) {
+  // Add files from smartContextAutoIncludes
+  if (
+    isSmartContextEnabled &&
+    smartContextAutoIncludes &&
+    smartContextAutoIncludes.length > 0
+  ) {
     for (const p of smartContextAutoIncludes) {
       const pattern = path.join(appPath, p.globPath);
       const matches = await glob(pattern, {
@@ -383,13 +393,20 @@ export async function extractCodebase({
       matches.forEach((file) => {
         const normalizedFile = path.normalize(file);
         autoIncludedFiles.add(normalizedFile);
+        includedFiles.add(normalizedFile); // Also add to included files
       });
     }
   }
 
+  // Only filter files if contextPaths are provided
+  // If only smartContextAutoIncludes are provided, keep all files and just mark auto-includes as forced
+  if (contextPaths && contextPaths.length > 0) {
+    files = files.filter((file) => includedFiles.has(path.normalize(file)));
+  }
+
   // Sort files by modification time (oldest first)
   // This is important for cache-ability.
-  const sortedFiles = await sortFilesByModificationTime(files);
+  const sortedFiles = await sortFilesByModificationTime([...new Set(files)]);
 
   // Format files and collect individual file contents
   const filesArray: CodebaseFile[] = [];
