@@ -3,7 +3,6 @@ import {
   type ChatSummary,
   ChatSummariesSchema,
   type UserSettings,
-  type GlobPath,
   type ContextPathResults,
 } from "../lib/schemas";
 import type {
@@ -71,11 +70,6 @@ interface DeleteCustomModelParams {
   providerId: string;
   modelApiName: string;
 }
-
-export type ContextPathResult = GlobPath & {
-  files: number;
-  tokens: number;
-};
 
 export class IpcClient {
   private static instance: IpcClient;

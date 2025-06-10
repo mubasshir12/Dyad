@@ -54,7 +54,7 @@ const gitIgnoreMtimes = new Map<string, number>();
 /**
  * Check if a path should be ignored based on git ignore rules
  */
-export async function isGitIgnored(
+async function isGitIgnored(
   filePath: string,
   baseDir: string,
 ): Promise<boolean> {
@@ -354,8 +354,7 @@ export async function extractCodebase({
   const startTime = Date.now();
 
   // Collect all relevant files
-  const allFiles = await collectFiles(appPath, appPath);
-  let files = allFiles;
+  let files = await collectFiles(appPath, appPath);
 
   // Collect files from contextPaths and smartContextAutoIncludes
   const { contextPaths, smartContextAutoIncludes } = chatContext;

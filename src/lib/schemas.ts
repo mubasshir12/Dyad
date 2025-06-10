@@ -94,7 +94,11 @@ export const ExperimentsSchema = z.object({
 });
 export type Experiments = z.infer<typeof ExperimentsSchema>;
 
-export const DyadProBudgetSchema = z.enum(["low", "medium", "high"]);
+export const DyadProBudgetSchema = z.object({
+  budgetResetAt: z.string(),
+  maxBudget: z.number(),
+});
+export type DyadProBudget = z.infer<typeof DyadProBudgetSchema>;
 
 export const GlobPathSchema = z.object({
   globPath: z.string(),
@@ -119,7 +123,7 @@ export type ContextPathResults = {
 };
 
 /**
- *[ Zod schema for user settings]
+ * Zod schema for user settings
  */
 export const UserSettingsSchema = z.object({
   selectedModel: LargeLanguageModelSchema,

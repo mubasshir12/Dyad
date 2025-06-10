@@ -42,6 +42,7 @@ interface CodebaseTokenCache {
   messageContent: string;
   tokenCount: number;
   timestamp: number;
+  chatContext: string;
 }
 
 // Cache expiration time (5 minutes)
@@ -75,7 +76,7 @@ async function getCodebaseTokenCount(
   messageId: number,
   messageContent: string,
   appPath: string,
-  contextPaths: unknown,
+  chatContext: unknown,
 ): Promise<number> {
   // Clean up expired cache entries first
   cleanupExpiredCacheEntries();
@@ -88,6 +89,7 @@ async function getCodebaseTokenCount(
     cacheEntry &&
     cacheEntry.messageId === messageId &&
     cacheEntry.messageContent === messageContent &&
+    cacheEntry.chatContext === JSON.stringify(chatContext) &&
     now - cacheEntry.timestamp < CACHE_EXPIRATION_MS
   ) {
     logger.log(`Using cached codebase token count for chatId: ${chatId}`);
@@ -99,7 +101,7 @@ async function getCodebaseTokenCount(
   const codebase = (
     await extractCodebase({
       appPath: getDyadAppPath(appPath),
-      chatContext: validateChatContext(contextPaths),
+      chatContext: validateChatContext(chatContext),
     })
   ).formattedOutput;
   const tokenCount = estimateTokens(codebase);
@@ -111,6 +113,7 @@ async function getCodebaseTokenCount(
     messageContent,
     tokenCount,
     timestamp: now,
+    chatContext: JSON.stringify(chatContext),
   });
 
   return tokenCount;
