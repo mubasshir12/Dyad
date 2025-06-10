@@ -651,16 +651,26 @@ export class IpcClient {
     return this.ipcRenderer.invoke("vercel:list-projects");
   }
 
-  public async createVercelProject(projectName: string): Promise<VercelProject> {
+  public async createVercelProject(
+    projectName: string,
+  ): Promise<VercelProject> {
     return this.ipcRenderer.invoke("vercel:create-project", { projectName });
   }
 
-  public async deployVercelProject(params: VercelDeployParams): Promise<VercelDeploymentResult> {
+  public async deployVercelProject(
+    params: VercelDeployParams,
+  ): Promise<VercelDeploymentResult> {
     return this.ipcRenderer.invoke("vercel:deploy-project", params);
   }
 
-  public async setVercelAppProject(appId: number, vercelProjectId: string): Promise<void> {
-    await this.ipcRenderer.invoke("app:set-vercel-project", { appId, vercelProjectId });
+  public async setVercelAppProject(
+    appId: number,
+    vercelProjectId: string,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("app:set-vercel-project", {
+      appId,
+      vercelProjectId,
+    });
   }
 
   public async unsetVercelAppProject(appId: number): Promise<void> {

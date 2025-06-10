@@ -19,7 +19,9 @@ export const apps = sqliteTable("apps", {
   vercelDeploymentId: text("vercel_deployment_id"),
   vercelDeploymentUrl: text("vercel_deployment_url"),
   vercelInspectorUrl: text("vercel_inspector_url"),
-  vercelDeploymentTimestamp: integer("vercel_deployment_timestamp", { mode: "timestamp" }),
+  vercelDeploymentTimestamp: integer("vercel_deployment_timestamp", {
+    mode: "timestamp",
+  }),
 });
 
 export const chats = sqliteTable("chats", {

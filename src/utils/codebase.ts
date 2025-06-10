@@ -122,7 +122,7 @@ const ALLOWED_EXTENSIONS = [
   ".babel.config",
   ".editorconfig",
   ".env",
-  ".lock" // Include lock files like package-lock.json, yarn.lock, etc.
+  ".lock", // Include lock files like package-lock.json, yarn.lock, etc.
 ];
 
 // Directories to always exclude

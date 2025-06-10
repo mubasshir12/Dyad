@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { ArrowLeft, KeyRound, ExternalLink, Rocket, Info, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  KeyRound,
+  ExternalLink,
+  Rocket,
+  Info,
+  Trash2,
+} from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,16 +25,24 @@ import { IpcClient } from "@/ipc/ipc_client";
 
 export function VercelSettingsPage() {
   const router = useRouter();
-  const { settings, envVars, loading: settingsLoading, error: settingsError, updateSettings } = useSettings();
+  const {
+    settings,
+    envVars,
+    loading: settingsLoading,
+    error: settingsError,
+    updateSettings,
+  } = useSettings();
 
-  const vercelDetails = INTEGRATION_PROVIDERS.find(p => p.id === "vercel");
+  const vercelDetails = INTEGRATION_PROVIDERS.find((p) => p.id === "vercel");
 
   const [accessTokenInput, setAccessTokenInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const userAccessToken = settings?.vercel?.accessToken?.value;
-  const envAccessToken = vercelDetails?.envVarName ? envVars[vercelDetails.envVarName] : undefined;
+  const envAccessToken = vercelDetails?.envVarName
+    ? envVars[vercelDetails.envVarName]
+    : undefined;
   const activeAccessToken = userAccessToken || envAccessToken;
   const isConfigured = !!activeAccessToken;
 
@@ -127,7 +142,9 @@ export function VercelSettingsPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mr-3">
               Configure {vercelDetails.name}
             </h1>
-            <Rocket className={`h-5 w-5 ${isConfigured ? "text-green-500" : "text-yellow-500"}`} />
+            <Rocket
+              className={`h-5 w-5 ${isConfigured ? "text-green-500" : "text-yellow-500"}`}
+            />
             <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
               {settingsLoading
                 ? "Loading..."
@@ -137,13 +154,16 @@ export function VercelSettingsPage() {
             </span>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {vercelDetails.description} Manage your Vercel Access Token here. Project linking and deployment are handled in the App Details page.
+            {vercelDetails.description} Manage your Vercel Access Token here.
+            Project linking and deployment are handled in the App Details page.
           </p>
         </div>
 
         {vercelDetails.websiteUrl && (
           <Button
-            onClick={() => IpcClient.getInstance().openExternalUrl(vercelDetails.websiteUrl!)}
+            onClick={() =>
+              IpcClient.getInstance().openExternalUrl(vercelDetails.websiteUrl!)
+            }
             className="mb-4 bg-(--background-lightest) cursor-pointer py-5"
             variant="outline"
           >
@@ -218,13 +238,19 @@ export function VercelSettingsPage() {
                       placeholder="Enter Vercel Access Token here"
                       className={`flex-grow ${saveError ? "border-red-500" : ""}`}
                     />
-                    <Button onClick={handleSaveKey} disabled={isSaving || !accessTokenInput}>
+                    <Button
+                      onClick={handleSaveKey}
+                      disabled={isSaving || !accessTokenInput}
+                    >
                       {isSaving ? "Saving..." : "Save Token"}
                     </Button>
                   </div>
-                  {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+                  {saveError && (
+                    <p className="text-xs text-red-600">{saveError}</p>
+                  )}
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Setting a token here will override the environment variable (if set).
+                    Setting a token here will override the environment variable
+                    (if set).
                   </p>
                 </div>
               </AccordionContent>
@@ -242,17 +268,21 @@ export function VercelSettingsPage() {
                   {envAccessToken ? (
                     <Alert variant="default">
                       <KeyRound className="h-4 w-4" />
-                      <AlertTitle>Environment Variable Token ({vercelDetails.envVarName})</AlertTitle>
+                      <AlertTitle>
+                        Environment Variable Token ({vercelDetails.envVarName})
+                      </AlertTitle>
                       <AlertDescription>
                         <p className="font-mono text-sm">{envAccessToken}</p>
                         {!userAccessToken && (
                           <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                            This token is currently active (no settings token set).
+                            This token is currently active (no settings token
+                            set).
                           </p>
                         )}
                         {userAccessToken && (
                           <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                            This token is currently being overridden by the token set in Settings.
+                            This token is currently being overridden by the
+                            token set in Settings.
                           </p>
                         )}
                       </AlertDescription>
@@ -271,9 +301,9 @@ export function VercelSettingsPage() {
                     </Alert>
                   )}
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                    This token is set outside the application. If present, it will be
-                    used only if no token is configured in the Settings section above.
-                    Requires app restart to detect changes.
+                    This token is set outside the application. If present, it
+                    will be used only if no token is configured in the Settings
+                    section above. Requires app restart to detect changes.
                   </p>
                 </AccordionContent>
               </AccordionItem>

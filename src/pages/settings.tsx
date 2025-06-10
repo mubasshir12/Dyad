@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { useTheme } from "../contexts/ThemeContext";
 import { ProviderSettingsGrid } from "@/components/ProviderSettings";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { IpcClient, GitHubDeviceFlowUpdateData, GitHubDeviceFlowErrorData, GitHubDeviceFlowSuccessData } from "@/ipc/ipc_client";
+import {
+  IpcClient,
+  GitHubDeviceFlowUpdateData,
+  GitHubDeviceFlowErrorData,
+  GitHubDeviceFlowSuccessData,
+} from "@/ipc/ipc_client";
 import { showSuccess, showError, showInfo } from "@/lib/toast";
 import { AutoApproveSwitch } from "@/components/AutoApproveSwitch";
 import { TelemetrySwitch } from "@/components/TelemetrySwitch";
@@ -10,7 +15,16 @@ import { MaxChatTurnsSelector } from "@/components/MaxChatTurnsSelector";
 import { useSettings } from "@/hooks/useSettings";
 import { useAppVersion } from "@/hooks/useAppVersion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Github, DatabaseZap, Rocket, ExternalLink, Clipboard, Check, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Github,
+  DatabaseZap,
+  Rocket,
+  ExternalLink,
+  Clipboard,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -28,7 +42,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { INTEGRATION_PROVIDERS } from "@/shared/integrations";
-import { providerSettingsRoute } from "@/routes/settings/providers/$provider";
+
 import { vercelSettingsRoute } from "@/routes/settings/vercel";
 import { GitHubIntegration } from "@/components/GitHubIntegration"; // Per il pulsante Disconnect
 import { SupabaseIntegration } from "@/components/SupabaseIntegration"; // Per il pulsante Disconnect
@@ -44,56 +58,66 @@ export default function SettingsPage() {
 
   // State per il GitHub Device Flow
   const [githubUserCode, setGithubUserCode] = useState<string | null>(null);
-  const [githubVerificationUri, setGithubVerificationUri] = useState<string | null>(null);
+  const [githubVerificationUri, setGithubVerificationUri] = useState<
+    string | null
+  >(null);
   const [githubError, setGithubError] = useState<string | null>(null);
   const [isConnectingToGithub, setIsConnectingToGithub] = useState(false);
-  const [githubStatusMessage, setGithubStatusMessage] = useState<string | null>(null);
+  const [githubStatusMessage, setGithubStatusMessage] = useState<string | null>(
+    null,
+  );
   const [codeCopied, setCodeCopied] = useState(false);
   const [showGithubAuthModal, setShowGithubAuthModal] = useState(false);
-
 
   useEffect(() => {
     const cleanupFunctions: (() => void)[] = [];
 
     if (isConnectingToGithub) {
       const removeUpdateListener =
-        IpcClient.getInstance().onGithubDeviceFlowUpdate((data: GitHubDeviceFlowUpdateData) => {
-          if (data.userCode) setGithubUserCode(data.userCode);
-          if (data.verificationUri) setGithubVerificationUri(data.verificationUri);
-          if (data.message) setGithubStatusMessage(data.message);
-          setGithubError(null);
-        });
+        IpcClient.getInstance().onGithubDeviceFlowUpdate(
+          (data: GitHubDeviceFlowUpdateData) => {
+            if (data.userCode) setGithubUserCode(data.userCode);
+            if (data.verificationUri)
+              setGithubVerificationUri(data.verificationUri);
+            if (data.message) setGithubStatusMessage(data.message);
+            setGithubError(null);
+          },
+        );
       cleanupFunctions.push(removeUpdateListener);
 
       const removeSuccessListener =
-        IpcClient.getInstance().onGithubDeviceFlowSuccess((data: GitHubDeviceFlowSuccessData) => {
-          setGithubStatusMessage(data.message || "Successfully connected to GitHub!");
-          setGithubUserCode(null);
-          setGithubVerificationUri(null);
-          setGithubError(null);
-          setIsConnectingToGithub(false);
-          setShowGithubAuthModal(false);
-          refreshSettings();
-        });
+        IpcClient.getInstance().onGithubDeviceFlowSuccess(
+          (data: GitHubDeviceFlowSuccessData) => {
+            setGithubStatusMessage(
+              data.message || "Successfully connected to GitHub!",
+            );
+            setGithubUserCode(null);
+            setGithubVerificationUri(null);
+            setGithubError(null);
+            setIsConnectingToGithub(false);
+            setShowGithubAuthModal(false);
+            refreshSettings();
+          },
+        );
       cleanupFunctions.push(removeSuccessListener);
 
-      const removeErrorListener = IpcClient.getInstance().onGithubDeviceFlowError(
-        (data: GitHubDeviceFlowErrorData) => {
-          setGithubError(data.error || "An unknown error occurred.");
-          setGithubStatusMessage(null);
-          setGithubUserCode(null);
-          setGithubVerificationUri(null);
-          setIsConnectingToGithub(false);
-          // Non chiudere il modale in caso di errore, così l'utente vede il messaggio
-        },
-      );
+      const removeErrorListener =
+        IpcClient.getInstance().onGithubDeviceFlowError(
+          (data: GitHubDeviceFlowErrorData) => {
+            setGithubError(data.error || "An unknown error occurred.");
+            setGithubStatusMessage(null);
+            setGithubUserCode(null);
+            setGithubVerificationUri(null);
+            setIsConnectingToGithub(false);
+            // Non chiudere il modale in caso di errore, così l'utente vede il messaggio
+          },
+        );
       cleanupFunctions.push(removeErrorListener);
     }
     return () => {
       cleanupFunctions.forEach((cleanup) => cleanup());
     };
   }, [isConnectingToGithub, refreshSettings]);
-
 
   const handleResetEverything = async () => {
     setIsResetting(true);
@@ -153,13 +177,19 @@ export default function SettingsPage() {
       } else {
         // Già connesso, potrebbe mostrare un messaggio o permettere la disconnessione qui
         // Per ora, la disconnessione è gestita dal componente GitHubIntegration
-        showInfo("Already connected to GitHub. You can manage the connection below.");
+        showInfo(
+          "Already connected to GitHub. You can manage the connection below.",
+        );
       }
     } else if (integrationId === "supabase") {
       if (!settings?.supabase?.accessToken) {
-        IpcClient.getInstance().openExternalUrl("https://supabase-oauth.dyad.sh/api/connect-supabase/login");
+        IpcClient.getInstance().openExternalUrl(
+          "https://supabase-oauth.dyad.sh/api/connect-supabase/login",
+        );
       } else {
-        showInfo("Already connected to Supabase. You can manage the connection below.");
+        showInfo(
+          "Already connected to Supabase. You can manage the connection below.",
+        );
       }
     }
   };
@@ -358,17 +388,20 @@ export default function SettingsPage() {
       />
 
       {/* GitHub Device Flow Modal */}
-      <Dialog open={showGithubAuthModal} onOpenChange={(open) => {
-        if (!open) {
-          // Se l'utente chiude il modale, interrompiamo il tentativo di connessione
-          setIsConnectingToGithub(false);
-          setGithubUserCode(null);
-          setGithubVerificationUri(null);
-          setGithubError(null);
-          setGithubStatusMessage(null);
-        }
-        setShowGithubAuthModal(open);
-      }}>
+      <Dialog
+        open={showGithubAuthModal}
+        onOpenChange={(open) => {
+          if (!open) {
+            // Se l'utente chiude il modale, interrompiamo il tentativo di connessione
+            setIsConnectingToGithub(false);
+            setGithubUserCode(null);
+            setGithubVerificationUri(null);
+            setGithubError(null);
+            setGithubStatusMessage(null);
+          }
+          setShowGithubAuthModal(open);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center">
@@ -397,9 +430,14 @@ export default function SettingsPage() {
                   <Button
                     variant="link"
                     className="p-0 h-auto ml-1 text-blue-600 dark:text-blue-400"
-                    onClick={() => IpcClient.getInstance().openExternalUrl(githubVerificationUri)}
+                    onClick={() =>
+                      IpcClient.getInstance().openExternalUrl(
+                        githubVerificationUri,
+                      )
+                    }
                   >
-                    {githubVerificationUri} <ExternalLink className="ml-1 h-3 w-3" />
+                    {githubVerificationUri}{" "}
+                    <ExternalLink className="ml-1 h-3 w-3" />
                   </Button>
                 </p>
                 <div>
@@ -413,28 +451,39 @@ export default function SettingsPage() {
                       size="sm"
                       className="h-7 w-7 p-0"
                       onClick={() => {
-                        navigator.clipboard.writeText(githubUserCode).then(() => {
-                          setCodeCopied(true);
-                          setTimeout(() => setCodeCopied(false), 2000);
-                        });
+                        navigator.clipboard
+                          .writeText(githubUserCode)
+                          .then(() => {
+                            setCodeCopied(true);
+                            setTimeout(() => setCodeCopied(false), 2000);
+                          });
                       }}
                       title="Copy code"
                     >
-                      {codeCopied ? <Check className="h-4 w-4 text-green-500" /> : <Clipboard className="h-4 w-4" />}
+                      {codeCopied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Clipboard className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
               </div>
             )}
             {githubStatusMessage && !githubUserCode && (
-              <p className="text-sm text-muted-foreground">{githubStatusMessage}</p>
+              <p className="text-sm text-muted-foreground">
+                {githubStatusMessage}
+              </p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsConnectingToGithub(false); // Interrompi il tentativo
-              setShowGithubAuthModal(false);
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsConnectingToGithub(false); // Interrompi il tentativo
+                setShowGithubAuthModal(false);
+              }}
+            >
               Cancel
             </Button>
           </DialogFooter>

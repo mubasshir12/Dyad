@@ -267,7 +267,8 @@ export default function AppDetailsPage() {
           </Button>
           <GitHubConnector appId={appId} folderName={selectedApp.path} />
           {appId && <SupabaseConnector appId={appId} />}
-          {appId && <VercelConnector appId={appId} />} {/* Add VercelConnector here */}
+          {appId && <VercelConnector appId={appId} />}{" "}
+          {/* Add VercelConnector here */}
         </div>
 
         {/* Rename Dialog */}
