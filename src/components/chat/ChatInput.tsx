@@ -61,6 +61,9 @@ import { DragDropOverlay } from "./DragDropOverlay";
 import { showError, showExtraFilesToast } from "@/lib/toast";
 import { ChatInputControls } from "../ChatInputControls";
 import { ChatErrorBox } from "./ChatErrorBox";
+import { selectedComponentPreviewAtom } from "@/atoms/previewAtoms";
+import { SelectedComponentDisplay } from "./SelectedComponentDisplay";
+
 const showTokenBarAtom = atom(false);
 
 export function ChatInput({ chatId }: { chatId?: number }) {
@@ -78,6 +81,9 @@ export function ChatInput({ chatId }: { chatId?: number }) {
   const [, setMessages] = useAtom<Message[]>(chatMessagesAtom);
   const setIsPreviewOpen = useSetAtom(isPreviewOpenAtom);
   const [showTokenBar, setShowTokenBar] = useAtom(showTokenBarAtom);
+  const [selectedComponent, setSelectedComponent] = useAtom(
+    selectedComponentPreviewAtom,
+  );
 
   // Use the attachments hook
   const {
@@ -139,19 +145,24 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
   const handleSubmit = async () => {
     if (
-      (!inputValue.trim() && attachments.length === 0) ||
+      (!inputValue.trim() && attachments.length === 0 && !selectedComponent) ||
       isStreaming ||
       !chatId
     ) {
       return;
     }
 
-    const currentInput = inputValue;
+    let promptWithContext = inputValue;
+    if (selectedComponent) {
+      const componentContext = `File: ${selectedComponent.relativePath}:${selectedComponent.lineNumber}\n\`\`\`\n${selectedComponent.name}\n\`\`\``;
+      promptWithContext = `${componentContext}\n\n${inputValue}`;
+    }
     setInputValue("");
+    setSelectedComponent(null);
 
     // Send message with attachments and clear them after sending
     await streamMessage({
-      prompt: currentInput,
+      prompt: promptWithContext,
       chatId,
       attachments,
       redo: false,
@@ -281,6 +292,8 @@ export function ChatInput({ chatId }: { chatId?: number }) {
               isRejecting={isRejecting}
             />
           )}
+
+          <SelectedComponentDisplay />
 
           {/* Use the AttachmentsList component */}
           <AttachmentsList

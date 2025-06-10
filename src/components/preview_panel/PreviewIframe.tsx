@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Lightbulb,
   ChevronRight,
+  Crosshair,
 } from "lucide-react";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
@@ -29,6 +30,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useStreamChat } from "@/hooks/useStreamChat";
+import {
+  ComponentSelection,
+  selectedComponentPreviewAtom,
+} from "@/atoms/previewAtoms";
 
 interface ErrorBannerProps {
   error: string | undefined;
@@ -169,13 +174,32 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
   const [canGoForward, setCanGoForward] = useState(false);
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
   const [currentHistoryPosition, setCurrentHistoryPosition] = useState(0);
+  const [selectedComponentPreview, setSelectedComponentPreview] = useAtom(
+    selectedComponentPreviewAtom,
+  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Deactivate component selector when selection is cleared
+  useEffect(() => {
+    if (!selectedComponentPreview && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: "deactivate-dyad-component-selector" },
+        "*",
+      );
+    }
+  }, [selectedComponentPreview]);
 
   // Add message listener for iframe errors and navigation events
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Only handle messages from our iframe
       if (event.source !== iframeRef.current?.contentWindow) {
+        return;
+      }
+
+      if (event.data?.type === "dyad-component-selected") {
+        console.log("Component picked:", event.data);
+        setSelectedComponentPreview(parseComponentSelection(event.data));
         return;
       }
 
@@ -280,6 +304,18 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
     }
   }, [appUrl]);
 
+  // Function to activate component selector in the iframe
+  const handleActivateComponentSelector = () => {
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: "activate-dyad-component-selector",
+        },
+        "*",
+      );
+    }
+  };
+
   // Function to navigate back
   const handleNavigateBack = () => {
     if (canGoBack && iframeRef.current?.contentWindow) {
@@ -371,6 +407,14 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
       <div className="flex items-center p-2 border-b space-x-2 ">
         {/* Navigation Buttons */}
         <div className="flex space-x-1">
+          <button
+            onClick={handleActivateComponentSelector}
+            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-300"
+            disabled={loading || !selectedAppId}
+            data-testid="preview-pick-element-button"
+          >
+            <Crosshair size={16} />
+          </button>
           <button
             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-300"
             disabled={!canGoBack || loading || !selectedAppId}
@@ -486,3 +530,48 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
     </div>
   );
 };
+
+function parseComponentSelection(data: any): ComponentSelection | null {
+  if (
+    !data ||
+    data.type !== "dyad-component-selected" ||
+    typeof data.id !== "string" ||
+    typeof data.name !== "string"
+  ) {
+    return null;
+  }
+
+  const { id, name } = data;
+
+  // The id is expected to be in the format "filepath:line:column"
+  const parts = id.split(":");
+  if (parts.length < 3) {
+    console.error(`Invalid component selection id format: "${id}"`);
+    return null;
+  }
+
+  const columnStr = parts.pop();
+  const lineStr = parts.pop();
+  const relativePath = parts.join(":");
+
+  if (!columnStr || !lineStr || !relativePath) {
+    console.error(`Could not parse component selection from id: "${id}"`);
+    return null;
+  }
+
+  const lineNumber = parseInt(lineStr, 10);
+  const columnNumber = parseInt(columnStr, 10);
+
+  if (isNaN(lineNumber) || isNaN(columnNumber)) {
+    console.error(`Could not parse line/column from id: "${id}"`);
+    return null;
+  }
+
+  return {
+    id,
+    name,
+    relativePath,
+    lineNumber,
+    columnNumber,
+  };
+}
