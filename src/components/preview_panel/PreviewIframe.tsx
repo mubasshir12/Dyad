@@ -30,10 +30,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useStreamChat } from "@/hooks/useStreamChat";
-import {
-  ComponentSelection,
-  selectedComponentPreviewAtom,
-} from "@/atoms/previewAtoms";
+import { selectedComponentPreviewAtom } from "@/atoms/previewAtoms";
+import { ComponentSelection } from "@/ipc/ipc_types";
 
 interface ErrorBannerProps {
   error: string | undefined;

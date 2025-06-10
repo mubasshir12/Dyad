@@ -145,27 +145,24 @@ export function ChatInput({ chatId }: { chatId?: number }) {
 
   const handleSubmit = async () => {
     if (
-      (!inputValue.trim() && attachments.length === 0 && !selectedComponent) ||
+      (!inputValue.trim() && attachments.length === 0) ||
       isStreaming ||
       !chatId
     ) {
       return;
     }
 
-    let promptWithContext = inputValue;
-    if (selectedComponent) {
-      const componentContext = `File: ${selectedComponent.relativePath}:${selectedComponent.lineNumber}\n\`\`\`\n${selectedComponent.name}\n\`\`\``;
-      promptWithContext = `${componentContext}\n\n${inputValue}`;
-    }
+    const currentInput = inputValue;
     setInputValue("");
     setSelectedComponent(null);
 
     // Send message with attachments and clear them after sending
     await streamMessage({
-      prompt: promptWithContext,
+      prompt: currentInput,
       chatId,
       attachments,
       redo: false,
+      selectedComponent,
     });
     clearAttachments();
     posthog.capture("chat:submit");

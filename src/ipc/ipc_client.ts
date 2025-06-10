@@ -33,6 +33,7 @@ import type {
   UserBudgetInfo,
   CopyAppParams,
   App,
+  ComponentSelection,
 } from "./ipc_types";
 import type { AppChatContext, ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -224,6 +225,7 @@ export class IpcClient {
   public streamMessage(
     prompt: string,
     options: {
+      selectedComponent: ComponentSelection | null;
       chatId: number;
       redo?: boolean;
       attachments?: File[];
@@ -232,7 +234,15 @@ export class IpcClient {
       onError: (error: string) => void;
     },
   ): void {
-    const { chatId, redo, attachments, onUpdate, onEnd, onError } = options;
+    const {
+      chatId,
+      redo,
+      attachments,
+      selectedComponent,
+      onUpdate,
+      onEnd,
+      onError,
+    } = options;
     this.chatStreams.set(chatId, { onUpdate, onEnd, onError });
 
     // Handle file attachments if provided
@@ -264,6 +274,7 @@ export class IpcClient {
               prompt,
               chatId,
               redo,
+              selectedComponent,
               attachments: fileDataArray,
             })
             .catch((err) => {
@@ -284,6 +295,7 @@ export class IpcClient {
           prompt,
           chatId,
           redo,
+          selectedComponent,
         })
         .catch((err) => {
           showError(err);
