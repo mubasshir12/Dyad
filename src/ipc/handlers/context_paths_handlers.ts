@@ -93,8 +93,6 @@ export function registerContextPathsHandlers() {
       schema.parse({ appId, chatContext });
 
       await db.update(apps).set({ chatContext }).where(eq(apps.id, appId));
-
-      return { success: true };
     },
   );
 }

@@ -35,7 +35,7 @@ import type {
   CopyAppParams,
   App,
 } from "./ipc_types";
-import type { ProposalResult } from "@/lib/schemas";
+import type { AppChatContext, ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
 
 export interface ChatStreamCallbacks {
@@ -855,21 +855,16 @@ export class IpcClient {
     return this.ipcRenderer.invoke("get-user-budget");
   }
 
-  public async getContextPaths(appId: number): Promise<ContextPathResults> {
-    return this.ipcRenderer.invoke("get-context-paths", { appId });
+  public async getChatContextResults(params: {
+    appId: number;
+  }): Promise<ContextPathResults> {
+    return this.ipcRenderer.invoke("get-context-paths", params);
   }
 
-  public async setContextPaths(
-    appId: number,
-    contextPaths: GlobPath[],
-    smartContextAutoIncludes?: GlobPath[],
-  ): Promise<void> {
-    return this.ipcRenderer.invoke("set-context-paths", {
-      appId,
-      chatContext: {
-        contextPaths,
-        smartContextAutoIncludes: smartContextAutoIncludes || [],
-      },
-    });
+  public async setChatContext(params: {
+    appId: number;
+    chatContext: AppChatContext;
+  }): Promise<void> {
+    return this.ipcRenderer.invoke("set-context-paths", params);
   }
 }

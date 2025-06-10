@@ -17,7 +17,7 @@ export function useContextPaths() {
     queryFn: async () => {
       if (!appId) return { contextPaths: [], smartContextAutoIncludes: [] };
       const ipcClient = IpcClient.getInstance();
-      return ipcClient.getContextPaths(appId);
+      return ipcClient.getChatContextResults({ appId });
     },
     enabled: !!appId,
   });
@@ -30,11 +30,13 @@ export function useContextPaths() {
     mutationFn: async ({ contextPaths, smartContextAutoIncludes }) => {
       if (!appId) throw new Error("No app selected");
       const ipcClient = IpcClient.getInstance();
-      return ipcClient.setContextPaths(
+      return ipcClient.setChatContext({
         appId,
-        contextPaths,
-        smartContextAutoIncludes,
-      );
+        chatContext: {
+          contextPaths,
+          smartContextAutoIncludes: smartContextAutoIncludes || [],
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["context-paths", appId] });
