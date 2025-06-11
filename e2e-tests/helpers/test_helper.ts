@@ -220,6 +220,18 @@ export class PageObject {
     await this.page.getByText("Rebuild").click();
   }
 
+  async clickTogglePreviewPanel() {
+    await this.page.getByTestId("toggle-preview-panel-button").click();
+  }
+
+  async clickPreviewPickElement() {
+    await this.page.getByTestId("preview-pick-element-button").click();
+  }
+
+  async clickDeselectComponent() {
+    await this.page.getByRole("button", { name: "Deselect component" }).click();
+  }
+
   async clickPreviewMoreOptions() {
     await this.page.getByTestId("preview-more-options-button").click();
   }
@@ -260,6 +272,18 @@ export class PageObject {
 
   locatePreviewErrorBanner() {
     return this.page.getByTestId("preview-error-banner");
+  }
+
+  async snapshotChatInputContainer() {
+    await expect(this.getChatInputContainer()).toMatchAriaSnapshot();
+  }
+
+  getSelectedComponentDisplay() {
+    return this.page.getByTestId("selected-component-display");
+  }
+
+  async snapshotSelectedComponentDisplay() {
+    await expect(this.getSelectedComponentDisplay()).toMatchAriaSnapshot();
   }
 
   async snapshotPreview({ name }: { name?: string } = {}) {

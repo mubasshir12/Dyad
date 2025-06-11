@@ -12,7 +12,7 @@ export function SelectedComponentDisplay() {
   }
 
   return (
-    <div className="p-2 pb-1">
+    <div className="p-2 pb-1" data-testid="selected-component-display">
       <div className="flex items-center justify-between rounded-md bg-indigo-600/10 px-2 py-1 text-sm">
         <div className="flex items-center gap-2 overflow-hidden">
           <Code2

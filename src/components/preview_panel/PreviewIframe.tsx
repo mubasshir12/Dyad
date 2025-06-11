@@ -168,6 +168,8 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
   }, [routerContent]);
 
   // Navigation state
+  const [isComponentSelectorInitialized, setIsComponentSelectorInitialized] =
+    useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
   const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
@@ -192,6 +194,11 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
     const handleMessage = (event: MessageEvent) => {
       // Only handle messages from our iframe
       if (event.source !== iframeRef.current?.contentWindow) {
+        return;
+      }
+
+      if (event.data?.type === "dyad-component-selector-initialized") {
+        setIsComponentSelectorInitialized(true);
         return;
       }
 
@@ -284,6 +291,8 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
     selectedAppId,
     errorMessage,
     setErrorMessage,
+    setIsComponentSelectorInitialized,
+    setSelectedComponentPreview,
   ]);
 
   useEffect(() => {
@@ -408,7 +417,9 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
           <button
             onClick={handleActivateComponentSelector}
             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-300"
-            disabled={loading || !selectedAppId}
+            disabled={
+              loading || !selectedAppId || !isComponentSelectorInitialized
+            }
             data-testid="preview-pick-element-button"
           >
             <Crosshair size={16} />
