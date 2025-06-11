@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e98558dd-fdb2-4308-8a26-1e3371c2931e",
-  "prevId": "cad2f4bd-b6dc-4836-a9b8-7567a5f4acbd",
+  "id": "cad2f4bd-b6dc-4836-a9b8-7567a5f4acbd",
+  "prevId": "efeb7ede-5d0c-4885-820c-857d60160185",
   "tables": {
     "apps": {
       "name": "apps",
@@ -81,13 +81,6 @@
         },
         "vercel_deployment_url": {
           "name": "vercel_deployment_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "vercel_inspector_url": {
-          "name": "vercel_inspector_url",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
