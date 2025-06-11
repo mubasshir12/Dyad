@@ -872,7 +872,7 @@ export class IpcClient {
     appId: number;
     chatContext: AppChatContext;
   }): Promise<void> {
-    await this.ipcRenderer.invoke("set-chat-context", params);
+    await this.ipcRenderer.invoke("set-context-paths", params);
   }
 
   public async getAppUpgrades(params: {
