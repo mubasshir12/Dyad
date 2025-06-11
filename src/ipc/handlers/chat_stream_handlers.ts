@@ -174,9 +174,9 @@ export function registerChatStreamHandlers() {
           const lines = componentFileContent.split("\n");
           const selectedIndex = req.selectedComponent.lineNumber - 1;
 
-          // Let's get one line before and one after for context.
+          // Let's get one line before and three after for context.
           const startIndex = Math.max(0, selectedIndex - 1);
-          const endIndex = Math.min(lines.length, selectedIndex + 2);
+          const endIndex = Math.min(lines.length, selectedIndex + 4);
 
           const snippetLines = lines.slice(startIndex, endIndex);
           const selectedLineInSnippetIndex = selectedIndex - startIndex;
