@@ -5,8 +5,6 @@ import { walk } from "estree-walker";
 import type { Plugin } from "vite";
 
 const VALID_EXTENSIONS = new Set([".jsx", ".tsx"]);
-// TODO: Make this configurable
-// const HTML_TAG_REGEX = /^[a-z][a-z0-9-]*$/;
 
 /**
  * Returns a Vite / esbuild plug-in.
@@ -38,9 +36,8 @@ export default function dyadTagger(): Plugin {
           if (node.type !== "JSXOpeningElement") return;
 
           // ── 1. Extract the tag / component name ──────────────────────────────
-          if (node.name.type !== "JSXIdentifier") return; //   skip <Foo.Bar />
+          if (node.name.type !== "JSXIdentifier") return;
           const tagName = node.name.name as string;
-          // if (HTML_TAG_REGEX.test(tagName)) return; //   skip <div>
 
           // ── 2. Check whether the tag already has data-dyad-id ───────────────
           const alreadyTagged = node.attributes.some(
