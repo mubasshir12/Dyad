@@ -266,7 +266,16 @@ ${componentSnippet}
           try {
             const out = await extractCodebase({
               appPath,
-              chatContext: validateChatContext(updatedChat.app.chatContext),
+              chatContext: req.selectedComponent
+                ? {
+                    contextPaths: [
+                      {
+                        globPath: req.selectedComponent.relativePath,
+                      },
+                    ],
+                    smartContextAutoIncludes: [],
+                  }
+                : validateChatContext(updatedChat.app.chatContext),
             });
             codebaseInfo = out.formattedOutput;
             files = out.files;
