@@ -232,3 +232,11 @@ export interface ComponentSelection {
   lineNumber: number;
   columnNumber: number;
 }
+
+export interface AppUpgrade {
+  id: string;
+  title: string;
+  description: string;
+  manualUpgradeUrl: string;
+  isNeeded: boolean;
+}

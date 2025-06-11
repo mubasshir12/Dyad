@@ -34,6 +34,7 @@ import type {
   CopyAppParams,
   App,
   ComponentSelection,
+  AppUpgrade,
 } from "./ipc_types";
 import type { AppChatContext, ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -871,6 +872,19 @@ export class IpcClient {
     appId: number;
     chatContext: AppChatContext;
   }): Promise<void> {
-    return this.ipcRenderer.invoke("set-context-paths", params);
+    await this.ipcRenderer.invoke("set-chat-context", params);
+  }
+
+  public async getAppUpgrades(params: {
+    appId: number;
+  }): Promise<AppUpgrade[]> {
+    return this.ipcRenderer.invoke("get-app-upgrades", params);
+  }
+
+  public async executeAppUpgrade(params: {
+    appId: number;
+    upgradeId: string;
+  }): Promise<void> {
+    return this.ipcRenderer.invoke("execute-app-upgrade", params);
   }
 }
