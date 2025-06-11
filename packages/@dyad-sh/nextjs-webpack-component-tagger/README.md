@@ -16,22 +16,24 @@ pnpm add @dyad-sh/nextjs-webpack-component-tagger
 
 Add the loader to your `next.config.js` file:
 
-```js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.(jsx|tsx)$/,
-      exclude: /node_modules/,
-      enforce: "pre",
-      use: "@dyad-sh/nextjs-webpack-component-tagger",
-    });
+```ts
+import type { NextConfig } from "next";
 
+const nextConfig: NextConfig = {
+  webpack: (config) => {
+    if (process.env.NODE_ENV === "development") {
+      config.module.rules.push({
+        test: /\.(jsx|tsx)$/,
+        exclude: /node_modules/,
+        enforce: "pre",
+        use: "@dyad-sh/nextjs-webpack-component-tagger",
+      });
+    }
     return config;
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
 ```
 
 The loader will automatically add `data-dyad-id` and `data-dyad-name` to all your React components.
