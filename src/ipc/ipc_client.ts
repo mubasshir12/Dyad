@@ -3,9 +3,9 @@ import {
   type ChatSummary,
   ChatSummariesSchema,
   type UserSettings,
-  type ContextPathResults,
 } from "../lib/schemas";
 import type {
+  App,
   AppOutput,
   Chat,
   ChatResponseEnd,
@@ -30,11 +30,11 @@ import type {
   ImportAppResult,
   ImportAppParams,
   RenameBranchParams,
-  UserBudgetInfo,
-  CopyAppParams,
-  App,
+  VercelProject,
+  VercelDeployParams,
+  VercelDeploymentResult, // Added
 } from "./ipc_types";
-import type { AppChatContext, ProposalResult } from "@/lib/schemas";
+import type { ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
 
 export interface ChatStreamCallbacks {
@@ -467,10 +467,6 @@ export class IpcClient {
     });
   }
 
-  public async copyApp(params: CopyAppParams): Promise<{ app: App }> {
-    return this.ipcRenderer.invoke("copy-app", params);
-  }
-
   // Reset all - removes all app files, settings, and drops the database
   public async resetAll(): Promise<void> {
     await this.ipcRenderer.invoke("reset-all");
@@ -593,17 +589,12 @@ export class IpcClient {
   public async getProposal(chatId: number): Promise<ProposalResult | null> {
     try {
       const data = await this.ipcRenderer.invoke("get-proposal", { chatId });
-      // Assuming the main process returns data matching the ProposalResult interface
-      // Add a type check/guard if necessary for robustness
       return data as ProposalResult | null;
     } catch (error) {
       showError(error);
       throw error;
     }
   }
-
-  // Example methods for listening to events (if needed)
-  // public on(channel: string, func: (...args: any[]) => void): void {
 
   // --- Proposal Management ---
   public async approveProposal({
@@ -653,18 +644,39 @@ export class IpcClient {
       app,
     });
   }
+  // --- End Supabase Management ---
 
-  public async fakeHandleSupabaseConnect(params: {
-    appId: number;
-    fakeProjectId: string;
-  }): Promise<void> {
-    await this.ipcRenderer.invoke(
-      "supabase:fake-connect-and-set-project",
-      params,
-    );
+  // --- Vercel Management ---
+  public async listVercelProjects(): Promise<VercelProject[]> {
+    return this.ipcRenderer.invoke("vercel:list-projects");
   }
 
-  // --- End Supabase Management ---
+  public async createVercelProject(
+    projectName: string,
+  ): Promise<VercelProject> {
+    return this.ipcRenderer.invoke("vercel:create-project", { projectName });
+  }
+
+  public async deployVercelProject(
+    params: VercelDeployParams,
+  ): Promise<VercelDeploymentResult> {
+    return this.ipcRenderer.invoke("vercel:deploy-project", params);
+  }
+
+  public async setVercelAppProject(
+    appId: number,
+    vercelProjectId: string,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("app:set-vercel-project", {
+      appId,
+      vercelProjectId,
+    });
+  }
+
+  public async unsetVercelAppProject(appId: number): Promise<void> {
+    await this.ipcRenderer.invoke("app:unset-vercel-project", { appId });
+  }
+  // --- End Vercel Management ---
 
   public async getSystemDebugInfo(): Promise<SystemDebugInfo> {
     return this.ipcRenderer.invoke("get-system-debug-info");
@@ -842,23 +854,5 @@ export class IpcClient {
 
   async clearSessionData(): Promise<void> {
     return this.ipcRenderer.invoke("clear-session-data");
-  }
-
-  // Method to get user budget information
-  public async getUserBudget(): Promise<UserBudgetInfo | null> {
-    return this.ipcRenderer.invoke("get-user-budget");
-  }
-
-  public async getChatContextResults(params: {
-    appId: number;
-  }): Promise<ContextPathResults> {
-    return this.ipcRenderer.invoke("get-context-paths", params);
-  }
-
-  public async setChatContext(params: {
-    appId: number;
-    chatContext: AppChatContext;
-  }): Promise<void> {
-    return this.ipcRenderer.invoke("set-context-paths", params);
   }
 }

@@ -20,7 +20,6 @@ const validInvokeChannels = [
   "chat:count-tokens",
   "create-chat",
   "create-app",
-  "copy-app",
   "get-chat",
   "get-chats",
   "get-chat-logs",
@@ -76,15 +75,12 @@ const validInvokeChannels = [
   "check-app-name",
   "rename-branch",
   "clear-session-data",
-  "get-user-budget",
-  "get-context-paths",
-  "set-context-paths",
-  // Test-only channels
-  // These should ALWAYS be guarded with IS_TEST_BUILD in the main process.
-  // We can't detect with IS_TEST_BUILD in the preload script because
-  // it's a separate process from the main process.
-  "supabase:fake-connect-and-set-project",
-];
+  "vercel:list-projects",
+  "vercel:deploy-project",
+  "vercel:create-project",
+  "app:set-vercel-project", // Added
+  "app:unset-vercel-project", // Added
+] as const;
 
 // Add valid receive channels
 const validReceiveChannels = [

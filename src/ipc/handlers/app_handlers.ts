@@ -2,12 +2,7 @@ import { ipcMain } from "electron";
 import { db, getDatabasePath } from "../../db";
 import { apps, chats } from "../../db/schema";
 import { desc, eq } from "drizzle-orm";
-import type {
-  App,
-  CreateAppParams,
-  RenameBranchParams,
-  CopyAppParams,
-} from "../ipc_types";
+import type { App, CreateAppParams, RenameBranchParams } from "../ipc_types";
 import fs from "node:fs";
 import path from "node:path";
 import { getDyadAppPath, getUserDataPath } from "../../paths/paths";
@@ -28,7 +23,7 @@ import { getEnvVar } from "../utils/read_env";
 import { readSettings } from "../../main/settings";
 
 import fixPath from "fix-path";
-
+import { getGitAuthor } from "../utils/git_author";
 import killPort from "kill-port";
 import util from "util";
 import log from "electron-log";
@@ -38,26 +33,7 @@ import { getLanguageModelProviders } from "../shared/language_model_helpers";
 import { startProxy } from "../utils/start_proxy_server";
 import { Worker } from "worker_threads";
 import { createFromTemplate } from "./createFromTemplate";
-import { gitCommit } from "../utils/git_utils";
-
-async function copyDir(
-  source: string,
-  destination: string,
-  filter?: (source: string) => boolean,
-) {
-  await fsPromises.cp(source, destination, {
-    recursive: true,
-    filter: (src: string) => {
-      if (path.basename(src) === "node_modules") {
-        return false;
-      }
-      if (filter) {
-        return filter(src);
-      }
-      return true;
-    },
-  });
-}
+import { getVercelProjectName } from "./vercel_handlers"; // Import Vercel helper
 
 const logger = log.scope("app_handlers");
 const handle = createLoggedHandler(logger);
@@ -94,7 +70,7 @@ async function executeAppLocalNode({
   event: Electron.IpcMainInvokeEvent;
 }): Promise<void> {
   const process = spawn(
-    "(pnpm install && pnpm run dev --port 32100) || (npm install --legacy-peer-deps && npm run dev -- --port 32100)",
+    "(pnpm install && pnpm run dev --port 32100) || (npm install && npm run dev -- --port 32100)",
     [],
     {
       cwd: appPath,
@@ -232,9 +208,11 @@ export function registerAppHandlers() {
       });
 
       // Create initial commit
-      const commitHash = await gitCommit({
-        path: fullAppPath,
+      const commitHash = await git.commit({
+        fs: fs,
+        dir: fullAppPath,
         message: "Init Dyad app",
+        author: await getGitAuthor(),
       });
 
       // Update chat with initial commit hash
@@ -246,86 +224,6 @@ export function registerAppHandlers() {
         .where(eq(chats.id, chat.id));
 
       return { app, chatId: chat.id };
-    },
-  );
-
-  handle(
-    "copy-app",
-    async (_, params: CopyAppParams): Promise<{ app: any }> => {
-      const { appId, newAppName, withHistory } = params;
-
-      // 1. Check if an app with the new name already exists
-      const existingApp = await db.query.apps.findFirst({
-        where: eq(apps.name, newAppName),
-      });
-
-      if (existingApp) {
-        throw new Error(`An app named "${newAppName}" already exists.`);
-      }
-
-      // 2. Find the original app
-      const originalApp = await db.query.apps.findFirst({
-        where: eq(apps.id, appId),
-      });
-
-      if (!originalApp) {
-        throw new Error("Original app not found.");
-      }
-
-      const originalAppPath = getDyadAppPath(originalApp.path);
-      const newAppPath = getDyadAppPath(newAppName);
-
-      // 3. Copy the app folder
-      try {
-        await copyDir(originalAppPath, newAppPath, (source: string) => {
-          if (!withHistory && path.basename(source) === ".git") {
-            return false;
-          }
-          return true;
-        });
-      } catch (error) {
-        logger.error("Failed to copy app directory:", error);
-        throw new Error("Failed to copy app directory.");
-      }
-
-      if (!withHistory) {
-        // Initialize git repo and create first commit
-        await git.init({
-          fs: fs,
-          dir: newAppPath,
-          defaultBranch: "main",
-        });
-
-        // Stage all files
-        await git.add({
-          fs: fs,
-          dir: newAppPath,
-          filepath: ".",
-        });
-
-        // Create initial commit
-        await gitCommit({
-          path: newAppPath,
-          message: "Init Dyad app",
-        });
-      }
-
-      // 4. Create a new app entry in the database
-      const [newDbApp] = await db
-        .insert(apps)
-        .values({
-          name: newAppName,
-          path: newAppName, // Use the new name for the path
-          // Explicitly set these to null because we don't want to copy them over.
-          // Note: we could just leave them out since they're nullable field, but this
-          // is to make it explicit we intentionally don't want to copy them over.
-          supabaseProjectId: null,
-          githubOrg: null,
-          githubRepo: null,
-        })
-        .returning();
-
-      return { app: newDbApp };
     },
   );
 
@@ -350,15 +248,25 @@ export function registerAppHandlers() {
     }
 
     let supabaseProjectName: string | null = null;
+    let vercelProjectName: string | null = null;
     const settings = readSettings();
+
     if (app.supabaseProjectId && settings.supabase?.accessToken?.value) {
       supabaseProjectName = await getSupabaseProjectName(app.supabaseProjectId);
+    }
+    if (app.vercelProjectId && settings.vercel?.accessToken?.value) {
+      vercelProjectName = await getVercelProjectName(app.vercelProjectId);
     }
 
     return {
       ...app,
       files,
       supabaseProjectName,
+      vercelProjectName,
+      vercelDeploymentId: app.vercelDeploymentId,
+      vercelDeploymentUrl: app.vercelDeploymentUrl,
+      vercelInspectorUrl: app.vercelInspectorUrl,
+      vercelDeploymentTimestamp: app.vercelDeploymentTimestamp,
     };
   });
 
@@ -624,9 +532,11 @@ export function registerAppHandlers() {
             filepath: filePath,
           });
 
-          await gitCommit({
-            path: appPath,
+          await git.commit({
+            fs,
+            dir: appPath,
             message: `Updated ${filePath}`,
+            author: await getGitAuthor(),
           });
         }
 
@@ -760,7 +670,10 @@ export function registerAppHandlers() {
             });
 
             // Copy the directory without node_modules
-            await copyDir(oldAppPath, newAppPath);
+            await fsPromises.cp(oldAppPath, newAppPath, {
+              recursive: true,
+              filter: (source) => !source.includes("node_modules"),
+            });
           } catch (error: any) {
             logger.error(
               `Error moving app files from ${oldAppPath} to ${newAppPath}:`,
@@ -802,7 +715,10 @@ export function registerAppHandlers() {
           if (newAppPath !== oldAppPath) {
             try {
               // Copy back from new to old
-              await copyDir(newAppPath, oldAppPath);
+              await fsPromises.cp(newAppPath, oldAppPath, {
+                recursive: true,
+                filter: (source) => !source.includes("node_modules"),
+              });
               // Delete the new directory
               await fsPromises.rm(newAppPath, { recursive: true, force: true });
             } catch (rollbackError) {
@@ -929,4 +845,36 @@ export function registerAppHandlers() {
       }
     });
   });
+
+  // Handler for setting Vercel project ID for an app
+  handle(
+    "app:set-vercel-project",
+    async (
+      _,
+      { appId, vercelProjectId }: { appId: number; vercelProjectId: string },
+    ) => {
+      await db.update(apps).set({ vercelProjectId }).where(eq(apps.id, appId));
+      logger.info(
+        `Associated app ${appId} with Vercel project ${vercelProjectId}`,
+      );
+    },
+  );
+
+  // Handler for unsetting Vercel project ID for an app
+  handle(
+    "app:unset-vercel-project",
+    async (_, { appId }: { appId: number }) => {
+      await db
+        .update(apps)
+        .set({
+          vercelProjectId: null,
+          vercelDeploymentId: null,
+          vercelDeploymentUrl: null,
+          vercelInspectorUrl: null,
+          vercelDeploymentTimestamp: null,
+        })
+        .where(eq(apps.id, appId));
+      logger.info(`Removed Vercel project association for app ${appId}`);
+    },
+  );
 }

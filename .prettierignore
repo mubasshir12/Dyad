@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Ignore artifacts:
 build
 coverage
@@ -5,3 +6,11 @@ coverage
 drizzle/
 **/pnpm-lock.yaml
 **/snapshots/**
+=======
+# Ignore artifacts:
+build
+coverage
+# generated files
+drizzle/
+**/pnpm-lock.yaml
+>>>>>>> main

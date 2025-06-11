@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 export interface AppOutput {
   type: "stdout" | "stderr" | "info" | "client-error";
   message: string;
@@ -71,6 +69,12 @@ export interface App {
   githubRepo: string | null;
   supabaseProjectId: string | null;
   supabaseProjectName: string | null;
+  vercelProjectId: string | null;
+  vercelProjectName: string | null;
+  vercelDeploymentId: string | null;
+  vercelDeploymentUrl: string | null;
+  vercelInspectorUrl: string | null;
+  vercelDeploymentTimestamp: Date | null;
 }
 
 export interface Version {
@@ -104,7 +108,6 @@ export interface SystemDebugInfo {
   platform: string;
   architecture: string;
   logs: string;
-  selectedLanguageModel: string;
 }
 
 export interface LocalModel {
@@ -200,12 +203,6 @@ export interface ImportAppParams {
   appName: string;
 }
 
-export interface CopyAppParams {
-  appId: number;
-  newAppName: string;
-  withHistory: boolean;
-}
-
 export interface ImportAppResult {
   appId: number;
   chatId: number;
@@ -217,9 +214,18 @@ export interface RenameBranchParams {
   newBranchName: string;
 }
 
-export const UserBudgetInfoSchema = z.object({
-  usedCredits: z.number(),
-  totalCredits: z.number(),
-  budgetResetDate: z.date(),
-});
-export type UserBudgetInfo = z.infer<typeof UserBudgetInfoSchema>;
+export interface VercelProject {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface VercelDeployParams {
+  appId: number;
+  projectId: string;
+}
+
+export interface VercelDeploymentResult {
+  deploymentUrl: string;
+  inspectorUrl: string;
+}
