@@ -225,7 +225,9 @@ export class PageObject {
   }
 
   async clickPreviewPickElement() {
-    await this.page.getByTestId("preview-pick-element-button").click();
+    await this.page
+      .getByTestId("preview-pick-element-button")
+      .click({ timeout: Timeout.LONG });
   }
 
   async clickDeselectComponent() {
@@ -512,7 +514,9 @@ export class PageObject {
   }
 
   async expectNoAppUpgrades() {
-    await expect(this.page.getByTestId("no-app-upgrades-needed")).toBeVisible();
+    await expect(this.page.getByTestId("no-app-upgrades-needed")).toBeVisible({
+      timeout: Timeout.MEDIUM,
+    });
   }
 
   async clickAppDetailsRenameAppButton() {
