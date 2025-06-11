@@ -17,7 +17,7 @@ import {
   ChevronDown,
   Lightbulb,
   ChevronRight,
-  Crosshair,
+  MousePointerClick,
 } from "lucide-react";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
@@ -32,6 +32,12 @@ import {
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { selectedComponentPreviewAtom } from "@/atoms/previewAtoms";
 import { ComponentSelection } from "@/ipc/ipc_types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ErrorBannerProps {
   error: string | undefined;
@@ -178,14 +184,18 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
     selectedComponentPreviewAtom,
   );
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isPicking, setIsPicking] = useState(false);
 
   // Deactivate component selector when selection is cleared
   useEffect(() => {
-    if (!selectedComponentPreview && iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(
-        { type: "deactivate-dyad-component-selector" },
-        "*",
-      );
+    if (!selectedComponentPreview) {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { type: "deactivate-dyad-component-selector" },
+          "*",
+        );
+      }
+      setIsPicking(false);
     }
   }, [selectedComponentPreview]);
 
@@ -205,6 +215,7 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
       if (event.data?.type === "dyad-component-selected") {
         console.log("Component picked:", event.data);
         setSelectedComponentPreview(parseComponentSelection(event.data));
+        setIsPicking(false);
         return;
       }
 
@@ -314,9 +325,13 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
   // Function to activate component selector in the iframe
   const handleActivateComponentSelector = () => {
     if (iframeRef.current?.contentWindow) {
+      const newIsPicking = !isPicking;
+      setIsPicking(newIsPicking);
       iframeRef.current.contentWindow.postMessage(
         {
-          type: "activate-dyad-component-selector",
+          type: newIsPicking
+            ? "activate-dyad-component-selector"
+            : "deactivate-dyad-component-selector",
         },
         "*",
       );
@@ -414,16 +429,33 @@ export const PreviewIframe = ({ loading }: { loading: boolean }) => {
       <div className="flex items-center p-2 border-b space-x-2 ">
         {/* Navigation Buttons */}
         <div className="flex space-x-1">
-          <button
-            onClick={handleActivateComponentSelector}
-            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-300"
-            disabled={
-              loading || !selectedAppId || !isComponentSelectorInitialized
-            }
-            data-testid="preview-pick-element-button"
-          >
-            <Crosshair size={16} />
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleActivateComponentSelector}
+                  className={`p-1 rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isPicking
+                      ? "bg-purple-500 text-white hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700"
+                      : " text-purple-700 hover:bg-purple-200  dark:text-purple-300 dark:hover:bg-purple-900"
+                  }`}
+                  disabled={
+                    loading || !selectedAppId || !isComponentSelectorInitialized
+                  }
+                  data-testid="preview-pick-element-button"
+                >
+                  <MousePointerClick size={16} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>
+                  {isPicking
+                    ? "Deactivate component selector"
+                    : "Select component"}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <button
             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:text-gray-300"
             disabled={!canGoBack || loading || !selectedAppId}
