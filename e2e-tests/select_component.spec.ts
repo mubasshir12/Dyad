@@ -1,6 +1,3 @@
-// await page.getByTestId('preview-pick-element-button').click();
-// await page.getByRole('button', { name: 'Deselect component' }).click();
-// await page.locator('[data-testid="preview-iframe-element"]').contentFrame().getByRole('heading', { name: 'Launch Your Next Project' }).click();
 import { expect } from "@playwright/test";
 import { test } from "./helpers/test_helper";
 
@@ -53,5 +50,26 @@ test("deselect component", async ({ po }) => {
 
   // Send one more prompt to make sure it's a normal message.
   await po.sendPrompt("[dump] tc=basic");
+  await po.snapshotServerDump("last-message");
+});
+
+test("upgrade app to select component", async ({ po }) => {
+  await po.setUp();
+  await po.importApp("select-component");
+  await po.getTitleBarAppNameButton().click();
+  await po.clickAppUpgradeButton({ upgradeId: "component-tagger" });
+  await po.expectNoAppUpgrades();
+  await po.snapshotAppFiles();
+  await po.clickOpenInChatButton();
+
+  await po.clickPreviewPickElement();
+
+  await po
+    .getPreviewIframeElement()
+    .contentFrame()
+    .getByRole("heading", { name: "Launch Your Next Project" })
+    .click();
+
+  await po.sendPrompt("[dump] make it smaller");
   await po.snapshotServerDump("last-message");
 });

@@ -507,6 +507,14 @@ export class PageObject {
     await this.page.getByRole("button", { name: "Open in Chat" }).click();
   }
 
+  async clickAppUpgradeButton({ upgradeId }: { upgradeId: string }) {
+    await this.page.getByTestId(`app-upgrade-${upgradeId}`).click();
+  }
+
+  async expectNoAppUpgrades() {
+    await expect(this.page.getByTestId("no-app-upgrades-needed")).toBeVisible();
+  }
+
   async clickAppDetailsRenameAppButton() {
     await this.page.getByTestId("app-details-rename-app-button").click();
   }

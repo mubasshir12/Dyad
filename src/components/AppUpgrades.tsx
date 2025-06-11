@@ -85,7 +85,10 @@ export function AppUpgrades({ appId }: { appId: number | null }) {
         App Upgrades
       </h3>
       {currentUpgrades.length === 0 ? (
-        <div className="p-4 bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800/50 rounded-lg text-sm text-green-800 dark:text-green-300">
+        <div
+          data-testid="no-app-upgrades-needed"
+          className="p-4 bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800/50 rounded-lg text-sm text-green-800 dark:text-green-300"
+        >
           App is up-to-date and has all Dyad capabilities enabled
         </div>
       ) : (
@@ -133,6 +136,7 @@ export function AppUpgrades({ appId }: { appId: number | null }) {
                 disabled={isUpgrading && upgradingVariables === upgrade.id}
                 className="ml-4 flex-shrink-0"
                 size="sm"
+                data-testid={`app-upgrade-${upgrade.id}`}
               >
                 {isUpgrading && upgradingVariables === upgrade.id ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
