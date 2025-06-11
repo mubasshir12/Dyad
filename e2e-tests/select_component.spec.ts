@@ -73,3 +73,30 @@ test("upgrade app to select component", async ({ po }) => {
   await po.sendPrompt("[dump] make it smaller");
   await po.snapshotServerDump("last-message");
 });
+
+test("select component next.js", async ({ po }) => {
+  await po.setUp();
+
+  // Select Next.js template
+  await po.goToHubTab();
+  await po.selectTemplate("Next.js Template");
+  await po.goToAppsTab();
+
+  await po.sendPrompt("tc=basic");
+  await po.clickTogglePreviewPanel();
+  await po.clickPreviewPickElement();
+
+  await po
+    .getPreviewIframeElement()
+    .contentFrame()
+    .getByRole("heading", { name: "Blank page" })
+    .click();
+
+  await po.snapshotPreview();
+  await po.snapshotSelectedComponentDisplay();
+
+  await po.sendPrompt("[dump] make it smaller");
+  await po.snapshotPreview();
+
+  await po.snapshotServerDump("all-messages");
+});
