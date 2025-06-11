@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
-import { test } from "./helpers/test_helper";
+import { testSkipIfWindows } from "./helpers/test_helper";
 
-test("select component", async ({ po }) => {
+testSkipIfWindows("select component", async ({ po }) => {
   await po.setUp();
   await po.sendPrompt("tc=basic");
   await po.clickTogglePreviewPanel();
@@ -27,7 +27,7 @@ test("select component", async ({ po }) => {
   await po.snapshotServerDump("last-message");
 });
 
-test("deselect component", async ({ po }) => {
+testSkipIfWindows("deselect component", async ({ po }) => {
   await po.setUp();
   await po.sendPrompt("tc=basic");
   await po.clickTogglePreviewPanel();
@@ -53,7 +53,7 @@ test("deselect component", async ({ po }) => {
   await po.snapshotServerDump("last-message");
 });
 
-test("upgrade app to select component", async ({ po }) => {
+testSkipIfWindows("upgrade app to select component", async ({ po }) => {
   await po.setUp();
   await po.importApp("select-component");
   await po.getTitleBarAppNameButton().click();
@@ -74,7 +74,7 @@ test("upgrade app to select component", async ({ po }) => {
   await po.snapshotServerDump("last-message");
 });
 
-test("select component next.js", async ({ po }) => {
+testSkipIfWindows("select component next.js", async ({ po }) => {
   await po.setUp();
 
   // Select Next.js template

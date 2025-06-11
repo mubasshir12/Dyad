@@ -67,7 +67,7 @@ async function applyComponentTagger(appPath: string) {
     throw new Error("Could not find vite.config.js or vite.config.ts");
   }
 
-  let content = fs.readFileSync(viteConfigPath, "utf-8");
+  let content = await fs.promises.readFile(viteConfigPath, "utf-8");
 
   // Add import statement if not present
   if (
@@ -106,7 +106,7 @@ async function applyComponentTagger(appPath: string) {
     );
   }
 
-  fs.writeFileSync(viteConfigPath, content);
+  await fs.promises.writeFile(viteConfigPath, content);
 
   // Install the dependency
   return new Promise<void>((resolve, reject) => {

@@ -119,9 +119,6 @@ function injectHTML(buf) {
   // as a vite plugin, then do not inject the shim twice to avoid weird behaviors.
   const legacyAppWithShim =
     txt.includes("window-error") && txt.includes("unhandled-rejection");
-  // if () {
-  //   return buf;
-  // }
 
   const scripts = [];
 
