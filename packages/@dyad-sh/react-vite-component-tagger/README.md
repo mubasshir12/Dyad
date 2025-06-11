@@ -33,12 +33,22 @@ The `data-dyad-id` will be a unique identifier for each component instance, in t
 
 The `data-dyad-name` will be the name of the component.
 
-## Development
+## Testing & Publishing
 
-- Bump it to an alpha version and test in Dyad app, eg. `"version": "0.0.1-alpha.0",`
+Bump it to an alpha version and test in Dyad app, eg. `"version": "0.0.1-alpha.0",`
 
-How to publish:
+Then publish it:
 
 ```sh
-npm run prepublishOnly && npm publish
+cd packages/@dyad-sh/react-vite-component-tagger/ && npm run prepublishOnly && npm publish
 ```
+
+Update the scaffold like this:
+
+```sh
+cd scaffold && pnpm remove @dyad-sh/react-vite-component-tagger && pnpm add -D @dyad-sh/react-vite-component-tagger
+```
+
+Run the E2E tests and make sure it passes.
+
+Then, bump to a normal version, e.g. "0.1.0" and then re-publish. We'll try to match the main Dyad app version where possible.
