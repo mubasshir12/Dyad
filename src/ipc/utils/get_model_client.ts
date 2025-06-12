@@ -14,8 +14,10 @@ import { createDyadEngine } from "./llm_engine_provider";
 import { findLanguageModel } from "./findLanguageModel";
 import { LM_STUDIO_BASE_URL } from "./lm_studio_utils";
 
-const dyadLocalEngine = process.env.DYAD_LOCAL_ENGINE;
-const dyadGatewayUrl = process.env.DYAD_GATEWAY_URL;
+const dyadEngineUrl =
+  process.env.DYAD_LOCAL_ENGINE ?? "https://engine.dyad.sh/v1";
+const dyadGatewayUrl =
+  process.env.DYAD_GATEWAY_URL ?? "https://llm-gateway.dyad.sh/v1";
 
 const AUTO_MODELS = [
   {
@@ -101,7 +103,7 @@ export async function getModelClient(
     // we're using local engine.
     // IMPORTANT: some providers like OpenAI have an empty string gateway prefix,
     // so we do a nullish and not a truthy check here.
-    if (providerConfig.gatewayPrefix != null || dyadLocalEngine) {
+    if (providerConfig.gatewayPrefix != null || dyadEngineUrl) {
       const languageModel = await findLanguageModel(model);
       const engineProMode =
         settings.enableProSmartFilesContextMode ||
@@ -115,7 +117,7 @@ export async function getModelClient(
       const provider = isEngineEnabled
         ? createDyadEngine({
             apiKey: dyadApiKey,
-            baseURL: dyadLocalEngine ?? "https://engine.dyad.sh/v1",
+            baseURL: dyadEngineUrl,
             dyadOptions: {
               enableLazyEdits: settings.enableProLazyEditsMode,
               enableSmartFilesContext: settings.enableProSmartFilesContextMode,
@@ -124,10 +126,21 @@ export async function getModelClient(
         : createOpenAICompatible({
             name: "dyad-gateway",
             apiKey: dyadApiKey,
-            baseURL: dyadGatewayUrl ?? "https://llm-gateway.dyad.sh/v1",
+            baseURL: dyadGatewayUrl,
           });
 
-      logger.info(`Using Dyad Pro API key. engine_enabled=${isEngineEnabled}`);
+      logger.info(
+        `\x1b[1;97;44m Using Dyad Pro API key for model: ${model.name}. engine_enabled=${isEngineEnabled} \x1b[0m`,
+      );
+      if (isEngineEnabled) {
+        logger.info(
+          `\x1b[1;30;42m Using Dyad Pro engine: ${dyadEngineUrl} \x1b[0m`,
+        );
+      } else {
+        logger.info(
+          `\x1b[1;30;43m Using Dyad Pro gateway: ${dyadGatewayUrl} \x1b[0m`,
+        );
+      }
       // Do not use free variant (for openrouter).
       const modelName = model.name.split(":free")[0];
       const autoModelClient = {
