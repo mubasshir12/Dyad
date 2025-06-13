@@ -14,10 +14,8 @@ import { createDyadEngine } from "./llm_engine_provider";
 import { findLanguageModel } from "./findLanguageModel";
 import { LM_STUDIO_BASE_URL } from "./lm_studio_utils";
 
-const dyadEngineUrl =
-  process.env.DYAD_LOCAL_ENGINE ?? "https://engine.dyad.sh/v1";
-const dyadGatewayUrl =
-  process.env.DYAD_GATEWAY_URL ?? "https://llm-gateway.dyad.sh/v1";
+const dyadEngineUrl = process.env.DYAD_ENGINE_URL;
+const dyadGatewayUrl = process.env.DYAD_GATEWAY_URL;
 
 const AUTO_MODELS = [
   {
@@ -117,7 +115,7 @@ export async function getModelClient(
       const provider = isEngineEnabled
         ? createDyadEngine({
             apiKey: dyadApiKey,
-            baseURL: dyadEngineUrl,
+            baseURL: dyadEngineUrl ?? "https://engine.dyad.sh/v1",
             dyadOptions: {
               enableLazyEdits: settings.enableProLazyEditsMode,
               enableSmartFilesContext: settings.enableProSmartFilesContextMode,
@@ -126,7 +124,7 @@ export async function getModelClient(
         : createOpenAICompatible({
             name: "dyad-gateway",
             apiKey: dyadApiKey,
-            baseURL: dyadGatewayUrl,
+            baseURL: dyadGatewayUrl ?? "https://llm-gateway.dyad.sh/v1",
           });
 
       logger.info(
@@ -134,11 +132,11 @@ export async function getModelClient(
       );
       if (isEngineEnabled) {
         logger.info(
-          `\x1b[1;30;42m Using Dyad Pro engine: ${dyadEngineUrl} \x1b[0m`,
+          `\x1b[1;30;42m Using Dyad Pro engine: ${dyadEngineUrl ?? "<prod>"} \x1b[0m`,
         );
       } else {
         logger.info(
-          `\x1b[1;30;43m Using Dyad Pro gateway: ${dyadGatewayUrl} \x1b[0m`,
+          `\x1b[1;30;43m Using Dyad Pro gateway: ${dyadGatewayUrl ?? "<prod>"} \x1b[0m`,
         );
       }
       // Do not use free variant (for openrouter).
