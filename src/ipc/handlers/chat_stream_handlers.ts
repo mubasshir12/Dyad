@@ -35,6 +35,8 @@ import { MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/settings_constants";
 import { validateChatContext } from "../utils/context_paths_utils";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 
+import { getExtraProviderOptions } from "../utils/thinking_utils";
+
 const logger = log.scope("chat_stream_handlers");
 
 // Track active streams for cancellation
@@ -450,17 +452,12 @@ This conversation includes one or more image attachments. When the user uploads 
           maxRetries: 2,
           model: modelClient.model,
           providerOptions: {
-            "dyad-gateway": {
-              // thinking: {
-              //   type: "enabled",
-              //   include_thoughts: true,
-              // },
-            },
+            "dyad-gateway": getExtraProviderOptions(
+              modelClient.builtinProviderId,
+            ),
             google: {
-              // Options are nested under 'google' for Vertex provider
               thinkingConfig: {
                 includeThoughts: true,
-                // thinkingBudget: 2048, // Optional
               },
             } satisfies GoogleGenerativeAIProviderOptions,
           },
@@ -468,8 +465,11 @@ This conversation includes one or more image attachments. When the user uploads 
           messages: chatMessages.filter((m) => m.content),
           onError: (error: any) => {
             logger.error("Error streaming text:", error);
-            const message =
-              (error as any)?.error?.message || JSON.stringify(error);
+            let errorMessage = (error as any)?.error?.message;
+            if (errorMessage) {
+              errorMessage += "\n\nDetails: " + error?.error?.responseBody;
+            }
+            const message = errorMessage || JSON.stringify(error);
             event.sender.send(
               "chat:response:error",
               `Sorry, there was an error from the AI: ${message}`,

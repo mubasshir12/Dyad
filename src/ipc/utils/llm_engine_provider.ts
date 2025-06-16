@@ -11,6 +11,7 @@ import {
 
 import { OpenAICompatibleChatSettings } from "@ai-sdk/openai-compatible";
 import log from "electron-log";
+import { getExtraProviderOptions } from "./thinking_utils";
 
 const logger = log.scope("llm_engine_provider");
 
@@ -42,6 +43,7 @@ or to provide a custom fetch implementation for e.g. testing.
 */
   fetch?: FetchFunction;
 
+  originalProviderId: string;
   dyadOptions: {
     enableLazyEdits?: boolean;
     enableSmartFilesContext?: boolean;
@@ -121,13 +123,10 @@ export function createDyadEngine(
 
         try {
           // Parse the request body to manipulate it
-          const parsedBody = JSON.parse(init.body);
-          console.log("parsedBody", parsedBody);
-          // TODO: not sure if this is OK with other models...
-          // parsedBody.thinking = {
-          //   type: "enabled",
-          //   include_thoughts: true,
-          // };
+          const parsedBody = {
+            ...JSON.parse(init.body),
+            ...getExtraProviderOptions(options.originalProviderId),
+          };
 
           // Add files to the request if they exist
           if (files?.length) {
