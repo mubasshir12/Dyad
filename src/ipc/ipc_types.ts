@@ -168,7 +168,6 @@ export type LanguageModel =
       maxOutputTokens?: number;
       contextWindow?: number;
       supportsTurboEdits?: boolean;
-      enableThinking?: boolean;
       type: "local" | "cloud";
     };
 

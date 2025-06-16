@@ -550,27 +550,6 @@ This conversation includes one or more image attachments. When the user uploads 
               break;
             }
           }
-
-          if (inThinkingBlock) {
-            const chunk = "</think>";
-            fullResponse += chunk;
-            partialResponses.set(req.chatId, fullResponse);
-
-            const currentMessages = [...updatedChat.messages];
-            if (
-              currentMessages.length > 0 &&
-              currentMessages[currentMessages.length - 1].role === "assistant"
-            ) {
-              currentMessages[currentMessages.length - 1].content =
-                fullResponse;
-            }
-
-            event.sender.send("chat:response:chunk", {
-              chatId: req.chatId,
-              messages: currentMessages,
-            });
-            inThinkingBlock = false;
-          }
         } catch (streamError) {
           // Check if this was an abort error
           if (abortController.signal.aborted) {
