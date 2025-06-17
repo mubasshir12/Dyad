@@ -196,6 +196,9 @@ export class PageObject {
   ) {
     this.userDataDir = userDataDir;
     this.githubConnector = new GitHubConnector(this.page);
+  }
+
+  private async baseSetup() {
     this.githubConnector.clearPushEvents();
   }
 
@@ -203,6 +206,7 @@ export class PageObject {
     autoApprove = false,
     nativeGit = false,
   }: { autoApprove?: boolean; nativeGit?: boolean } = {}) {
+    await this.baseSetup();
     await this.goToSettingsTab();
     if (autoApprove) {
       await this.toggleAutoApprove();
@@ -217,16 +221,8 @@ export class PageObject {
     await this.selectTestModel();
   }
 
-  async importApp(appDir: string) {
-    await this.page.getByRole("button", { name: "Import App" }).click();
-    await eph.stubDialog(this.electronApp, "showOpenDialog", {
-      filePaths: [path.join(__dirname, "..", "fixtures", "import-app", appDir)],
-    });
-    await this.page.getByRole("button", { name: "Select Folder" }).click();
-    await this.page.getByRole("button", { name: "Import" }).click();
-  }
-
   async setUpDyadPro({ autoApprove = false }: { autoApprove?: boolean } = {}) {
+    await this.baseSetup();
     await this.goToSettingsTab();
     if (autoApprove) {
       await this.toggleAutoApprove();
@@ -236,7 +232,6 @@ export class PageObject {
   }
 
   async setUpDyadProvider() {
-    // await page.getByRole('link', { name: 'Settings' }).click();
     await this.page
       .locator("div")
       .filter({ hasText: /^DyadNeeds Setup$/ })
@@ -247,12 +242,15 @@ export class PageObject {
       .getByRole("textbox", { name: "Set Dyad API Key" })
       .fill("testdyadkey");
     await this.page.getByRole("button", { name: "Save Key" }).click();
-    // await page.getByRole('link', { name: 'Apps' }).click();
-    // await page.getByTestId('home-chat-input-container').getByRole('button', { name: 'Pro' }).click();
-    // await page.getByRole('switch', { name: 'Turbo Edits' }).click();
-    // await page.getByRole('switch', { name: 'Turbo Edits' }).click();
-    // await page.locator('div').filter({ hasText: /^Import App$/ }).click();
-    // await page.getByRole('button', { name: 'Select Folder' }).press('Escape');
+  }
+
+  async importApp(appDir: string) {
+    await this.page.getByRole("button", { name: "Import App" }).click();
+    await eph.stubDialog(this.electronApp, "showOpenDialog", {
+      filePaths: [path.join(__dirname, "..", "fixtures", "import-app", appDir)],
+    });
+    await this.page.getByRole("button", { name: "Select Folder" }).click();
+    await this.page.getByRole("button", { name: "Import" }).click();
   }
 
   async openContextFilesPicker() {
