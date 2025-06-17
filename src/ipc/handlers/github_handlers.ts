@@ -1,10 +1,9 @@
 import { ipcMain, BrowserWindow, IpcMainInvokeEvent } from "electron";
 import fetch from "node-fetch"; // Use node-fetch for making HTTP requests in main process
 import { writeSettings, readSettings } from "../../main/settings";
-import { updateAppGithubRepo } from "../../db/index";
 import git from "isomorphic-git";
 import http from "isomorphic-git/http/node";
-
+import * as schema from "../../db/schema";
 import fs from "node:fs";
 import { getDyadAppPath } from "../../paths/paths";
 import { db } from "../../db";
@@ -502,7 +501,7 @@ async function handleCreateRepo(
     throw new Error(errorMessage);
   }
   // Store org, repo, and branch in the app's DB row (apps table)
-  await updateAppGithubRepo(appId, owner, repo, branch);
+  await updateAppGithubRepo({ appId, org: owner, repo, branch });
 }
 
 // --- GitHub Connect to Existing Repo Handler ---
@@ -542,7 +541,7 @@ async function handleConnectToExistingRepo(
     }
 
     // Store org, repo, and branch in the app's DB row
-    await updateAppGithubRepo(appId, owner, repo, branch);
+    await updateAppGithubRepo({ appId, org: owner, repo, branch });
   } catch (err: any) {
     logger.error("[GitHub Handler] Failed to connect to existing repo:", err);
     throw new Error(err.message || "Failed to connect to existing repository.");
@@ -651,4 +650,25 @@ export function registerGithubHandlers() {
   ipcMain.handle("github:disconnect", (event, args: { appId: number }) =>
     handleDisconnectGithubRepo(event, args),
   );
+}
+
+export async function updateAppGithubRepo({
+  appId,
+  org,
+  repo,
+  branch,
+}: {
+  appId: number;
+  org?: string;
+  repo: string;
+  branch?: string;
+}): Promise<void> {
+  await db
+    .update(schema.apps)
+    .set({
+      githubOrg: org,
+      githubRepo: repo,
+      githubBranch: branch || "main",
+    })
+    .where(eq(schema.apps.id, appId));
 }

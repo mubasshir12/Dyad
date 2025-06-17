@@ -8,7 +8,7 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "node:path";
 import fs from "node:fs";
 import { getDyadAppPath, getUserDataPath } from "../paths/paths";
-import { eq } from "drizzle-orm";
+
 import log from "electron-log";
 
 const logger = log.scope("db");
@@ -87,19 +87,3 @@ try {
 export const db = _db as any as BetterSQLite3Database<typeof schema> & {
   $client: Database.Database;
 };
-
-export async function updateAppGithubRepo(
-  appId: number,
-  org: string,
-  repo: string,
-  branch?: string,
-): Promise<void> {
-  await db
-    .update(schema.apps)
-    .set({
-      githubOrg: org,
-      githubRepo: repo,
-      githubBranch: branch || "main",
-    })
-    .where(eq(schema.apps.id, appId));
-}

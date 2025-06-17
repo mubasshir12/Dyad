@@ -315,7 +315,7 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
   // Extract repo name from URL path like /github/git/testuser/test-repo.git
   // The middleware expects the repo name as the basename after the route
   const urlPath = req.url;
-  const match = urlPath.match(/\/github\/git\/[^\/]+\/([^\/\.]+)\.git/);
+  const match = urlPath.match(/\/github\/git\/[^/]+\/([^/.]+)\.git/);
   const repoName = match?.[1];
 
   if (repoName) {
@@ -390,7 +390,7 @@ export function handleGitPush(req: Request, res: Response, next?: Function) {
     // Rewrite the URL to match what the middleware expects
     // Change /github/git/testuser/test-repo.git/... to /github/git/test-repo.git/...
     const rewrittenUrl = req.url.replace(
-      /\/github\/git\/[^\/]+\//,
+      /\/github\/git\/[^/]+\//,
       "/github/git/",
     );
     req.url = rewrittenUrl;
