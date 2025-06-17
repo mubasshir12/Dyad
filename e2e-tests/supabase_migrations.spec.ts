@@ -43,4 +43,19 @@ test("supabase migrations", async ({ po }) => {
   expect(await fs.readFile(path.join(migrationsDir, files[0]), "utf8")).toEqual(
     "CREATE TABLE users (id serial primary key);",
   );
+
+  // Send a prompt that triggers a migration
+  await po.sendPrompt("tc=execute-sql-no-description");
+  await po.waitForChatCompletion();
+
+  await expect(async () => {
+    // Check that one migration file was created
+    files = await fs.readdir(migrationsDir);
+    expect(files).toHaveLength(2);
+  }).toPass();
+
+  expect(files[1]).toMatch(/0001_\w+_\w+_\w+\.sql/);
+  expect(await fs.readFile(path.join(migrationsDir, files[1]), "utf8")).toEqual(
+    "DROP TABLE users;",
+  );
 });
