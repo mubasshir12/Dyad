@@ -12,14 +12,28 @@ import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { GithubUser } from "../../lib/schemas";
 import log from "electron-log";
+import { IS_TEST_BUILD } from "../utils/test_utils";
 
 const logger = log.scope("github_handlers");
 
 // --- GitHub Device Flow Constants ---
 // TODO: Fetch this securely, e.g., from environment variables or a config file
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || "Ov23liWV2HdC0RBLecWx";
-const GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code";
-const GITHUB_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
+
+// Use test server URLs when in test mode
+
+const TEST_SERVER_BASE = "http://localhost:3500";
+
+const GITHUB_DEVICE_CODE_URL = IS_TEST_BUILD
+  ? `${TEST_SERVER_BASE}/github/login/device/code`
+  : "https://github.com/login/device/code";
+const GITHUB_ACCESS_TOKEN_URL = IS_TEST_BUILD
+  ? `${TEST_SERVER_BASE}/github/login/oauth/access_token`
+  : "https://github.com/login/oauth/access_token";
+const GITHUB_API_BASE = IS_TEST_BUILD
+  ? `${TEST_SERVER_BASE}/github/api`
+  : "https://api.github.com";
+
 const GITHUB_SCOPES = "repo,user,workflow"; // Define the scopes needed
 
 // --- State Management (Simple in-memory, consider alternatives for robustness) ---
@@ -48,7 +62,7 @@ export async function getGithubUser(): Promise<GithubUser | null> {
   try {
     const accessToken = settings.githubAccessToken?.value;
     if (!accessToken) return null;
-    const res = await fetch("https://api.github.com/user/emails", {
+    const res = await fetch(`${GITHUB_API_BASE}/user/emails`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) return null;
@@ -295,7 +309,7 @@ async function handleListGithubRepos(): Promise<
 
     // Fetch user's repositories
     const response = await fetch(
-      "https://api.github.com/user/repos?per_page=100&sort=updated",
+      `${GITHUB_API_BASE}/user/repos?per_page=100&sort=updated`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -338,7 +352,7 @@ async function handleGetRepoBranches(
 
     // Fetch repository branches
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/branches`,
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}/branches`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -380,13 +394,13 @@ async function handleIsRepoAvailable(
     // If org is empty, use the authenticated user
     const owner =
       org ||
-      (await fetch("https://api.github.com/user", {
+      (await fetch(`${GITHUB_API_BASE}/user`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
         .then((r) => r.json())
         .then((u) => u.login));
     // Check if repo exists
-    const url = `https://api.github.com/repos/${owner}/${repo}`;
+    const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}`;
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -422,7 +436,7 @@ async function handleCreateRepo(
   // If org is empty, create for the authenticated user
   let owner = org;
   if (!owner) {
-    const userRes = await fetch("https://api.github.com/user", {
+    const userRes = await fetch(`${GITHUB_API_BASE}/user`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const user = await userRes.json();
@@ -430,8 +444,8 @@ async function handleCreateRepo(
   }
   // Create repo
   const createUrl = org
-    ? `https://api.github.com/orgs/${owner}/repos`
-    : `https://api.github.com/user/repos`;
+    ? `${GITHUB_API_BASE}/orgs/${owner}/repos`
+    : `${GITHUB_API_BASE}/user/repos`;
   const res = await fetch(createUrl, {
     method: "POST",
     headers: {
@@ -508,7 +522,7 @@ async function handleConnectToExistingRepo(
 
     // Verify the repository exists and user has access
     const repoResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}`,
+      `${GITHUB_API_BASE}/repos/${owner}/${repo}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,

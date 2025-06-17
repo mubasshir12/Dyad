@@ -64,15 +64,28 @@ class ProModesDialog {
   }
 }
 
+class GitHubConnector {
+  constructor(public page: Page) {}
+
+  async connect() {
+    await this.page.getByRole("button", { name: "Connect to GitHub" }).click();
+  }
+
+  getSetupYourGitHubRepoButton() {
+    return this.page.getByText("Set up your GitHub repo");
+  }
+}
+
 export class PageObject {
   private userDataDir: string;
-
+  public githubConnector: GitHubConnector;
   constructor(
     public electronApp: ElectronApplication,
     public page: Page,
     { userDataDir }: { userDataDir: string },
   ) {
     this.userDataDir = userDataDir;
+    this.githubConnector = new GitHubConnector(this.page);
   }
 
   async setUp({
