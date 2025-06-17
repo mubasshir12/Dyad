@@ -92,9 +92,14 @@ export async function updateAppGithubRepo(
   appId: number,
   org: string,
   repo: string,
+  branch?: string,
 ): Promise<void> {
   await db
     .update(schema.apps)
-    .set({ githubOrg: org, githubRepo: repo })
+    .set({
+      githubOrg: org,
+      githubRepo: repo,
+      githubBranch: branch || "main",
+    })
     .where(eq(schema.apps.id, appId));
 }

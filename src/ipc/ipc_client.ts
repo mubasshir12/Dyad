@@ -554,6 +554,56 @@ export class IpcClient {
   // --- End GitHub Device Flow ---
 
   // --- GitHub Repo Management ---
+  public async listGithubRepos(): Promise<
+    { name: string; full_name: string; private: boolean }[]
+  > {
+    try {
+      const repos = await this.ipcRenderer.invoke("github:list-repos");
+      return repos as { name: string; full_name: string; private: boolean }[];
+    } catch (error) {
+      showError(error);
+      throw error;
+    }
+  }
+
+  public async getGithubRepoBranches(
+    owner: string,
+    repo: string,
+  ): Promise<{ name: string; commit: { sha: string } }[]> {
+    try {
+      const branches = await this.ipcRenderer.invoke(
+        "github:get-repo-branches",
+        {
+          owner,
+          repo,
+        },
+      );
+      return branches as { name: string; commit: { sha: string } }[];
+    } catch (error) {
+      showError(error);
+      throw error;
+    }
+  }
+
+  public async connectToExistingGithubRepo(
+    owner: string,
+    repo: string,
+    branch: string,
+    appId: number,
+  ): Promise<void> {
+    try {
+      await this.ipcRenderer.invoke("github:connect-existing-repo", {
+        owner,
+        repo,
+        branch,
+        appId,
+      });
+    } catch (error) {
+      showError(error);
+      throw error;
+    }
+  }
+
   public async checkGithubRepoAvailable(
     org: string,
     repo: string,
@@ -568,20 +618,26 @@ export class IpcClient {
     org: string,
     repo: string,
     appId: number,
+    branch?: string,
   ): Promise<void> {
     await this.ipcRenderer.invoke("github:create-repo", {
       org,
       repo,
       appId,
+      branch,
     });
   }
 
   // Sync (push) local repo to GitHub
   public async syncGithubRepo(
     appId: number,
+    force?: boolean,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const result = await this.ipcRenderer.invoke("github:push", { appId });
+      const result = await this.ipcRenderer.invoke("github:push", {
+        appId,
+        force,
+      });
       return result as { success: boolean; error?: string };
     } catch (error) {
       showError(error);

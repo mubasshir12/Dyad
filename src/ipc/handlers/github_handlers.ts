@@ -281,6 +281,90 @@ function handleStartGithubFlow(
     });
 }
 
+// --- GitHub List Repos Handler ---
+async function handleListGithubRepos(): Promise<
+  { name: string; full_name: string; private: boolean }[]
+> {
+  try {
+    // Get access token from settings
+    const settings = readSettings();
+    const accessToken = settings.githubAccessToken?.value;
+    if (!accessToken) {
+      throw new Error("Not authenticated with GitHub.");
+    }
+
+    // Fetch user's repositories
+    const response = await fetch(
+      "https://api.github.com/user/repos?per_page=100&sort=updated",
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        `GitHub API error: ${errorData.message || response.statusText}`,
+      );
+    }
+
+    const repos = await response.json();
+    return repos.map((repo: any) => ({
+      name: repo.name,
+      full_name: repo.full_name,
+      private: repo.private,
+    }));
+  } catch (err: any) {
+    logger.error("[GitHub Handler] Failed to list repos:", err);
+    throw new Error(err.message || "Failed to list GitHub repositories.");
+  }
+}
+
+// --- GitHub Get Repo Branches Handler ---
+async function handleGetRepoBranches(
+  event: IpcMainInvokeEvent,
+  { owner, repo }: { owner: string; repo: string },
+): Promise<{ name: string; commit: { sha: string } }[]> {
+  try {
+    // Get access token from settings
+    const settings = readSettings();
+    const accessToken = settings.githubAccessToken?.value;
+    if (!accessToken) {
+      throw new Error("Not authenticated with GitHub.");
+    }
+
+    // Fetch repository branches
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/branches`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        `GitHub API error: ${errorData.message || response.statusText}`,
+      );
+    }
+
+    const branches = await response.json();
+    return branches.map((branch: any) => ({
+      name: branch.name,
+      commit: { sha: branch.commit.sha },
+    }));
+  } catch (err: any) {
+    logger.error("[GitHub Handler] Failed to get repo branches:", err);
+    throw new Error(err.message || "Failed to get repository branches.");
+  }
+}
+
 // --- GitHub Repo Availability Handler ---
 async function handleIsRepoAvailable(
   event: IpcMainInvokeEvent,
@@ -322,7 +406,12 @@ async function handleIsRepoAvailable(
 // --- GitHub Create Repo Handler ---
 async function handleCreateRepo(
   event: IpcMainInvokeEvent,
-  { org, repo, appId }: { org: string; repo: string; appId: number },
+  {
+    org,
+    repo,
+    appId,
+    branch,
+  }: { org: string; repo: string; appId: number; branch?: string },
 ): Promise<void> {
   // Get access token from settings
   const settings = readSettings();
@@ -395,14 +484,58 @@ async function handleCreateRepo(
 
     throw new Error(errorMessage);
   }
-  // Store org and repo in the app's DB row (apps table)
-  await updateAppGithubRepo(appId, owner, repo);
+  // Store org, repo, and branch in the app's DB row (apps table)
+  await updateAppGithubRepo(appId, owner, repo, branch);
+}
+
+// --- GitHub Connect to Existing Repo Handler ---
+async function handleConnectToExistingRepo(
+  event: IpcMainInvokeEvent,
+  {
+    owner,
+    repo,
+    branch,
+    appId,
+  }: { owner: string; repo: string; branch: string; appId: number },
+): Promise<void> {
+  try {
+    // Get access token from settings
+    const settings = readSettings();
+    const accessToken = settings.githubAccessToken?.value;
+    if (!accessToken) {
+      throw new Error("Not authenticated with GitHub.");
+    }
+
+    // Verify the repository exists and user has access
+    const repoResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github+json",
+        },
+      },
+    );
+
+    if (!repoResponse.ok) {
+      const errorData = await repoResponse.json();
+      throw new Error(
+        `Repository not found or access denied: ${errorData.message}`,
+      );
+    }
+
+    // Store org, repo, and branch in the app's DB row
+    await updateAppGithubRepo(appId, owner, repo, branch);
+  } catch (err: any) {
+    logger.error("[GitHub Handler] Failed to connect to existing repo:", err);
+    throw new Error(err.message || "Failed to connect to existing repository.");
+  }
 }
 
 // --- GitHub Push Handler ---
 async function handlePushToGithub(
   event: IpcMainInvokeEvent,
-  { appId }: { appId: number },
+  { appId, force }: { appId: number; force?: boolean },
 ) {
   try {
     // Get access token from settings
@@ -417,6 +550,8 @@ async function handlePushToGithub(
       return { success: false, error: "App is not linked to a GitHub repo." };
     }
     const appPath = getDyadAppPath(app.path);
+    const branch = app.githubBranch || "main";
+
     // Set up remote URL with token
     const remoteUrl = `https://${accessToken}:x-oauth-basic@github.com/${app.githubOrg}/${app.githubRepo}.git`;
     // Set or update remote URL using git config
@@ -433,11 +568,12 @@ async function handlePushToGithub(
       dir: appPath,
       remote: "origin",
       ref: "main",
+      remoteRef: branch,
       onAuth: () => ({
         username: accessToken,
         password: "x-oauth-basic",
       }),
-      force: false,
+      force: !!force,
     });
     return { success: true };
   } catch (err: any) {
@@ -463,12 +599,13 @@ async function handleDisconnectGithubRepo(
     throw new Error("App not found");
   }
 
-  // Update app in database to remove GitHub repo and org
+  // Update app in database to remove GitHub repo, org, and branch
   await db
     .update(apps)
     .set({
       githubRepo: null,
       githubOrg: null,
+      githubBranch: null,
     })
     .where(eq(apps.id, appId));
 }
@@ -476,8 +613,21 @@ async function handleDisconnectGithubRepo(
 // --- Registration ---
 export function registerGithubHandlers() {
   ipcMain.handle("github:start-flow", handleStartGithubFlow);
+  ipcMain.handle("github:list-repos", handleListGithubRepos);
+  ipcMain.handle(
+    "github:get-repo-branches",
+    (event, args: { owner: string; repo: string }) =>
+      handleGetRepoBranches(event, args),
+  );
   ipcMain.handle("github:is-repo-available", handleIsRepoAvailable);
   ipcMain.handle("github:create-repo", handleCreateRepo);
+  ipcMain.handle(
+    "github:connect-existing-repo",
+    (
+      event,
+      args: { owner: string; repo: string; branch: string; appId: number },
+    ) => handleConnectToExistingRepo(event, args),
+  );
   ipcMain.handle("github:push", handlePushToGithub);
   ipcMain.handle("github:disconnect", (event, args: { appId: number }) =>
     handleDisconnectGithubRepo(event, args),
