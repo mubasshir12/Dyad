@@ -100,7 +100,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
     {
       name: "gemini-2.5-pro",
       displayName: "Gemini 2.5 Pro",
-      description: "Preview version of Google's Gemini 2.5 Pro model",
+      description: "Google's Gemini 2.5 Pro model",
       // See Flash 2.5 comment below (go 1 below just to be safe, even though it seems OK now).
       maxOutputTokens: 65_536 - 1,
       // Gemini context window = input token + output token
