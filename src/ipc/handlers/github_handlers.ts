@@ -33,6 +33,9 @@ const GITHUB_ACCESS_TOKEN_URL = IS_TEST_BUILD
 const GITHUB_API_BASE = IS_TEST_BUILD
   ? `${TEST_SERVER_BASE}/github/api`
   : "https://api.github.com";
+const GITHUB_GIT_BASE = IS_TEST_BUILD
+  ? `${TEST_SERVER_BASE}/github/git`
+  : "https://github.com";
 
 const GITHUB_SCOPES = "repo,user,workflow"; // Define the scopes needed
 
@@ -567,7 +570,9 @@ async function handlePushToGithub(
     const branch = app.githubBranch || "main";
 
     // Set up remote URL with token
-    const remoteUrl = `https://${accessToken}:x-oauth-basic@github.com/${app.githubOrg}/${app.githubRepo}.git`;
+    const remoteUrl = IS_TEST_BUILD
+      ? `${GITHUB_GIT_BASE}/${app.githubOrg}/${app.githubRepo}.git`
+      : `https://${accessToken}:x-oauth-basic@github.com/${app.githubOrg}/${app.githubRepo}.git`;
     // Set or update remote URL using git config
     await git.setConfig({
       fs,

@@ -1,4 +1,20 @@
 import { Request, Response } from "express";
+import * as path from "path";
+import * as fs from "fs";
+import * as os from "os";
+
+const gitHttpMiddlewareFactory = require("git-http-mock-server/middleware");
+
+// Push event tracking for tests
+interface PushEvent {
+  timestamp: Date;
+  repo: string;
+  branch: string;
+  operation: "push" | "create" | "delete";
+  commitSha?: string;
+}
+
+const pushEvents: PushEvent[] = [];
 
 // Mock data for testing
 const mockAccessToken = "fake_access_token_12345";
@@ -186,7 +202,6 @@ export function handleUserRepos(req: Request, res: Response) {
       default_branch: "main",
     };
 
-    mockRepos.push(newRepo);
     res.status(201).json(newRepo);
   }
 }
@@ -252,4 +267,151 @@ export function handleOrgRepos(req: Request, res: Response) {
 
   // For simplicity, just redirect to user repos for mock
   handleUserRepos(req, res);
+}
+
+// Push event management functions for testing
+export function handleGetPushEvents(req: Request, res: Response) {
+  console.log("* Getting push events");
+  const { repo } = req.query;
+
+  const events = repo ? pushEvents.filter((e) => e.repo === repo) : pushEvents;
+
+  res.json(events);
+}
+
+export function handleClearPushEvents(req: Request, res: Response) {
+  console.log("* Clearing push events");
+  pushEvents.length = 0;
+  res.json({ cleared: true, timestamp: new Date() });
+}
+
+// Handle Git operations (push, pull, clone, etc.) using git-http-mock-server
+export function handleGitPush(req: Request, res: Response, next?: Function) {
+  console.log("* GitHub Git operation requested:", req.method, req.url);
+
+  // Log request headers to see git operation details
+  console.log("* Git Headers:", {
+    "git-protocol": req.headers["git-protocol"],
+    "content-type": req.headers["content-type"],
+    "user-agent": req.headers["user-agent"],
+  });
+
+  // Create a unique temporary directory for this request
+  const mockReposRoot = fs.mkdtempSync(
+    path.join(
+      os.tmpdir(),
+      "dyad-git-mock-" + Math.random().toString(36).substring(2, 15),
+    ),
+  );
+  console.error(`* Created temporary git repos directory: ${mockReposRoot}`);
+
+  // Create git middleware instance for this request
+  const gitHttpMiddleware = gitHttpMiddlewareFactory({
+    root: mockReposRoot,
+    route: "/github/git",
+    glob: "*.git",
+  });
+
+  // Extract repo name from URL path like /github/git/testuser/test-repo.git
+  // The middleware expects the repo name as the basename after the route
+  const urlPath = req.url;
+  const match = urlPath.match(/\/github\/git\/[^\/]+\/([^\/\.]+)\.git/);
+  const repoName = match?.[1];
+
+  if (repoName) {
+    console.log(`* Git operation for repo: ${repoName}`);
+
+    // Track push events if this is a git-receive-pack (push) operation
+    if (req.url.includes("/git-receive-pack") && req.method === "POST") {
+      console.log("* Git PUSH operation detected for repo:", repoName);
+
+      // Collect request body to parse git protocol
+      let body = "";
+      req.on("data", (chunk) => {
+        body += chunk.toString();
+      });
+      req.on("end", () => {
+        try {
+          // Parse git pack protocol for branch refs
+          // Git protocol sends refs in format: "old-sha new-sha refs/heads/branch-name"
+          const lines = body.split("\n");
+          lines.forEach((line) => {
+            // Look for lines containing refs/heads/
+            const refMatch = line.match(
+              /([0-9a-f]{40})\s+([0-9a-f]{40})\s+refs\/heads\/([^\s\u0000]+)/,
+            );
+            if (refMatch) {
+              const [, oldSha, newSha, branchName] = refMatch;
+              const isDelete = newSha === "0".repeat(40);
+              const isCreate = oldSha === "0".repeat(40);
+
+              let operation: "push" | "create" | "delete" = "push";
+              if (isDelete) operation = "delete";
+              else if (isCreate) operation = "create";
+
+              pushEvents.push({
+                timestamp: new Date(),
+                repo: repoName,
+                branch: branchName,
+                operation,
+                commitSha: isDelete ? oldSha : newSha,
+              });
+
+              console.log(
+                `* Recorded ${operation} to ${repoName}/${branchName}, commit: ${isDelete ? oldSha : newSha}`,
+              );
+            }
+          });
+        } catch (error) {
+          console.error("* Error parsing git protocol:", error);
+        }
+      });
+    }
+
+    // Ensure the bare git repository exists for this repo
+    const bareRepoPath = path.join(mockReposRoot, `${repoName}.git`);
+    console.log(`* Creating bare git repository at: ${bareRepoPath}`);
+    try {
+      fs.mkdirSync(bareRepoPath, { recursive: true });
+      // Initialize as bare repository
+      const { execSync } = require("child_process");
+      execSync(`git init --bare`, { cwd: bareRepoPath });
+      console.log(
+        `* Successfully created bare git repository: ${repoName}.git`,
+      );
+    } catch (error) {
+      console.error(`* Failed to create bare git repository:`, error);
+      return res.status(500).json({
+        message: "Failed to initialize git repository",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    // Rewrite the URL to match what the middleware expects
+    // Change /github/git/testuser/test-repo.git/... to /github/git/test-repo.git/...
+    const rewrittenUrl = req.url.replace(
+      /\/github\/git\/[^\/]+\//,
+      "/github/git/",
+    );
+    req.url = rewrittenUrl;
+    console.log(`* Rewritten URL from ${urlPath} to ${rewrittenUrl}`);
+  }
+
+  // Use git-http-mock-server middleware to handle the actual git operations
+  gitHttpMiddleware(
+    req,
+    res,
+    next ||
+      (() => {
+        // Fallback if middleware doesn't handle the request
+        console.log(
+          `* Git middleware did not handle request: ${req.method} ${req.url}`,
+        );
+        res.status(404).json({
+          message: "Git operation not supported",
+          url: req.url,
+          method: req.method,
+        });
+      }),
+  );
 }

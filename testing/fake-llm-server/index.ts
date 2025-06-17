@@ -11,6 +11,9 @@ import {
   handleRepo,
   handleRepoBranches,
   handleOrgRepos,
+  handleGitPush,
+  handleGetPushEvents,
+  handleClearPushEvents,
 } from "./githubHandler";
 
 // Create Express app
@@ -204,6 +207,13 @@ app.post("/github/api/user/repos", handleUserRepos);
 app.get("/github/api/repos/:owner/:repo", handleRepo);
 app.get("/github/api/repos/:owner/:repo/branches", handleRepoBranches);
 app.post("/github/api/orgs/:org/repos", handleOrgRepos);
+
+// GitHub test endpoints for verifying push operations
+app.get("/github/api/test/push-events", handleGetPushEvents);
+app.post("/github/api/test/clear-push-events", handleClearPushEvents);
+
+// GitHub Git endpoints - intercept all paths with /github/git prefix
+app.all("/github/git/*", handleGitPush);
 
 // Start the server
 const server = createServer(app);

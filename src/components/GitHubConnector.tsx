@@ -112,7 +112,10 @@ function ConnectedGitHubConnector({
   };
 
   return (
-    <div className="mt-4 w-full border border-gray-200 rounded-md p-4">
+    <div
+      className="mt-4 w-full border border-gray-200 rounded-md p-4"
+      data-testid="github-connected-repo"
+    >
       <p>Connected to GitHub Repo:</p>
       <a
         onClick={(e) => {
@@ -530,7 +533,7 @@ function UnconnectedGitHubConnector({
 
   if (!settings?.githubAccessToken) {
     return (
-      <div className="mt-1 w-full">
+      <div className="mt-1 w-full" data-testid="github-unconnected-repo">
         <Button
           onClick={handleConnectToGithub}
           className="cursor-pointer w-full py-5 flex justify-center items-center gap-2"
@@ -634,7 +637,10 @@ function UnconnectedGitHubConnector({
   }
 
   return (
-    <div className="mt-4 w-full border border-gray-200 rounded-md">
+    <div
+      className="mt-4 w-full border border-gray-200 rounded-md"
+      data-testid="github-setup-repo"
+    >
       {/* Collapsible Header */}
       <button
         type="button"
@@ -704,6 +710,7 @@ function UnconnectedGitHubConnector({
                     Repository Name
                   </Label>
                   <Input
+                    data-testid="github-create-repo-name-input"
                     className="w-full mt-1"
                     value={repoName}
                     onChange={(e) => {
@@ -743,7 +750,10 @@ function UnconnectedGitHubConnector({
                     onValueChange={setSelectedRepo}
                     disabled={isLoadingRepos}
                   >
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger
+                      className="w-full mt-1"
+                      data-testid="github-repo-select"
+                    >
                       <SelectValue
                         placeholder={
                           isLoadingRepos
@@ -784,7 +794,10 @@ function UnconnectedGitHubConnector({
                     }}
                     disabled={isLoadingBranches}
                   >
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger
+                      className="w-full mt-1"
+                      data-testid="github-branch-select"
+                    >
                       <SelectValue
                         placeholder={
                           isLoadingBranches
@@ -808,6 +821,7 @@ function UnconnectedGitHubConnector({
                   </Select>
                   {branchInputMode === "custom" && (
                     <Input
+                      data-testid="github-custom-branch-input"
                       className="w-full"
                       value={customBranchName}
                       onChange={(e) => setCustomBranchName(e.target.value)}
@@ -823,6 +837,7 @@ function UnconnectedGitHubConnector({
                   onChange={(e) => setSelectedBranch(e.target.value)}
                   placeholder="main"
                   disabled={isCreatingRepo}
+                  data-testid="github-new-repo-branch-input"
                 />
               )}
             </div>
