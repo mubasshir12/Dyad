@@ -26,6 +26,7 @@ jobs:
       matrix:
         os:
           [
+            { name: "windows-arm", image: "windows-11-arm" },
             { name: "windows", image: "windows-latest" },
             { name: "macos", image: "macos-latest" },
           ]
