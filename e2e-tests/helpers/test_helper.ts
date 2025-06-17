@@ -199,7 +199,7 @@ export class PageObject {
   }
 
   private async baseSetup() {
-    this.githubConnector.clearPushEvents();
+    await this.githubConnector.clearPushEvents();
   }
 
   async setUp({
