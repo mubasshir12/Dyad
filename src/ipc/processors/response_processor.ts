@@ -250,12 +250,19 @@ export async function processFullResponseActions(
             supabaseProjectId: chatWithApp.app.supabaseProjectId!,
             query: query.content,
           });
+        } catch (error) {
+          errors.push({
+            message: `Failed to execute SQL query: ${query.content}`,
+            error: error,
+          });
+        }
+        try {
           if (settings.enableSupabaseWriteSqlMigration) {
             await writeMigrationFile(appPath, query.content, query.description);
           }
         } catch (error) {
           errors.push({
-            message: `Failed to execute SQL query: ${query.content}`,
+            message: `Failed to write SQL migration file for: ${query.description}`,
             error: error,
           });
         }

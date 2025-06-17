@@ -90,6 +90,5 @@ export async function writeMigrationFile(
   const migrationFileName = `${paddedNumber}_${description}.sql`;
   const migrationFilePath = path.join(migrationsDir, migrationFileName);
 
-  console.error("Writing migration file to", migrationFilePath);
   await fsExtra.writeFile(migrationFilePath, queryContent);
 }
