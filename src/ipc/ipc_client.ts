@@ -557,32 +557,17 @@ export class IpcClient {
   public async listGithubRepos(): Promise<
     { name: string; full_name: string; private: boolean }[]
   > {
-    try {
-      const repos = await this.ipcRenderer.invoke("github:list-repos");
-      return repos as { name: string; full_name: string; private: boolean }[];
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+    return this.ipcRenderer.invoke("github:list-repos");
   }
 
   public async getGithubRepoBranches(
     owner: string,
     repo: string,
   ): Promise<{ name: string; commit: { sha: string } }[]> {
-    try {
-      const branches = await this.ipcRenderer.invoke(
-        "github:get-repo-branches",
-        {
-          owner,
-          repo,
-        },
-      );
-      return branches as { name: string; commit: { sha: string } }[];
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+    return this.ipcRenderer.invoke("github:get-repo-branches", {
+      owner,
+      repo,
+    });
   }
 
   public async connectToExistingGithubRepo(
@@ -591,17 +576,12 @@ export class IpcClient {
     branch: string,
     appId: number,
   ): Promise<void> {
-    try {
-      await this.ipcRenderer.invoke("github:connect-existing-repo", {
-        owner,
-        repo,
-        branch,
-        appId,
-      });
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+    await this.ipcRenderer.invoke("github:connect-existing-repo", {
+      owner,
+      repo,
+      branch,
+      appId,
+    });
   }
 
   public async checkGithubRepoAvailable(
@@ -633,16 +613,10 @@ export class IpcClient {
     appId: number,
     force?: boolean,
   ): Promise<{ success: boolean; error?: string }> {
-    try {
-      const result = await this.ipcRenderer.invoke("github:push", {
-        appId,
-        force,
-      });
-      return result as { success: boolean; error?: string };
-    } catch (error) {
-      showError(error);
-      throw error;
-    }
+    return this.ipcRenderer.invoke("github:push", {
+      appId,
+      force,
+    });
   }
 
   public async disconnectGithubRepo(appId: number): Promise<void> {
