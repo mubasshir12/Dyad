@@ -229,7 +229,9 @@ function ConnectedGitHubConnector({
                 </p>
                 <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-md border border-orange-200 dark:border-orange-800">
                   <p className="text-sm text-orange-800 dark:text-orange-200">
-                    <strong>⚠️ This is dangerous and will:</strong>
+                    <strong>
+                      This is dangerous and non-reversible and will:
+                    </strong>
                   </p>
                   <ul className="text-sm text-orange-700 dark:text-orange-300 list-disc list-inside mt-2 space-y-1">
                     <li>Overwrite the remote repository history</li>
@@ -237,13 +239,10 @@ function ConnectedGitHubConnector({
                       Permanently delete commits that exist on the remote but
                       not locally
                     </li>
-                    <li>Potentially cause data loss for other collaborators</li>
-                    <li>Break other people's local copies of the repository</li>
                   </ul>
                 </div>
                 <p className="text-sm">
-                  Only proceed if you're certain this is what you want to do and
-                  you understand the consequences.
+                  Only proceed if you're certain this is what you want to do.
                 </p>
               </div>
             </DialogDescription>
