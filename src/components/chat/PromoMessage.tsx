@@ -214,15 +214,37 @@ const ALL_MESSAGES = [
 
 // Main PromoMessage component using the modular system
 export function PromoMessage({ seed }: { seed: number }) {
-  // Simple hash function to better distribute the seed
-  const hash = (num: number) => {
-    let hash = num;
-    hash = ((hash << 5) - hash + hash) & 0xffffffff;
-    hash = (hash ^ (hash >>> 16)) & 0xffffffff;
-    return Math.abs(hash);
-  };
-
-  const hashedSeed = hash(seed);
+  const hashedSeed = hashNumber(seed);
   const randomMessage = ALL_MESSAGES[hashedSeed % ALL_MESSAGES.length];
   return <Message {...randomMessage} />;
+}
+
+/**
+ * Hashes a 32-bit integer using a variant of the MurmurHash3 algorithm.
+ * This function is designed to produce a good, random-like distribution
+ * of hash values, which is crucial for data structures like hash tables.
+ * @param {number} key - The integer to hash.
+ * @returns {number} A 32-bit integer hash.
+ */
+function hashNumber(key: number): number {
+  // Ensure the key is treated as an integer.
+  let i = key | 0;
+
+  // MurmurHash3's mixing function (fmix32)
+  // It uses a series of bitwise multiplications, shifts, and XORs
+  // to thoroughly mix the bits of the input key.
+
+  // XOR with a shifted version of itself to start mixing bits.
+  i ^= i >>> 16;
+  // Multiply by a large prime to further scramble bits.
+  i = Math.imul(i, 0x85ebca6b);
+  // Another XOR shift.
+  i ^= i >>> 13;
+  // Another prime multiplication.
+  i = Math.imul(i, 0xc2b2ae35);
+  // Final XOR shift to get the final mix.
+  i ^= i >>> 16;
+
+  // Return the result as an unsigned 32-bit integer.
+  return i >>> 0;
 }
