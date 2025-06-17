@@ -1,16 +1,8 @@
 - paragraph: hi
-- 'button "Thinking `<dyad-write>`: I''ll think about the problem and write a bug report. <dyad-write> <dyad-write path=\"file1.txt\"> Fake dyad write </dyad-write>"':
-  - img
-  - img
-  - paragraph:
-    - code: "`<dyad-write>`"
-    - text: ": I'll think about the problem and write a bug report."
 - img
 - text: file1.txt
 - img
-- text: Did not finish
-- img
 - text: file1.txt
-- paragraph: More EOM</dyad-write></dyad-write>
+- paragraph: More EOM
 - button "Retry":
   - img

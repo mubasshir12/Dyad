@@ -466,8 +466,9 @@ This conversation includes one or more image attachments. When the user uploads 
           onError: (error: any) => {
             logger.error("Error streaming text:", error);
             let errorMessage = (error as any)?.error?.message;
-            if (errorMessage) {
-              errorMessage += "\n\nDetails: " + error?.error?.responseBody;
+            const responseBody = error?.error?.responseBody;
+            if (errorMessage && responseBody) {
+              errorMessage += "\n\nDetails: " + responseBody;
             }
             const message = errorMessage || JSON.stringify(error);
             event.sender.send(
