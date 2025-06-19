@@ -11,9 +11,9 @@ export function ChatInputControls({
   return (
     <div className="flex">
       <ChatModeSelector />
-      <div className="w-1"></div>
+      <div className="w-1.5"></div>
       <ModelPicker />
-      <div className="w-2"></div>
+      <div className="w-1.5"></div>
       <ProModeSelector />
       <div className="w-1"></div>
       {showContextFilesPicker && (
