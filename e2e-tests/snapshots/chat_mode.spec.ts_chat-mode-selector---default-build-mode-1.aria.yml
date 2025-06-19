@@ -7,7 +7,7 @@
 - img
 - text: Approved
 - paragraph: "[dump] hi"
-- paragraph: /\[\[dyad-dump-path=\/Users\/will\/Documents\/GitHub\/dyad-zero\/testing\/fake-llm-server\/dist\/generated\/\d+\.json\]\]/
+- paragraph: "[[dyad-dump-path=*]]"
 - img
 - text: Approved
 - button "Retry":
