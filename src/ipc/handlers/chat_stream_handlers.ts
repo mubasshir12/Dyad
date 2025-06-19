@@ -38,7 +38,7 @@ import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { getExtraProviderOptions } from "../utils/thinking_utils";
 
 import { safeSend } from "../utils/safe_sender";
-import { cleanFullResponse } from "./cleanFullResponse";
+import { cleanFullResponse } from "../utils/cleanFullResponse";
 
 const logger = log.scope("chat_stream_handlers");
 

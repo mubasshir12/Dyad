@@ -1,5 +1,5 @@
 import { safeSend } from "../utils/safe_sender";
-import { cleanFullResponse } from "./cleanFullResponse";
+import { cleanFullResponse } from "../utils/cleanFullResponse";
 
 // e.g. [dyad-qa=add-dep]
 // Canned responses for test prompts

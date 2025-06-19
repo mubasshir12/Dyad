@@ -1,4 +1,4 @@
-import { cleanFullResponse } from "@/ipc/handlers/cleanFullResponse";
+import { cleanFullResponse } from "@/ipc/utils/cleanFullResponse";
 import { describe, it, expect } from "vitest";
 
 describe("cleanFullResponse", () => {
