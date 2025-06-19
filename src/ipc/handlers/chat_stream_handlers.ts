@@ -608,7 +608,6 @@ This conversation includes one or more image attachments. When the user uploads 
           .update(messages)
           .set({ content: fullResponse })
           .where(eq(messages.id, placeholderAssistantMessage.id));
-        console.log("committed fullResponse", fullResponse);
 
         if (readSettings().autoApproveChanges) {
           const status = await processFullResponseActions(
