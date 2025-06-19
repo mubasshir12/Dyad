@@ -42,6 +42,10 @@ export function registerTokenCountHandlers() {
         throw new Error(`Chat not found: ${req.chatId}`);
       }
 
+      // Get settings to access chat mode
+      const { readSettings } = await import("../../main/settings");
+      const settings = readSettings();
+
       // Prepare message history for token counting
       const messageHistory = chat.messages
         .map((message) => message.content)
@@ -54,6 +58,7 @@ export function registerTokenCountHandlers() {
       // Count system prompt tokens
       let systemPrompt = constructSystemPrompt({
         aiRules: await readAiRules(getDyadAppPath(chat.app.path)),
+        chatMode: settings.selectedChatMode || "build",
       });
       let supabaseContext = "";
 

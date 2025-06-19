@@ -347,6 +347,7 @@ ${componentSnippet}
 
         let systemPrompt = constructSystemPrompt({
           aiRules: await readAiRules(getDyadAppPath(updatedChat.app.path)),
+          chatMode: settings.selectedChatMode || "build",
         });
         if (
           updatedChat.app?.supabaseProjectId &&

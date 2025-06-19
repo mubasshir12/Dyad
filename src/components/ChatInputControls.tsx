@@ -1,6 +1,7 @@
 import { ContextFilesPicker } from "./ContextFilesPicker";
 import { ModelPicker } from "./ModelPicker";
 import { ProModeSelector } from "./ProModeSelector";
+import { ChatModeSelector } from "./ChatModeSelector";
 
 export function ChatInputControls({
   showContextFilesPicker = false,
@@ -9,6 +10,8 @@ export function ChatInputControls({
 }) {
   return (
     <div className="flex">
+      <ChatModeSelector />
+      <div className="w-1"></div>
       <ModelPicker />
       <div className="w-2"></div>
       <ProModeSelector />

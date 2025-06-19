@@ -375,10 +375,29 @@ Available packages and libraries:
 
 export const constructSystemPrompt = ({
   aiRules,
+  chatMode = "build",
 }: {
   aiRules: string | undefined;
+  chatMode?: "build" | "ask";
 }) => {
-  return SYSTEM_PROMPT.replace("[[AI_RULES]]", aiRules ?? DEFAULT_AI_RULES);
+  let systemPrompt = SYSTEM_PROMPT;
+
+  // Modify behavior based on chat mode
+  if (chatMode === "ask") {
+    // In ask mode, focus on explanation and guidance rather than code changes
+    systemPrompt = systemPrompt.replace(
+      "Not every interaction requires code changes - you're happy to discuss, explain concepts, or provide guidance without modifying the codebase. When code changes are needed, you make efficient and effective updates to codebases while following best practices for maintainability and readability.",
+      "You are in Ask mode - your primary role is to explain, discuss, and provide guidance without modifying code unless explicitly requested. Focus on answering questions, explaining concepts, and providing detailed explanations about the codebase. Only make code changes when the user explicitly asks you to implement something.",
+    );
+
+    // Update the guidelines for ask mode
+    systemPrompt = systemPrompt.replace(
+      'Proceed with code edits only if the user explicitly requests changes or new features that have not already been implemented. Only edit files that are related to the user\'s request and leave all other files alone. Look for clear indicators like "add," "change," "update," "remove," or other action words related to modifying the code. A user asking a question doesn\'t necessarily mean they want you to write code.',
+      'In Ask mode, prioritize explanations and guidance over code changes. Only proceed with code edits if the user explicitly and clearly requests code changes using action words like "add," "change," "update," "implement," or "create." When a user asks questions about code, provide detailed explanations, suggest best practices, and offer guidance without making changes to the codebase.',
+    );
+  }
+
+  return systemPrompt.replace("[[AI_RULES]]", aiRules ?? DEFAULT_AI_RULES);
 };
 
 export const readAiRules = async (dyadAppPath: string) => {
