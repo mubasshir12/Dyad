@@ -18,7 +18,7 @@ export function ChatErrorBox({
         {error}
         <span className="ml-1">
           <ExternalLink href="https://dyad.sh/pro">
-            Access with Dyad Pro.
+            Access with Pro.
           </ExternalLink>
         </span>
       </ChatErrorContainer>
@@ -33,7 +33,7 @@ export function ChatErrorBox({
         {error}
         <span className="ml-1">
           <ExternalLink href="https://dyad.sh/pro">
-            Upgrade to Dyad Pro.
+            Upgrade to Pro.
           </ExternalLink>
         </span>
       </ChatErrorContainer>
@@ -44,9 +44,9 @@ export function ChatErrorBox({
     return (
       <ChatInfoContainer onDismiss={onDismiss}>
         <span>
-          Looks like you don't have a valid Dyad Pro key.{" "}
+          Looks like you don't have a valid Pro key.{" "}
           <ExternalLink href="https://dyad.sh/pro">
-            Upgrade to Dyad Pro
+            Upgrade to Pro
           </ExternalLink>{" "}
           today.
         </span>
