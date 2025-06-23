@@ -109,7 +109,7 @@ export default Index;
       lastMessage &&
       lastMessage.content &&
       typeof lastMessage.content === "string" &&
-      lastMessage.content.endsWith("[[STRING_TO_BE_FINISHED]]")
+      lastMessage.content.trim().endsWith("[[STRING_TO_BE_FINISHED]]")
     ) {
       messageContent = `[[STRING_IS_FINISHED]]";</dyad-write>`;
       messageContent += "\n\n" + generateDump(req);

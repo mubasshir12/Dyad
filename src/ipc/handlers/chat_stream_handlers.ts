@@ -606,7 +606,7 @@ This conversation includes one or more image attachments. When the user uploads 
 
             // Build messages: replay history then pre-fill assistant with current partial.
             const continuationMessages: CoreMessage[] = [
-              ...chatMessages.filter((m) => m.role !== "assistant"), // history up to user
+              ...chatMessages,
               { role: "assistant", content: fullResponse },
             ];
 

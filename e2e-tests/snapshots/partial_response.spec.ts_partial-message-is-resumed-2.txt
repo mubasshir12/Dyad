@@ -86,7 +86,8 @@ createRoot(document.getElementById("root")!).render(<App />);
 
 
 === src/new-file.ts ===
-const a = "[[STRING_TO_BE_FINISHED]][[STRING_IS_FINISHED]]";
+const a = "[[STRING_TO_BE_FINISHED]]
+[[STRING_IS_FINISHED]]";
 
 === src/vite-env.d.ts ===
 /// <reference types="vite/client" />
