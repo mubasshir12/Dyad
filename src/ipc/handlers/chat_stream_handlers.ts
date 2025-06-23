@@ -591,6 +591,65 @@ This conversation includes one or more image attachments. When the user uploads 
           }
           throw streamError;
         }
+
+        if (
+          !abortController.signal.aborted &&
+          hasUnclosedDyadWrite(fullResponse)
+        ) {
+          let continuationAttempts = 0;
+          while (
+            hasUnclosedDyadWrite(fullResponse) &&
+            continuationAttempts < 1 &&
+            !abortController.signal.aborted
+          ) {
+            continuationAttempts++;
+
+            // Build messages: replay history then pre-fill assistant with current partial.
+            const continuationMessages: CoreMessage[] = [
+              ...chatMessages.filter((m) => m.role !== "assistant"), // history up to user
+              { role: "assistant", content: fullResponse },
+            ];
+
+            const { fullStream: contStream } = streamText({
+              maxTokens: await getMaxTokens(settings.selectedModel),
+              temperature: 0,
+              maxRetries: 2,
+              model: modelClient.model,
+              providerOptions: {
+                "dyad-gateway": getExtraProviderOptions(
+                  modelClient.builtinProviderId,
+                ),
+                google: {
+                  thinkingConfig: { includeThoughts: true },
+                } as GoogleGenerativeAIProviderOptions,
+              },
+              system: systemPrompt,
+              messages: continuationMessages.filter((m) => m.content),
+              abortSignal: abortController.signal,
+            });
+
+            for await (const part of contStream) {
+              if (part.type !== "text-delta") continue; // ignore reasoning for continuation
+              fullResponse += part.textDelta;
+              fullResponse = cleanFullResponse(fullResponse);
+
+              // keep renderer in-sync
+              const currentMessages = [...updatedChat.messages];
+              if (
+                currentMessages.length > 0 &&
+                currentMessages[currentMessages.length - 1].role === "assistant"
+              ) {
+                currentMessages[currentMessages.length - 1].content =
+                  fullResponse;
+              }
+              partialResponses.set(req.chatId, fullResponse);
+              safeSend(event.sender, "chat:response:chunk", {
+                chatId: req.chatId,
+                messages: currentMessages,
+              });
+            }
+          }
+        }
       }
 
       // Only save the response and process it if we weren't aborted
@@ -831,4 +890,26 @@ function removeThinkingTags(text: string): string {
 export function removeDyadTags(text: string): string {
   const dyadRegex = /<dyad-[^>]*>[\s\S]*?<\/dyad-[^>]*>/g;
   return text.replace(dyadRegex, "").trim();
+}
+
+export function hasUnclosedDyadWrite(text: string): boolean {
+  // Find the last opening dyad-write tag
+  const openRegex = /<dyad-write[^>]*>/g;
+  let lastOpenIndex = -1;
+  let match;
+
+  while ((match = openRegex.exec(text)) !== null) {
+    lastOpenIndex = match.index;
+  }
+
+  // If no opening tag found, there's nothing unclosed
+  if (lastOpenIndex === -1) {
+    return false;
+  }
+
+  // Look for a closing tag after the last opening tag
+  const textAfterLastOpen = text.substring(lastOpenIndex);
+  const hasClosingTag = /<\/dyad-write>/.test(textAfterLastOpen);
+
+  return !hasClosingTag;
 }
