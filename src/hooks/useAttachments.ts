@@ -60,20 +60,23 @@ export function useAttachments() {
       e.preventDefault(); // Prevent default paste behavior for images
 
       const imageFiles: File[] = [];
+      // Generate base timestamp once to avoid collisions
+      const baseTimestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
-      for (const item of imageItems) {
+      for (let i = 0; i < imageItems.length; i++) {
+        const item = imageItems[i];
         const file = item.getAsFile();
         if (file) {
-          // Create a more descriptive filename with timestamp
-          const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+          // Create a more descriptive filename with timestamp and counter
           const extension = file.type.split("/")[1] || "png";
-          const newFile = new File(
-            [file],
-            `pasted-image-${timestamp}.${extension}`,
-            {
-              type: file.type,
-            },
-          );
+          const filename =
+            imageItems.length === 1
+              ? `pasted-image-${baseTimestamp}.${extension}`
+              : `pasted-image-${baseTimestamp}-${i + 1}.${extension}`;
+
+          const newFile = new File([file], filename, {
+            type: file.type,
+          });
           imageFiles.push(newFile);
         }
       }
