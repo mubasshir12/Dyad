@@ -145,9 +145,14 @@ export function ProviderSettingsGrid() {
                   >
                     <Popover>
                       <PopoverTrigger asChild>
-                        <button className="p-1 hover:bg-muted rounded-full focus:outline-none">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-1 hover:bg-muted rounded-full focus:outline-none"
+                          data-testid="custom-provider-more-options"
+                        >
                           <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                        </button>
+                        </Button>
                       </PopoverTrigger>
                       <PopoverContent align="end" className="w-48 p-2">
                         <Button
