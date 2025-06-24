@@ -492,6 +492,42 @@ This conversation includes one or more image attachments. When the user uploads 
           });
         };
 
+        const processResponseChunkUpdate = async ({
+          fullResponse,
+        }: {
+          fullResponse: string;
+        }) => {
+          if (
+            fullResponse.includes("$$SUPABASE_CLIENT_CODE$$") &&
+            updatedChat.app?.supabaseProjectId
+          ) {
+            const supabaseClientCode = await getSupabaseClientCode({
+              projectId: updatedChat.app?.supabaseProjectId,
+            });
+            fullResponse = fullResponse.replace(
+              "$$SUPABASE_CLIENT_CODE$$",
+              supabaseClientCode,
+            );
+          }
+          // Store the current partial response
+          partialResponses.set(req.chatId, fullResponse);
+
+          // Update the placeholder assistant message content in the messages array
+          const currentMessages = [...updatedChat.messages];
+          if (
+            currentMessages.length > 0 &&
+            currentMessages[currentMessages.length - 1].role === "assistant"
+          ) {
+            currentMessages[currentMessages.length - 1].content = fullResponse;
+          }
+
+          // Update the assistant message in the database
+          safeSend(event.sender, "chat:response:chunk", {
+            chatId: req.chatId,
+            messages: currentMessages,
+          });
+        };
+
         // When calling streamText, the messages need to be properly formatted for mixed content
         const { fullStream } = await simpleStreamText({ chatMessages });
 
@@ -528,36 +564,8 @@ This conversation includes one or more image attachments. When the user uploads 
 
             fullResponse += chunk;
             fullResponse = cleanFullResponse(fullResponse);
-
-            if (
-              fullResponse.includes("$$SUPABASE_CLIENT_CODE$$") &&
-              updatedChat.app?.supabaseProjectId
-            ) {
-              const supabaseClientCode = await getSupabaseClientCode({
-                projectId: updatedChat.app?.supabaseProjectId,
-              });
-              fullResponse = fullResponse.replace(
-                "$$SUPABASE_CLIENT_CODE$$",
-                supabaseClientCode,
-              );
-            }
-            // Store the current partial response
-            partialResponses.set(req.chatId, fullResponse);
-
-            // Update the placeholder assistant message content in the messages array
-            const currentMessages = [...updatedChat.messages];
-            if (
-              currentMessages.length > 0 &&
-              currentMessages[currentMessages.length - 1].role === "assistant"
-            ) {
-              currentMessages[currentMessages.length - 1].content =
-                fullResponse;
-            }
-
-            // Update the assistant message in the database
-            safeSend(event.sender, "chat:response:chunk", {
-              chatId: req.chatId,
-              messages: currentMessages,
+            processResponseChunkUpdate({
+              fullResponse,
             });
 
             // If the stream was aborted, exit early
@@ -623,23 +631,16 @@ This conversation includes one or more image attachments. When the user uploads 
               ],
             });
             for await (const part of contStream) {
+              // If the stream was aborted, exit early
+              if (abortController.signal.aborted) {
+                logger.log(`Stream for chat ${req.chatId} was aborted`);
+                break;
+              }
               if (part.type !== "text-delta") continue; // ignore reasoning for continuation
               fullResponse += part.textDelta;
               fullResponse = cleanFullResponse(fullResponse);
-
-              // keep renderer in-sync
-              const currentMessages = [...updatedChat.messages];
-              if (
-                currentMessages.length > 0 &&
-                currentMessages[currentMessages.length - 1].role === "assistant"
-              ) {
-                currentMessages[currentMessages.length - 1].content =
-                  fullResponse;
-              }
-              partialResponses.set(req.chatId, fullResponse);
-              safeSend(event.sender, "chat:response:chunk", {
-                chatId: req.chatId,
-                messages: currentMessages,
+              processResponseChunkUpdate({
+                fullResponse,
               });
             }
           }
