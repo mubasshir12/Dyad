@@ -451,41 +451,49 @@ This conversation includes one or more image attachments. When the user uploads 
           ];
         }
 
+        const simpleStreamText = async ({
+          chatMessages,
+        }: {
+          chatMessages: CoreMessage[];
+        }) => {
+          return streamText({
+            maxTokens: await getMaxTokens(settings.selectedModel),
+            temperature: 0,
+            maxRetries: 2,
+            model: modelClient.model,
+            providerOptions: {
+              "dyad-gateway": getExtraProviderOptions(
+                modelClient.builtinProviderId,
+              ),
+              google: {
+                thinkingConfig: {
+                  includeThoughts: true,
+                },
+              } satisfies GoogleGenerativeAIProviderOptions,
+            },
+            system: systemPrompt,
+            messages: chatMessages.filter((m) => m.content),
+            onError: (error: any) => {
+              logger.error("Error streaming text:", error);
+              let errorMessage = (error as any)?.error?.message;
+              const responseBody = error?.error?.responseBody;
+              if (errorMessage && responseBody) {
+                errorMessage += "\n\nDetails: " + responseBody;
+              }
+              const message = errorMessage || JSON.stringify(error);
+              event.sender.send(
+                "chat:response:error",
+                `Sorry, there was an error from the AI: ${message}`,
+              );
+              // Clean up the abort controller
+              activeStreams.delete(req.chatId);
+            },
+            abortSignal: abortController.signal,
+          });
+        };
+
         // When calling streamText, the messages need to be properly formatted for mixed content
-        const { fullStream } = streamText({
-          maxTokens: await getMaxTokens(settings.selectedModel),
-          temperature: 0,
-          maxRetries: 2,
-          model: modelClient.model,
-          providerOptions: {
-            "dyad-gateway": getExtraProviderOptions(
-              modelClient.builtinProviderId,
-            ),
-            google: {
-              thinkingConfig: {
-                includeThoughts: true,
-              },
-            } satisfies GoogleGenerativeAIProviderOptions,
-          },
-          system: systemPrompt,
-          messages: chatMessages.filter((m) => m.content),
-          onError: (error: any) => {
-            logger.error("Error streaming text:", error);
-            let errorMessage = (error as any)?.error?.message;
-            const responseBody = error?.error?.responseBody;
-            if (errorMessage && responseBody) {
-              errorMessage += "\n\nDetails: " + responseBody;
-            }
-            const message = errorMessage || JSON.stringify(error);
-            event.sender.send(
-              "chat:response:error",
-              `Sorry, there was an error from the AI: ${message}`,
-            );
-            // Clean up the abort controller
-            activeStreams.delete(req.chatId);
-          },
-          abortSignal: abortController.signal,
-        });
+        const { fullStream } = await simpleStreamText({ chatMessages });
 
         // Process the stream as before
         let inThinkingBlock = false;
@@ -604,30 +612,13 @@ This conversation includes one or more image attachments. When the user uploads 
           ) {
             continuationAttempts++;
 
-            // Build messages: replay history then pre-fill assistant with current partial.
-            const continuationMessages: CoreMessage[] = [
-              ...chatMessages,
-              { role: "assistant", content: fullResponse },
-            ];
-
-            const { fullStream: contStream } = streamText({
-              maxTokens: await getMaxTokens(settings.selectedModel),
-              temperature: 0,
-              maxRetries: 2,
-              model: modelClient.model,
-              providerOptions: {
-                "dyad-gateway": getExtraProviderOptions(
-                  modelClient.builtinProviderId,
-                ),
-                google: {
-                  thinkingConfig: { includeThoughts: true },
-                } as GoogleGenerativeAIProviderOptions,
-              },
-              system: systemPrompt,
-              messages: continuationMessages.filter((m) => m.content),
-              abortSignal: abortController.signal,
+            const { fullStream: contStream } = await simpleStreamText({
+              // Build messages: replay history then pre-fill assistant with current partial.
+              chatMessages: [
+                ...chatMessages,
+                { role: "assistant", content: fullResponse },
+              ],
             });
-
             for await (const part of contStream) {
               if (part.type !== "text-delta") continue; // ignore reasoning for continuation
               fullResponse += part.textDelta;
