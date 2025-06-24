@@ -137,7 +137,6 @@ export async function getModelClient(
       const envVarName = providerInfo?.envVarName;
 
       const apiKey =
-        dyadApiKey ||
         settings.providerSettings?.[autoModel.provider]?.apiKey?.value ||
         (envVarName ? getEnvVar(envVarName) : undefined);
 
