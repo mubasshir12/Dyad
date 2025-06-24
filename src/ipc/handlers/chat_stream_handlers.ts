@@ -575,6 +575,44 @@ This conversation includes one or more image attachments. When the user uploads 
               break;
             }
           }
+
+          if (
+            !abortController.signal.aborted &&
+            hasUnclosedDyadWrite(fullResponse)
+          ) {
+            let continuationAttempts = 0;
+            while (
+              hasUnclosedDyadWrite(fullResponse) &&
+              continuationAttempts < 2 &&
+              !abortController.signal.aborted
+            ) {
+              logger.warn(
+                `Received unclosed dyad-write tag, attempting to continue, attempt #${continuationAttempts + 1}`,
+              );
+              continuationAttempts++;
+
+              const { fullStream: contStream } = await simpleStreamText({
+                // Build messages: replay history then pre-fill assistant with current partial.
+                chatMessages: [
+                  ...chatMessages,
+                  { role: "assistant", content: fullResponse },
+                ],
+              });
+              for await (const part of contStream) {
+                // If the stream was aborted, exit early
+                if (abortController.signal.aborted) {
+                  logger.log(`Stream for chat ${req.chatId} was aborted`);
+                  break;
+                }
+                if (part.type !== "text-delta") continue; // ignore reasoning for continuation
+                fullResponse += part.textDelta;
+                fullResponse = cleanFullResponse(fullResponse);
+                fullResponse = await processResponseChunkUpdate({
+                  fullResponse,
+                });
+              }
+            }
+          }
         } catch (streamError) {
           // Check if this was an abort error
           if (abortController.signal.aborted) {
@@ -607,44 +645,6 @@ This conversation includes one or more image attachments. When the user uploads 
             return req.chatId;
           }
           throw streamError;
-        }
-
-        if (
-          !abortController.signal.aborted &&
-          hasUnclosedDyadWrite(fullResponse)
-        ) {
-          let continuationAttempts = 0;
-          while (
-            hasUnclosedDyadWrite(fullResponse) &&
-            continuationAttempts < 2 &&
-            !abortController.signal.aborted
-          ) {
-            logger.warn(
-              `Received unclosed dyad-write tag, attempting to continue, attempt #${continuationAttempts + 1}`,
-            );
-            continuationAttempts++;
-
-            const { fullStream: contStream } = await simpleStreamText({
-              // Build messages: replay history then pre-fill assistant with current partial.
-              chatMessages: [
-                ...chatMessages,
-                { role: "assistant", content: fullResponse },
-              ],
-            });
-            for await (const part of contStream) {
-              // If the stream was aborted, exit early
-              if (abortController.signal.aborted) {
-                logger.log(`Stream for chat ${req.chatId} was aborted`);
-                break;
-              }
-              if (part.type !== "text-delta") continue; // ignore reasoning for continuation
-              fullResponse += part.textDelta;
-              fullResponse = cleanFullResponse(fullResponse);
-              fullResponse = await processResponseChunkUpdate({
-                fullResponse,
-              });
-            }
-          }
         }
       }
 
