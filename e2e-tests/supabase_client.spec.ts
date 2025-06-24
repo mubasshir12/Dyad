@@ -1,6 +1,6 @@
-import { test } from "./helpers/test_helper";
+import { testSkipIfWindows } from "./helpers/test_helper";
 
-test("supabase client is generated", async ({ po }) => {
+testSkipIfWindows("supabase client is generated", async ({ po }) => {
   await po.setUp({ autoApprove: true });
   await po.importApp("minimal");
   await po.sendPrompt("tc=add-supabase");
