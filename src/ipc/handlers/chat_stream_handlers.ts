@@ -607,9 +607,12 @@ This conversation includes one or more image attachments. When the user uploads 
           let continuationAttempts = 0;
           while (
             hasUnclosedDyadWrite(fullResponse) &&
-            continuationAttempts < 1 &&
+            continuationAttempts < 2 &&
             !abortController.signal.aborted
           ) {
+            logger.warn(
+              `Received unclosed dyad-write tag, attempting to continue, attempt #${continuationAttempts + 1}`,
+            );
             continuationAttempts++;
 
             const { fullStream: contStream } = await simpleStreamText({
