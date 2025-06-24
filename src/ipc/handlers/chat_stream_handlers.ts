@@ -526,6 +526,7 @@ This conversation includes one or more image attachments. When the user uploads 
             chatId: req.chatId,
             messages: currentMessages,
           });
+          return fullResponse;
         };
 
         // When calling streamText, the messages need to be properly formatted for mixed content
@@ -564,7 +565,7 @@ This conversation includes one or more image attachments. When the user uploads 
 
             fullResponse += chunk;
             fullResponse = cleanFullResponse(fullResponse);
-            processResponseChunkUpdate({
+            fullResponse = await processResponseChunkUpdate({
               fullResponse,
             });
 
@@ -639,7 +640,7 @@ This conversation includes one or more image attachments. When the user uploads 
               if (part.type !== "text-delta") continue; // ignore reasoning for continuation
               fullResponse += part.textDelta;
               fullResponse = cleanFullResponse(fullResponse);
-              processResponseChunkUpdate({
+              fullResponse = await processResponseChunkUpdate({
                 fullResponse,
               });
             }
