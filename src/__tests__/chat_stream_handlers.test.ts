@@ -1043,7 +1043,7 @@ const component = <Component />;
 
   it("should handle dyad tags with special characters in content", () => {
     const text = `<dyad-write path="file.js">
-const regex = /<div[^>]*>.*?<\/div>/g;
+const regex = /<div[^>]*>.*?</div>/g;
 const special = "Special chars: @#$%^&*()[]{}|\\";
 </dyad-write>`;
     const result = removeDyadTags(text);
