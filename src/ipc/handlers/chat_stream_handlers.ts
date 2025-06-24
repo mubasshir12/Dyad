@@ -578,6 +578,7 @@ This conversation includes one or more image attachments. When the user uploads 
 
           if (
             !abortController.signal.aborted &&
+            settings.selectedChatMode !== "ask" &&
             hasUnclosedDyadWrite(fullResponse)
           ) {
             let continuationAttempts = 0;
