@@ -13,7 +13,6 @@ import { OpenAICompatibleChatSettings } from "@ai-sdk/openai-compatible";
 import log from "electron-log";
 import { getExtraProviderOptions } from "./thinking_utils";
 import type { UserSettings } from "../../lib/schemas";
-import { readSettings } from "@/main/settings";
 
 const logger = log.scope("llm_engine_provider");
 
@@ -50,7 +49,7 @@ or to provide a custom fetch implementation for e.g. testing.
     enableLazyEdits?: boolean;
     enableSmartFilesContext?: boolean;
   };
-  settings?: UserSettings;
+  settings: UserSettings;
 }
 
 export interface DyadEngineProvider {
@@ -130,7 +129,7 @@ export function createDyadEngine(
             ...JSON.parse(init.body),
             ...getExtraProviderOptions(
               options.originalProviderId,
-              readSettings(),
+              options.settings,
             ),
           };
 
