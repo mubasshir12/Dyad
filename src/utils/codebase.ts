@@ -45,6 +45,9 @@ const ALLOWED_EXTENSIONS = [
 // Directories to always exclude
 const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "build"];
 
+// Files to always exclude
+const EXCLUDED_FILES = ["pnpm-lock.yaml", "package-lock.json"];
+
 // Files to always include, regardless of extension
 const ALWAYS_INCLUDE_FILES = ["package.json"];
 
@@ -56,9 +59,8 @@ const OMITTED_FILES = [
   "src/components/ui",
   "eslint.config",
   "tsconfig.json",
-  "package-lock.json",
+
   ".env",
-  "pnpm-lock.yaml",
 ];
 
 // Maximum file size to include (in bytes) - 100KB
@@ -258,6 +260,11 @@ async function collectFiles(dir: string, baseDir: string): Promise<string[]> {
         const subDirFiles = await collectFiles(fullPath, baseDir);
         files.push(...subDirFiles);
       } else if (entry.isFile()) {
+        // Skip excluded files
+        if (EXCLUDED_FILES.includes(entry.name)) {
+          return;
+        }
+
         // Check file extension and filename
         const ext = path.extname(entry.name).toLowerCase();
         const shouldAlwaysInclude = ALWAYS_INCLUDE_FILES.includes(entry.name);
