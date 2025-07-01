@@ -38,7 +38,7 @@ export function ProModeSelector() {
   };
 
   const hasProKey = settings ? hasDyadProKey(settings) : false;
-  const proEnabled = Boolean(settings?.enableDyadPro);
+  const proModeTogglable = hasProKey && Boolean(settings?.enableDyadPro);
 
   return (
     <Popover>
@@ -95,7 +95,7 @@ export function ProModeSelector() {
               label="Turbo Edits"
               description="Makes file edits faster and cheaper"
               tooltip="Uses a faster, cheaper model to generate full file updates."
-              isTogglable={proEnabled}
+              isTogglable={proModeTogglable}
               settingEnabled={Boolean(settings?.enableProLazyEditsMode)}
               toggle={toggleLazyEdits}
             />
@@ -104,7 +104,7 @@ export function ProModeSelector() {
               label="Smart Context"
               description="Optimizes your AI's code context"
               tooltip="Improve efficiency and save credits working on large codebases."
-              isTogglable={proEnabled}
+              isTogglable={proModeTogglable}
               settingEnabled={Boolean(settings?.enableProSmartFilesContextMode)}
               toggle={toggleSmartContext}
             />
