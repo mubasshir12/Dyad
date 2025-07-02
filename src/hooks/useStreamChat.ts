@@ -1,16 +1,11 @@
 import { useCallback } from "react";
-import type {
-  ComponentSelection,
-  Message,
-  ChatProblemsEvent,
-} from "@/ipc/ipc_types";
+import type { ComponentSelection, Message } from "@/ipc/ipc_types";
 import { useAtom, useSetAtom } from "jotai";
 import {
   chatErrorAtom,
   chatMessagesAtom,
   chatStreamCountAtom,
   isStreamingAtom,
-  chatProblemsAtom,
 } from "@/atoms/chatAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
 import { isPreviewOpenAtom } from "@/atoms/viewAtoms";
@@ -39,7 +34,6 @@ export function useStreamChat({
   const [isStreaming, setIsStreaming] = useAtom(isStreamingAtom);
   const [error, setError] = useAtom(chatErrorAtom);
   const setIsPreviewOpen = useSetAtom(isPreviewOpenAtom);
-  const [, setProblems] = useAtom(chatProblemsAtom);
   const [selectedAppId] = useAtom(selectedAppIdAtom);
   const { refreshChats } = useChats(selectedAppId);
   const { refreshApp } = useLoadApp(selectedAppId);
@@ -81,14 +75,7 @@ export function useStreamChat({
 
       setError(null);
       setIsStreaming(true);
-      // Clear previous problems for the current app
-      if (selectedAppId != null) {
-        setProblems((prev) => {
-          const updated = { ...prev };
-          delete updated[selectedAppId];
-          return updated;
-        });
-      }
+
       let hasIncrementedStreamCount = false;
       try {
         IpcClient.getInstance().streamMessage(prompt, {
@@ -103,16 +90,6 @@ export function useStreamChat({
             }
 
             setMessages(updatedMessages);
-          },
-          onProblems: (problemsEvent: ChatProblemsEvent) => {
-            console.debug(
-              `[CHAT] Problems detected for chat ${problemsEvent.chatId} in app ${problemsEvent.appId}:`,
-              problemsEvent.problems,
-            );
-            setProblems((prev) => ({
-              ...prev,
-              [problemsEvent.appId]: problemsEvent.problems,
-            }));
           },
           onEnd: (response: ChatResponseEnd) => {
             if (response.updatedFiles) {

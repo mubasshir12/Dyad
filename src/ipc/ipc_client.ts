@@ -45,7 +45,6 @@ export interface ChatStreamCallbacks {
   onUpdate: (messages: Message[]) => void;
   onEnd: (response: ChatResponseEnd) => void;
   onError: (error: string) => void;
-  onProblems?: (problems: ChatProblemsEvent) => void;
 }
 
 export interface AppStreamCallbacks {
@@ -155,24 +154,6 @@ export class IpcClient {
         }
       } else {
         console.error("[IPC] Invalid error data received:", error);
-      }
-    });
-
-    this.ipcRenderer.on("chat:problems", (data) => {
-      if (
-        data &&
-        typeof data === "object" &&
-        "chatId" in data &&
-        "appId" in data &&
-        "problems" in data
-      ) {
-        const problemsEvent = data as unknown as ChatProblemsEvent;
-        const callbacks = this.chatStreams.get(problemsEvent.chatId);
-        if (callbacks && callbacks.onProblems) {
-          callbacks.onProblems(problemsEvent);
-        }
-      } else {
-        console.error("[IPC] Invalid problems data received:", data);
       }
     });
   }

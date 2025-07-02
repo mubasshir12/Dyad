@@ -101,7 +101,6 @@ const validReceiveChannels = [
   "chat:response:chunk",
   "chat:response:end",
   "chat:response:error",
-  "chat:problems",
   "app:output",
   "github:flow-update",
   "github:flow-success",

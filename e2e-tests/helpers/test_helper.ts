@@ -486,6 +486,12 @@ export class PageObject {
     return this.page.getByTestId("preview-iframe-element");
   }
 
+  expectPreviewIframeIsVisible() {
+    return expect(this.getPreviewIframeElement()).toBeVisible({
+      timeout: Timeout.LONG,
+    });
+  }
+
   async clickFixErrorWithAI() {
     await this.page.getByRole("button", { name: "Fix error with AI" }).click();
   }

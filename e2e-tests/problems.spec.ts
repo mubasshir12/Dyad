@@ -8,7 +8,7 @@ const MINIMAL_APP = "minimal-with-ai-rules";
 test("problems auto-fix - enabled", async ({ po }) => {
   await po.setUp();
   await po.importApp(MINIMAL_APP);
-  await po.snapshotPreview();
+  await po.expectPreviewIframeIsVisible();
 
   await po.sendPrompt("tc=create-ts-errors");
 
@@ -21,7 +21,7 @@ test("problems auto-fix - enabled", async ({ po }) => {
 test("problems auto-fix - gives up after 2 attempts", async ({ po }) => {
   await po.setUp();
   await po.importApp(MINIMAL_APP);
-  await po.snapshotPreview();
+  await po.expectPreviewIframeIsVisible();
 
   await po.sendPrompt("tc=create-unfixable-ts-errors");
 
@@ -38,7 +38,7 @@ test("problems auto-fix - gives up after 2 attempts", async ({ po }) => {
 test("problems auto-fix - complex delete-rename-write", async ({ po }) => {
   await po.setUp();
   await po.importApp(MINIMAL_APP);
-  await po.snapshotPreview();
+  await po.expectPreviewIframeIsVisible();
 
   await po.sendPrompt("tc=create-ts-errors-complex");
 
@@ -51,7 +51,7 @@ test("problems auto-fix - complex delete-rename-write", async ({ po }) => {
 test("problems auto-fix - disabled", async ({ po }) => {
   await po.setUp({ disableAutoFixProblems: true });
   await po.importApp(MINIMAL_APP);
-  await po.snapshotPreview();
+  await po.expectPreviewIframeIsVisible();
 
   await po.sendPrompt("tc=create-ts-errors");
 

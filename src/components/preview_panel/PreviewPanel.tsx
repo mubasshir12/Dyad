@@ -5,7 +5,6 @@ import {
   previewPanelKeyAtom,
   selectedAppIdAtom,
 } from "../../atoms/appAtoms";
-import { chatProblemsAtom } from "../../atoms/chatAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
 
 import { CodeView } from "./CodeView";
@@ -36,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { showError, showSuccess } from "@/lib/toast";
 import { useMutation } from "@tanstack/react-query";
+import { useCheckProblems } from "@/hooks/useCheckProblems";
 
 type PreviewMode = "preview" | "code" | "problems";
 
@@ -62,14 +62,12 @@ const PreviewHeader = ({
   onClearSessionData,
 }: PreviewHeaderProps) => {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
-  const problems = useAtomValue(chatProblemsAtom);
   const previewRef = useRef<HTMLButtonElement>(null);
   const codeRef = useRef<HTMLButtonElement>(null);
   const problemsRef = useRef<HTMLButtonElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
-
+  const { problemReport } = useCheckProblems(selectedAppId);
   // Get the problem count for the selected app
-  const problemReport = selectedAppId ? problems[selectedAppId] : null;
   const problemCount = problemReport ? problemReport.problems.length : 0;
 
   // Format the problem count for display

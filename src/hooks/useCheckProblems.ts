@@ -1,13 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useAtom } from "jotai";
-import { useEffect } from "react";
 import { IpcClient } from "@/ipc/ipc_client";
-import { chatProblemsAtom } from "@/atoms/chatAtoms";
 import type { ProblemReport } from "@/ipc/ipc_types";
 
 export function useCheckProblems(appId: number | null) {
-  const [chatProblems, setChatProblems] = useAtom(chatProblemsAtom);
-
   const {
     data: problemReport,
     isLoading: isChecking,
@@ -26,18 +21,8 @@ export function useCheckProblems(appId: number | null) {
     // DO NOT SHOW ERROR TOAST.
   });
 
-  // Sync the query result with the chatProblemsAtom
-  useEffect(() => {
-    if (problemReport && appId) {
-      setChatProblems((problems) => ({
-        ...problems,
-        [appId]: problemReport,
-      }));
-    }
-  }, [problemReport, appId, setChatProblems]);
-
   return {
-    problemReport: appId ? chatProblems[appId] || problemReport : null,
+    problemReport,
     isChecking,
     error,
     checkProblems,
