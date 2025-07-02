@@ -245,33 +245,53 @@ export class PageObject {
       throw new Error("No app selected");
     }
 
-    try {
-      execSync("pnpm install", {
-        cwd: appPath,
-        stdio: "pipe",
-        encoding: "utf8",
-      });
-    } catch (error: any) {
-      console.error(`Failed to run 'pnpm install' in ${appPath}`);
-      console.error(`Exit code: ${error.status}`);
-      console.error(`Command: ${error.cmd || "pnpm install"}`);
+    const maxRetries = 3;
+    let lastError: any;
 
-      if (error.stdout) {
-        console.error(`STDOUT:\n${error.stdout}`);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(
+          `Running 'pnpm install' in ${appPath} (attempt ${attempt}/${maxRetries})`,
+        );
+        execSync("pnpm install", {
+          cwd: appPath,
+          stdio: "pipe",
+          encoding: "utf8",
+        });
+        console.log(`'pnpm install' succeeded on attempt ${attempt}`);
+        return; // Success, exit the function
+      } catch (error: any) {
+        lastError = error;
+        console.error(
+          `Attempt ${attempt}/${maxRetries} failed to run 'pnpm install' in ${appPath}`,
+        );
+        console.error(`Exit code: ${error.status}`);
+        console.error(`Command: ${error.cmd || "pnpm install"}`);
+
+        if (error.stdout) {
+          console.error(`STDOUT:\n${error.stdout}`);
+        }
+
+        if (error.stderr) {
+          console.error(`STDERR:\n${error.stderr}`);
+        }
+
+        // If this wasn't the last attempt, wait a bit before retrying
+        if (attempt < maxRetries) {
+          const delayMs = 1000 * attempt; // Exponential backoff: 1s, 2s
+          console.log(`Waiting ${delayMs}ms before retry...`);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
       }
-
-      if (error.stderr) {
-        console.error(`STDERR:\n${error.stderr}`);
-      }
-
-      // Re-throw with enhanced error message
-      throw new Error(
-        `pnpm install failed in ${appPath}. ` +
-          `Exit code: ${error.status}. ` +
-          `${error.stderr ? `Error: ${error.stderr}` : ""}` +
-          `${error.stdout ? ` Output: ${error.stdout}` : ""}`,
-      );
     }
+
+    // All attempts failed, throw the last error with enhanced message
+    throw new Error(
+      `pnpm install failed in ${appPath} after ${maxRetries} attempts. ` +
+        `Exit code: ${lastError.status}. ` +
+        `${lastError.stderr ? `Error: ${lastError.stderr}` : ""}` +
+        `${lastError.stdout ? ` Output: ${lastError.stdout}` : ""}`,
+    );
   }
 
   async setUpDyadProvider() {
