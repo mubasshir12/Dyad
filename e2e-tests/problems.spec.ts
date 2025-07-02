@@ -43,6 +43,31 @@ test("problems auto-fix - disabled", async ({ po }) => {
   await po.snapshotMessages();
 });
 
+test("problems - fix all", async ({ po }) => {
+  await po.setUp({ disableAutoFixProblems: true });
+  await po.importApp("minimal");
+  const appPath = await po.getCurrentAppPath();
+  const badFilePath = path.join(appPath, "src", "bad-file.tsx");
+  fs.writeFileSync(
+    badFilePath,
+    `const App = () => <div>Minimal imported app</div>;
+nonExistentFunction1();
+nonExistentFunction2();
+nonExistentFunction3();
+
+export default App;
+`,
+  );
+  await po.runPnpmInstall();
+
+  await po.sendPrompt("tc=create-ts-errors");
+  await po.selectPreviewMode("problems");
+  await po.clickFixAllProblems();
+
+  await po.snapshotServerDump("last-message");
+  await po.snapshotMessages({ replaceDumpPath: true });
+});
+
 test("problems - manual edit (react/vite)", async ({ po }) => {
   await po.setUp();
   await po.sendPrompt("tc=1");

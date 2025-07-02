@@ -385,6 +385,7 @@ export class PageObject {
 
   async clickFixAllProblems() {
     await this.page.getByTestId("fix-all-button").click();
+    await this.waitForChatCompletion();
   }
 
   async snapshotProblemsPane() {
