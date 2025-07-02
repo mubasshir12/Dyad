@@ -22,5 +22,3 @@ export const envVarsAtom = atom<Record<string, string | undefined>>({});
 export const previewPanelKeyAtom = atom<number>(0);
 
 export const previewErrorMessageAtom = atom<string | undefined>(undefined);
-
-export const appsLoadingAtom = atom<boolean>(false);

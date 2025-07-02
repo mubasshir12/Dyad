@@ -82,7 +82,7 @@ export function useStreamChat({
       setError(null);
       setIsStreaming(true);
       // Clear previous problems for the current app
-      if (selectedAppId) {
+      if (selectedAppId != null) {
         setProblems((prev) => {
           const updated = { ...prev };
           delete updated[selectedAppId];
@@ -105,7 +105,7 @@ export function useStreamChat({
             setMessages(updatedMessages);
           },
           onProblems: (problemsEvent: ChatProblemsEvent) => {
-            console.log(
+            console.debug(
               `[CHAT] Problems detected for chat ${problemsEvent.chatId} in app ${problemsEvent.appId}:`,
               problemsEvent.problems,
             );
