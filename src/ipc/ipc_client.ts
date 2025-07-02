@@ -246,9 +246,8 @@ export class IpcClient {
       onUpdate,
       onEnd,
       onError,
-      onProblems,
     } = options;
-    this.chatStreams.set(chatId, { onUpdate, onEnd, onError, onProblems });
+    this.chatStreams.set(chatId, { onUpdate, onEnd, onError });
 
     // Handle file attachments if provided
     if (attachments && attachments.length > 0) {

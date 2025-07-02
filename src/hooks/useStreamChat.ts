@@ -137,7 +137,7 @@ export function useStreamChat({
       setMessages,
       setIsStreaming,
       setIsPreviewOpen,
-      setProblems,
+      checkProblems,
       selectedAppId,
       refetchUserBudget,
     ],
