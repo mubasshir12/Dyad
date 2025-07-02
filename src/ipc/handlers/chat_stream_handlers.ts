@@ -660,6 +660,7 @@ This conversation includes one or more image attachments. When the user uploads 
           }
           if (
             !abortController.signal.aborted &&
+            settings.enableAutoFixProblems &&
             settings.selectedChatMode !== "ask"
           ) {
             try {
@@ -669,17 +670,15 @@ This conversation includes one or more image attachments. When the user uploads 
                 appPath: getDyadAppPath(updatedChat.app.path),
               });
 
-              const settings = readSettings();
-              if (settings.enableAutoFixProblems) {
-                let autoFixAttempts = 0;
-                const originalFullResponse = fullResponse;
-                const previousAttempts: CoreMessage[] = [];
-                while (
-                  problemReport.problems.length > 0 &&
-                  autoFixAttempts < 2 &&
-                  !abortController.signal.aborted
-                ) {
-                  fullResponse += `<dyad-problem-report summary="${problemReport.problems.length} problems">
+              let autoFixAttempts = 0;
+              const originalFullResponse = fullResponse;
+              const previousAttempts: CoreMessage[] = [];
+              while (
+                problemReport.problems.length > 0 &&
+                autoFixAttempts < 2 &&
+                !abortController.signal.aborted
+              ) {
+                fullResponse += `<dyad-problem-report summary="${problemReport.problems.length} problems">
 ${problemReport.problems
   .map(
     (problem) =>
@@ -688,82 +687,79 @@ ${problemReport.problems
   .join("\n")}
 </dyad-problem-report>`;
 
-                  logger.info(
-                    `Attempting to auto-fix problems, attempt #${autoFixAttempts + 1}`,
-                  );
-                  autoFixAttempts++;
-                  const problemFixPrompt =
-                    createProblemFixPrompt(problemReport);
+                logger.info(
+                  `Attempting to auto-fix problems, attempt #${autoFixAttempts + 1}`,
+                );
+                autoFixAttempts++;
+                const problemFixPrompt = createProblemFixPrompt(problemReport);
 
-                  const virtualFileSystem = new AsyncVirtualFileSystem(
-                    getDyadAppPath(updatedChat.app.path),
+                const virtualFileSystem = new AsyncVirtualFileSystem(
+                  getDyadAppPath(updatedChat.app.path),
+                  {
+                    fileExists: (fileName: string) => fileExists(fileName),
+                    readFile: (fileName: string) => readFileWithCache(fileName),
+                  },
+                );
+                virtualFileSystem.applyResponseChanges(fullResponse);
+
+                const { formattedOutput: codebaseInfo, files } =
+                  await extractCodebase({
+                    appPath,
+                    chatContext,
+                    virtualFileSystem,
+                  });
+                const { modelClient } = await getModelClient(
+                  settings.selectedModel,
+                  settings,
+                  files,
+                );
+
+                const { fullStream } = await simpleStreamText({
+                  modelClient,
+                  chatMessages: [
+                    ...chatMessages.map((msg, index) => {
+                      if (
+                        index === 0 &&
+                        msg.role === "user" &&
+                        typeof msg.content === "string" &&
+                        msg.content.startsWith(CODEBASE_PROMPT_PREFIX)
+                      ) {
+                        return {
+                          role: "user",
+                          content: createCodebasePrompt(codebaseInfo),
+                        } as const;
+                      }
+                      return msg;
+                    }),
                     {
-                      fileExists: (fileName: string) => fileExists(fileName),
-                      readFile: (fileName: string) =>
-                        readFileWithCache(fileName),
+                      role: "assistant",
+                      content: originalFullResponse,
                     },
-                  );
-                  virtualFileSystem.applyResponseChanges(fullResponse);
+                    ...previousAttempts,
+                    { role: "user", content: problemFixPrompt },
+                  ],
+                });
+                previousAttempts.push({
+                  role: "user",
+                  content: problemFixPrompt,
+                });
+                const result = await processStreamChunks({
+                  fullStream,
+                  fullResponse,
+                  abortController,
+                  chatId: req.chatId,
+                  processResponseChunkUpdate,
+                });
+                fullResponse = result.fullResponse;
+                previousAttempts.push({
+                  role: "assistant",
+                  content: result.incrementalResponse,
+                });
 
-                  const { formattedOutput: codebaseInfo, files } =
-                    await extractCodebase({
-                      appPath,
-                      chatContext,
-                      virtualFileSystem,
-                    });
-                  const { modelClient } = await getModelClient(
-                    settings.selectedModel,
-                    settings,
-                    files,
-                  );
-
-                  const { fullStream } = await simpleStreamText({
-                    modelClient,
-                    chatMessages: [
-                      ...chatMessages.map((msg, index) => {
-                        if (
-                          index === 0 &&
-                          msg.role === "user" &&
-                          typeof msg.content === "string" &&
-                          msg.content.startsWith(CODEBASE_PROMPT_PREFIX)
-                        ) {
-                          return {
-                            role: "user",
-                            content: createCodebasePrompt(codebaseInfo),
-                          } as const;
-                        }
-                        return msg;
-                      }),
-                      {
-                        role: "assistant",
-                        content: originalFullResponse,
-                      },
-                      ...previousAttempts,
-                      { role: "user", content: problemFixPrompt },
-                    ],
-                  });
-                  previousAttempts.push({
-                    role: "user",
-                    content: problemFixPrompt,
-                  });
-                  const result = await processStreamChunks({
-                    fullStream,
-                    fullResponse,
-                    abortController,
-                    chatId: req.chatId,
-                    processResponseChunkUpdate,
-                  });
-                  fullResponse = result.fullResponse;
-                  previousAttempts.push({
-                    role: "assistant",
-                    content: result.incrementalResponse,
-                  });
-
-                  problemReport = await generateProblemReport({
-                    fullResponse,
-                    appPath: getDyadAppPath(updatedChat.app.path),
-                  });
-                }
+                problemReport = await generateProblemReport({
+                  fullResponse,
+                  appPath: getDyadAppPath(updatedChat.app.path),
+                });
               }
             } catch (error) {
               logger.error(
