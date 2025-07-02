@@ -205,7 +205,12 @@ export class PageObject {
   async setUp({
     autoApprove = false,
     nativeGit = false,
-  }: { autoApprove?: boolean; nativeGit?: boolean } = {}) {
+    disableAutoFixProblems = false,
+  }: {
+    autoApprove?: boolean;
+    nativeGit?: boolean;
+    disableAutoFixProblems?: boolean;
+  } = {}) {
     await this.baseSetup();
     await this.goToSettingsTab();
     if (autoApprove) {
@@ -213,6 +218,9 @@ export class PageObject {
     }
     if (nativeGit) {
       await this.toggleNativeGit();
+    }
+    if (disableAutoFixProblems) {
+      await this.toggleAutoFixProblems();
     }
     await this.setUpTestProvider();
     await this.setUpTestModel();
@@ -343,7 +351,7 @@ export class PageObject {
           throw new Error("Messages list not found");
         }
         messagesList.innerHTML = messagesList.innerHTML.replace(
-          /\[\[dyad-dump-path=([^\]]+)\]\]/,
+          /\[\[dyad-dump-path=([^\]]+)\]\]/g,
           "[[dyad-dump-path=*]]",
         );
       });
@@ -483,6 +491,9 @@ export class PageObject {
     }
 
     const dumpFilePath = dumpPaths[selectedIndex];
+    if (!dumpFilePath) {
+      throw new Error("No dump file path found");
+    }
 
     // Read the JSON file
     const dumpContent: string = (
@@ -727,6 +738,10 @@ export class PageObject {
 
   async toggleNativeGit() {
     await this.page.getByRole("switch", { name: "Enable Native Git" }).click();
+  }
+
+  async toggleAutoFixProblems() {
+    await this.page.getByRole("switch", { name: "Auto-fix problems" }).click();
   }
 
   async snapshotSettings() {

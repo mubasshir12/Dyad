@@ -96,6 +96,7 @@ export const DyadProblemSummary: React.FC<DyadProblemSummaryProps> = ({
     <div
       className="bg-(--background-lightest) hover:bg-(--background-lighter) rounded-lg px-4 py-2 border border-border my-2 cursor-pointer"
       onClick={() => setIsContentVisible(!isContentVisible)}
+      data-testid="problem-summary"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

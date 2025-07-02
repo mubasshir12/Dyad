@@ -45,7 +45,6 @@ x.nonExistentMethod2();
 </dyad-write>
 
       `;
-      messageContent += "\n\n" + generateDump(req);
     }
     if (
       lastMessage &&
@@ -66,6 +65,13 @@ x.toString(); // replaced with existing method
 </dyad-write>
 
       `;
+    }
+
+    if (
+      lastMessage &&
+      typeof lastMessage.content === "string" &&
+      lastMessage.content.includes("TypeScript compile-time error")
+    ) {
       messageContent += "\n\n" + generateDump(req);
     }
     if (
