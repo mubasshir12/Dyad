@@ -79,6 +79,15 @@ async function isTextFile(filePath: string): Promise<boolean> {
   return TEXT_FILE_EXTENSIONS.includes(ext);
 }
 
+function escapeXml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Ensure the temp directory exists
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
@@ -116,9 +125,7 @@ async function processStreamChunks({
         inThinkingBlock = true;
       }
 
-      chunk += escapeDyadTags(part.textDelta)
-        .replace(/<dyad/g, "＜dyad")
-        .replace(/<\/dyad/g, "＜/dyad");
+      chunk += escapeDyadTags(part.textDelta);
     }
 
     if (!chunk) {
@@ -672,7 +679,7 @@ This conversation includes one or more image attachments. When the user uploads 
 ${problemReport.problems
   .map(
     (problem) =>
-      `<problem file="${problem.file}" line="${problem.line}" column="${problem.column}" code="${problem.code}">${problem.message}</problem>`,
+      `<problem file="${escapeXml(problem.file)}" line="${problem.line}" column="${problem.column}" code="${problem.code}">${escapeXml(problem.message)}</problem>`,
   )
   .join("\n")}
 </dyad-problem-report>`;
