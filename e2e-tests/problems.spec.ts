@@ -43,7 +43,7 @@ test("problems auto-fix - disabled", async ({ po }) => {
   await po.snapshotMessages();
 });
 
-test.only("problems - manual edit (react/vite)", async ({ po }) => {
+test("problems - manual edit (react/vite)", async ({ po }) => {
   await po.setUp();
   await po.sendPrompt("tc=1");
 
@@ -70,7 +70,7 @@ export default App;
   await po.snapshotProblemsPane();
 });
 
-test.only("problems - manual edit (next.js)", async ({ po }) => {
+test("problems - manual edit (next.js)", async ({ po }) => {
   await po.setUp();
   await po.selectHubTemplate("Next.js Template");
   await po.sendPrompt("tc=1");
