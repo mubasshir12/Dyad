@@ -46,7 +46,7 @@ import { getExtraProviderOptions } from "../utils/thinking_utils";
 
 import { safeSend } from "../utils/safe_sender";
 import { cleanFullResponse } from "../utils/cleanFullResponse";
-import { generateProblemReport } from "../processors/autofix";
+import { generateProblemReport } from "../processors/tsc";
 import { createProblemFixPrompt } from "@/shared/problem_prompt";
 
 type AsyncIterableStream<T> = AsyncIterable<T> & ReadableStream<T>;

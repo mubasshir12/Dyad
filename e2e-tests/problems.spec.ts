@@ -33,6 +33,20 @@ test("problems auto-fix - gives up after 2 attempts", async ({ po }) => {
   await po.snapshotMessages({ replaceDumpPath: true });
 });
 
+test("problems auto-fix - complex delete-rename-write", async ({ po }) => {
+  await po.setUp();
+  await po.importApp("minimal");
+  await po.runPnpmInstall();
+
+  await po.sendPrompt("tc=create-ts-errors-complex");
+
+  await po.sleep(10_000);
+  await po.snapshotServerDump("all-messages", { dumpIndex: -2 });
+  await po.snapshotServerDump("all-messages", { dumpIndex: -1 });
+
+  await po.snapshotMessages({ replaceDumpPath: true });
+});
+
 test("problems auto-fix - disabled", async ({ po }) => {
   await po.setUp({ disableAutoFixProblems: true });
   await po.importApp("minimal");

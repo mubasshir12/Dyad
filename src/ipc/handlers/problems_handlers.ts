@@ -2,7 +2,7 @@ import { db } from "../../db";
 import { ipcMain } from "electron";
 import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
-import { generateProblemReport } from "../processors/autofix";
+import { generateProblemReport } from "../processors/tsc";
 import { getDyadAppPath } from "@/paths/paths";
 import { logger } from "./app_upgrade_handlers";
 
