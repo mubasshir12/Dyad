@@ -1,4 +1,4 @@
-import type { Message } from "@/ipc/ipc_types";
+import type { Message, ProblemReport } from "@/ipc/ipc_types";
 import { atom } from "jotai";
 import type { ChatSummary } from "@/lib/schemas";
 
@@ -19,3 +19,6 @@ export const chatsLoadingAtom = atom<boolean>(false);
 
 // Used for scrolling to the bottom of the chat messages
 export const chatStreamCountAtom = atom<number>(0);
+
+// Atom to hold TypeScript problems from autofix, keyed by app ID
+export const chatProblemsAtom = atom<Record<number, ProblemReport>>({});

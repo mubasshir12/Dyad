@@ -1,5 +1,12 @@
 import { ipcMain } from "electron";
-import { CoreMessage, TextPart, ImagePart, streamText } from "ai";
+import {
+  CoreMessage,
+  TextPart,
+  ImagePart,
+  streamText,
+  ToolSet,
+  TextStreamPart,
+} from "ai";
 import { db } from "../../db";
 import { chats, messages } from "../../db/schema";
 import { and, eq, isNull } from "drizzle-orm";
@@ -39,6 +46,10 @@ import { getExtraProviderOptions } from "../utils/thinking_utils";
 
 import { safeSend } from "../utils/safe_sender";
 import { cleanFullResponse } from "../utils/cleanFullResponse";
+import { generateProblemReport } from "../processors/autofix";
+import { createProblemFixPrompt } from "@/shared/problem_prompt";
+
+type AsyncIterableStream<T> = AsyncIterable<T> & ReadableStream<T>;
 
 const logger = log.scope("chat_stream_handlers");
 
@@ -71,6 +82,63 @@ async function isTextFile(filePath: string): Promise<boolean> {
 // Ensure the temp directory exists
 if (!fs.existsSync(TEMP_DIR)) {
   fs.mkdirSync(TEMP_DIR, { recursive: true });
+}
+
+// Helper function to process stream chunks
+async function processStreamChunks({
+  fullStream,
+  fullResponse,
+  abortController,
+  chatId,
+  processResponseChunkUpdate,
+}: {
+  fullStream: AsyncIterableStream<TextStreamPart<ToolSet>>;
+  fullResponse: string;
+  abortController: AbortController;
+  chatId: number;
+  processResponseChunkUpdate: (params: {
+    fullResponse: string;
+  }) => Promise<string>;
+}): Promise<string> {
+  let inThinkingBlock = false;
+
+  for await (const part of fullStream) {
+    let chunk = "";
+    if (part.type === "text-delta") {
+      if (inThinkingBlock) {
+        chunk = "</think>";
+        inThinkingBlock = false;
+      }
+      chunk += part.textDelta;
+    } else if (part.type === "reasoning") {
+      if (!inThinkingBlock) {
+        chunk = "<think>";
+        inThinkingBlock = true;
+      }
+
+      chunk += escapeDyadTags(part.textDelta)
+        .replace(/<dyad/g, "＜dyad")
+        .replace(/<\/dyad/g, "＜/dyad");
+    }
+
+    if (!chunk) {
+      continue;
+    }
+
+    fullResponse += chunk;
+    fullResponse = cleanFullResponse(fullResponse);
+    fullResponse = await processResponseChunkUpdate({
+      fullResponse,
+    });
+
+    // If the stream was aborted, exit early
+    if (abortController.signal.aborted) {
+      logger.log(`Stream for chat ${chatId} was aborted`);
+      break;
+    }
+  }
+
+  return fullResponse;
 }
 
 export function registerChatStreamHandlers() {
@@ -413,8 +481,8 @@ This conversation includes one or more image attachments. When the user uploads 
             // and eats up extra tokens.
             content:
               settings.selectedChatMode === "ask"
-                ? removeDyadTags(removeThinkingTags(msg.content))
-                : removeThinkingTags(msg.content),
+                ? removeDyadTags(removeNonEssentialTags(msg.content))
+                : removeNonEssentialTags(msg.content),
           })),
         ];
 
@@ -534,48 +602,14 @@ This conversation includes one or more image attachments. When the user uploads 
         const { fullStream } = await simpleStreamText({ chatMessages });
 
         // Process the stream as before
-        let inThinkingBlock = false;
         try {
-          for await (const part of fullStream) {
-            let chunk = "";
-            if (part.type === "text-delta") {
-              if (inThinkingBlock) {
-                chunk = "</think>";
-                inThinkingBlock = false;
-              }
-              chunk += part.textDelta;
-            } else if (part.type === "reasoning") {
-              if (!inThinkingBlock) {
-                chunk = "<think>";
-                inThinkingBlock = true;
-              }
-              // Escape dyad tags in reasoning content
-              // We are replacing the opening tag with a look-alike character
-              // to avoid issues where thinking content includes dyad tags
-              // and are mishandled by:
-              // 1. FE markdown parser
-              // 2. Main process response processor
-              chunk += part.textDelta
-                .replace(/<dyad/g, "＜dyad")
-                .replace(/<\/dyad/g, "＜/dyad");
-            }
-
-            if (!chunk) {
-              continue;
-            }
-
-            fullResponse += chunk;
-            fullResponse = cleanFullResponse(fullResponse);
-            fullResponse = await processResponseChunkUpdate({
-              fullResponse,
-            });
-
-            // If the stream was aborted, exit early
-            if (abortController.signal.aborted) {
-              logger.log(`Stream for chat ${req.chatId} was aborted`);
-              break;
-            }
-          }
+          fullResponse = await processStreamChunks({
+            fullStream,
+            fullResponse,
+            abortController,
+            chatId: req.chatId,
+            processResponseChunkUpdate,
+          });
 
           if (
             !abortController.signal.aborted &&
@@ -613,6 +647,68 @@ This conversation includes one or more image attachments. When the user uploads 
                   fullResponse,
                 });
               }
+            }
+          }
+          if (
+            !abortController.signal.aborted &&
+            settings.selectedChatMode !== "ask"
+          ) {
+            try {
+              // IF auto-fix is enabled
+              let problemReport = await generateProblemReport({
+                fullResponse,
+                appPath: getDyadAppPath(updatedChat.app.path),
+              });
+
+              const settings = readSettings();
+              if (settings.enableAutoFixProblems) {
+                let autoFixAttempts = 0;
+                while (
+                  problemReport.problems.length > 0 &&
+                  autoFixAttempts < 2 &&
+                  !abortController.signal.aborted
+                ) {
+                  fullResponse += `<dyad-problem-report summary="${problemReport.problems.length} problems">
+${problemReport.problems
+  .map(
+    (problem) =>
+      `<problem file="${problem.file}" line="${problem.line}" column="${problem.column}" code="${problem.code}">${problem.message}</problem>`,
+  )
+  .join("\n")}
+</dyad-problem-report>`;
+
+                  logger.info(
+                    `Attempting to auto-fix problems, attempt #${autoFixAttempts + 1}`,
+                  );
+                  autoFixAttempts++;
+                  const problemFixPrompt =
+                    createProblemFixPrompt(problemReport);
+                  const { fullStream } = await simpleStreamText({
+                    chatMessages: [
+                      ...chatMessages,
+                      { role: "user", content: problemFixPrompt },
+                    ],
+                  });
+                  fullResponse = await processStreamChunks({
+                    fullStream,
+                    fullResponse,
+                    abortController,
+                    chatId: req.chatId,
+                    processResponseChunkUpdate,
+                  });
+
+                  problemReport = await generateProblemReport({
+                    fullResponse,
+                    appPath: getDyadAppPath(updatedChat.app.path),
+                  });
+                }
+              }
+            } catch (error) {
+              logger.error(
+                "Error generating problem report or auto-fixing:",
+                settings.enableAutoFixProblems,
+                error,
+              );
             }
           }
         } catch (streamError) {
@@ -901,9 +997,19 @@ async function prepareMessageWithAttachments(
   };
 }
 
+function removeNonEssentialTags(text: string): string {
+  return removeProblemReportTags(removeThinkingTags(text));
+}
+
 function removeThinkingTags(text: string): string {
   const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
   return text.replace(thinkRegex, "").trim();
+}
+
+export function removeProblemReportTags(text: string): string {
+  const problemReportRegex =
+    /<dyad-problem-report[^>]*>[\s\S]*?<\/dyad-problem-report>/g;
+  return text.replace(problemReportRegex, "").trim();
 }
 
 export function removeDyadTags(text: string): string {
@@ -931,4 +1037,14 @@ export function hasUnclosedDyadWrite(text: string): boolean {
   const hasClosingTag = /<\/dyad-write>/.test(textAfterLastOpen);
 
   return !hasClosingTag;
+}
+
+function escapeDyadTags(text: string): string {
+  // Escape dyad tags in reasoning content
+  // We are replacing the opening tag with a look-alike character
+  // to avoid issues where thinking content includes dyad tags
+  // and are mishandled by:
+  // 1. FE markdown parser
+  // 2. Main process response processor
+  return text.replace(/<dyad/g, "＜dyad").replace(/<\/dyad/g, "＜/dyad");
 }

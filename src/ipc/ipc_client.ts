@@ -9,6 +9,7 @@ import type {
   AppOutput,
   Chat,
   ChatResponseEnd,
+  ChatProblemsEvent,
   CreateAppParams,
   CreateAppResult,
   ListAppsResponse,
@@ -35,6 +36,7 @@ import type {
   App,
   ComponentSelection,
   AppUpgrade,
+  ProblemReport,
 } from "./ipc_types";
 import type { AppChatContext, ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -43,6 +45,7 @@ export interface ChatStreamCallbacks {
   onUpdate: (messages: Message[]) => void;
   onEnd: (response: ChatResponseEnd) => void;
   onError: (error: string) => void;
+  onProblems?: (problems: ChatProblemsEvent) => void;
 }
 
 export interface AppStreamCallbacks {
@@ -154,6 +157,24 @@ export class IpcClient {
         console.error("[IPC] Invalid error data received:", error);
       }
     });
+
+    this.ipcRenderer.on("chat:problems", (data) => {
+      if (
+        data &&
+        typeof data === "object" &&
+        "chatId" in data &&
+        "appId" in data &&
+        "problems" in data
+      ) {
+        const problemsEvent = data as unknown as ChatProblemsEvent;
+        const callbacks = this.chatStreams.get(problemsEvent.chatId);
+        if (callbacks && callbacks.onProblems) {
+          callbacks.onProblems(problemsEvent);
+        }
+      } else {
+        console.error("[IPC] Invalid problems data received:", data);
+      }
+    });
   }
 
   public static getInstance(): IpcClient {
@@ -233,6 +254,7 @@ export class IpcClient {
       onUpdate: (messages: Message[]) => void;
       onEnd: (response: ChatResponseEnd) => void;
       onError: (error: string) => void;
+      onProblems?: (problems: ChatProblemsEvent) => void;
     },
   ): void {
     const {
@@ -243,8 +265,9 @@ export class IpcClient {
       onUpdate,
       onEnd,
       onError,
+      onProblems,
     } = options;
-    this.chatStreams.set(chatId, { onUpdate, onEnd, onError });
+    this.chatStreams.set(chatId, { onUpdate, onEnd, onError, onProblems });
 
     // Handle file attachments if provided
     if (attachments && attachments.length > 0) {
@@ -933,5 +956,11 @@ export class IpcClient {
 
   public async openAndroid(params: { appId: number }): Promise<void> {
     return this.ipcRenderer.invoke("open-android", params);
+  }
+
+  public async checkProblems(params: {
+    appId: number;
+  }): Promise<ProblemReport> {
+    return this.ipcRenderer.invoke("check-problems", params);
   }
 }

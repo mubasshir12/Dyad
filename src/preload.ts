@@ -88,6 +88,7 @@ const validInvokeChannels = [
   "sync-capacitor",
   "open-ios",
   "open-android",
+  "check-problems",
   // Test-only channels
   // These should ALWAYS be guarded with IS_TEST_BUILD in the main process.
   // We can't detect with IS_TEST_BUILD in the preload script because
@@ -100,6 +101,7 @@ const validReceiveChannels = [
   "chat:response:chunk",
   "chat:response:end",
   "chat:response:error",
+  "chat:problems",
   "app:output",
   "github:flow-update",
   "github:flow-success",

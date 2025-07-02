@@ -7,7 +7,7 @@ export const selectedAppIdAtom = atom<number | null>(null);
 export const appsListAtom = atom<App[]>([]);
 export const appBasePathAtom = atom<string>("");
 export const versionsListAtom = atom<Version[]>([]);
-export const previewModeAtom = atom<"preview" | "code">("preview");
+export const previewModeAtom = atom<"preview" | "code" | "problems">("preview");
 export const selectedVersionIdAtom = atom<string | null>(null);
 export const appOutputAtom = atom<AppOutput[]>([]);
 export const appUrlAtom = atom<
@@ -22,3 +22,5 @@ export const envVarsAtom = atom<Record<string, string | undefined>>({});
 export const previewPanelKeyAtom = atom<number>(0);
 
 export const previewErrorMessageAtom = atom<string | undefined>(undefined);
+
+export const appsLoadingAtom = atom<boolean>(false);
