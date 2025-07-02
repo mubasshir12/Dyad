@@ -1,15 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import {
-  getDyadWriteTags,
-  getDyadRenameTags,
-  getDyadDeleteTags,
-} from "./response_processor";
-import { safeJoin } from "../utils/path_utils";
+
 import { ProblemReport } from "../ipc_types";
 import { Problem } from "../ipc_types";
-import { logger } from "../handlers/app_upgrade_handlers";
+
 import { normalizePath } from "./normalizePath";
+import { SyncVirtualFileSystem } from "../../utils/VirtualFilesystem";
 
 function loadLocalTypeScript(appPath: string): typeof import("typescript") {
   try {
@@ -33,63 +29,18 @@ export async function generateProblemReport({
   // Load the local TypeScript version from the app's node_modules
   const ts = loadLocalTypeScript(appPath);
 
-  // Parse all file changes from the response
-  const writeTags = getDyadWriteTags(fullResponse);
-  const renameTags = getDyadRenameTags(fullResponse);
-  const deletePaths = getDyadDeleteTags(fullResponse);
-
-  // Create virtual file system
-  const virtualFiles = new Map<string, string>();
-  const deletedFiles = new Set<string>();
-
-  // Process deletions
-  for (const deletePath of deletePaths) {
-    const normalizedPath = path.resolve(appPath, deletePath);
-    deletedFiles.add(normalizedPath);
-  }
-
-  // Process renames (delete old, create new)
-  for (const rename of renameTags) {
-    const fromPath = path.resolve(appPath, rename.from);
-    const toPath = path.resolve(appPath, rename.to);
-
-    deletedFiles.add(fromPath);
-
-    // If the source file exists, read its content for the new location
-    try {
-      if (fs.existsSync(safeJoin(appPath, rename.from))) {
-        const content = await fs.promises.readFile(
-          safeJoin(appPath, rename.from),
-          "utf8",
-        );
-        virtualFiles.set(toPath, content);
-      }
-    } catch (error) {
-      logger.error(
-        "Error reading file for virtual file system (rename)",
-        error,
-      );
-      // If we can't read the source file, we'll let TypeScript handle the missing file
-    }
-  }
-
-  // Process writes
-  for (const writeTag of writeTags) {
-    const filePath = path.resolve(appPath, writeTag.path);
-    virtualFiles.set(filePath, writeTag.content);
-  }
+  // Create virtual file system with TypeScript system delegate and apply changes from response
+  const vfs = new SyncVirtualFileSystem(appPath, {
+    fileExists: (fileName: string) => ts.sys.fileExists(fileName),
+    readFile: (fileName: string) => ts.sys.readFile(fileName),
+  });
+  vfs.applyResponseChanges(fullResponse);
 
   // Find TypeScript config - throw error if not found
   const tsconfigPath = findTypeScriptConfig(appPath);
 
   // Create TypeScript program with virtual file system
-  const result = await runTypeScriptCheck(
-    ts,
-    appPath,
-    tsconfigPath,
-    virtualFiles,
-    deletedFiles,
-  );
+  const result = await runTypeScriptCheck(ts, appPath, tsconfigPath, vfs);
   return result;
 }
 
@@ -121,24 +72,16 @@ async function runTypeScriptCheck(
   ts: typeof import("typescript"),
   appPath: string,
   tsconfigPath: string,
-  virtualFiles: Map<string, string>,
-  deletedFiles: Set<string>,
+  vfs: SyncVirtualFileSystem,
 ): Promise<ProblemReport> {
-  return runSingleProject(
-    ts,
-    appPath,
-    tsconfigPath,
-    virtualFiles,
-    deletedFiles,
-  );
+  return runSingleProject(ts, appPath, tsconfigPath, vfs);
 }
 
 async function runSingleProject(
   ts: typeof import("typescript"),
   appPath: string,
   tsconfigPath: string,
-  virtualFiles: Map<string, string>,
-  deletedFiles: Set<string>,
+  vfs: SyncVirtualFileSystem,
 ): Promise<ProblemReport> {
   // Use the idiomatic way to parse TypeScript config
   const parsedCommandLine = ts.getParsedCommandLineOfConfigFile(
@@ -147,20 +90,8 @@ async function runSingleProject(
     {
       // Custom system object that can handle our virtual files
       ...ts.sys,
-      fileExists: (fileName: string) => {
-        const resolvedPath = path.resolve(fileName);
-        if (virtualFiles.has(resolvedPath)) return true;
-        if (deletedFiles.has(resolvedPath)) return false;
-        return ts.sys.fileExists(fileName);
-      },
-      readFile: (fileName: string) => {
-        const resolvedPath = path.resolve(fileName);
-        if (virtualFiles.has(resolvedPath))
-          return virtualFiles.get(resolvedPath);
-        if (deletedFiles.has(resolvedPath)) return undefined;
-
-        return ts.sys.readFile(fileName);
-      },
+      fileExists: (fileName: string) => vfs.fileExists(fileName),
+      readFile: (fileName: string) => vfs.readFile(fileName),
       onUnRecoverableConfigFileDiagnostic: (
         diagnostic: import("typescript").Diagnostic,
       ) => {
@@ -178,14 +109,18 @@ async function runSingleProject(
   let rootNames = parsedCommandLine.fileNames;
 
   // Add any virtual files that aren't already included
-  const virtualTsFiles = Array.from(virtualFiles.keys()).filter(
-    isTypeScriptFile,
-  );
+  const virtualTsFiles = vfs
+    .getVirtualFiles()
+    .map((file) => path.resolve(appPath, file.path))
+    .filter(isTypeScriptFile);
 
   // Remove deleted files from rootNames
+  const deletedFiles = vfs
+    .getDeletedFiles()
+    .map((file) => path.resolve(appPath, file));
   rootNames = rootNames.filter((fileName) => {
     const resolvedPath = path.resolve(fileName);
-    return !deletedFiles.has(resolvedPath);
+    return !deletedFiles.includes(resolvedPath);
   });
 
   for (const virtualFile of virtualTsFiles) {
@@ -198,8 +133,7 @@ async function runSingleProject(
   const host = createVirtualCompilerHost(
     ts,
     appPath,
-    virtualFiles,
-    deletedFiles,
+    vfs,
     parsedCommandLine.options,
   );
 
@@ -248,48 +182,19 @@ async function runSingleProject(
 function createVirtualCompilerHost(
   ts: typeof import("typescript"),
   appPath: string,
-  virtualFiles: Map<string, string>,
-  deletedFiles: Set<string>,
+  vfs: SyncVirtualFileSystem,
   compilerOptions: import("typescript").CompilerOptions,
 ): import("typescript").CompilerHost {
   const host = ts.createCompilerHost(compilerOptions);
 
   // Override file reading to use virtual files
-  const originalReadFile = host.readFile;
   host.readFile = (fileName: string) => {
-    const resolvedPath = path.resolve(fileName);
-
-    // Check virtual files first
-    if (virtualFiles.has(resolvedPath)) {
-      return virtualFiles.get(resolvedPath);
-    }
-
-    // Check if file is deleted
-    if (deletedFiles.has(resolvedPath)) {
-      return undefined;
-    }
-
-    // Fall back to actual file system
-    return originalReadFile(fileName);
+    return vfs.readFile(fileName);
   };
 
   // Override file existence check
-  const originalFileExists = host.fileExists;
   host.fileExists = (fileName: string) => {
-    const resolvedPath = path.resolve(fileName);
-
-    // Check virtual files first
-    if (virtualFiles.has(resolvedPath)) {
-      return true;
-    }
-
-    // Check if file is deleted
-    if (deletedFiles.has(resolvedPath)) {
-      return false;
-    }
-
-    // Fall back to actual file system
-    return originalFileExists(fileName);
+    return vfs.fileExists(fileName);
   };
 
   return host;

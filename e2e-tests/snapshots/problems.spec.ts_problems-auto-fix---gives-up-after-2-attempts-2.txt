@@ -335,7 +335,11 @@ You need to first add Supabase to your app and then we can add auth.
 
 ===
 role: user
-message: This is my codebase. <dyad-file path="index.html">
+message: This is my codebase. <dyad-file path="file1.txt">
+A file (2)
+</dyad-file>
+
+<dyad-file path="index.html">
 <!doctype html>
 <html lang="en">
   <head>
@@ -357,6 +361,14 @@ const App = () => <div>Minimal imported app</div>;
 
 export default App;
 
+</dyad-file>
+
+<dyad-file path="src/bad-file.ts">
+import NonExistentClass from 'non-existent-class';
+import NonExistentClass2 from 'non-existent-class';
+import NonExistentClass3 from 'non-existent-class';
+import NonExistentClass4 from 'non-existent-class';
+import NonExistentClass5 from 'non-existent-class';
 </dyad-file>
 
 <dyad-file path="src/main.tsx">

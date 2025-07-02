@@ -21,11 +21,11 @@ import {
 import { getDyadAppPath } from "../../paths/paths";
 import { readSettings } from "../../main/settings";
 import type { ChatResponseEnd, ChatStreamParams } from "../ipc_types";
-import { extractCodebase } from "../../utils/codebase";
+import { extractCodebase, readFileWithCache } from "../../utils/codebase";
 import { processFullResponseActions } from "../processors/response_processor";
 import { streamTestResponse } from "./testing_chat_handlers";
 import { getTestResponse } from "./testing_chat_handlers";
-import { getModelClient } from "../utils/get_model_client";
+import { getModelClient, ModelClient } from "../utils/get_model_client";
 import log from "electron-log";
 import {
   getSupabaseContext,
@@ -48,6 +48,8 @@ import { safeSend } from "../utils/safe_sender";
 import { cleanFullResponse } from "../utils/cleanFullResponse";
 import { generateProblemReport } from "../processors/tsc";
 import { createProblemFixPrompt } from "@/shared/problem_prompt";
+import { AsyncVirtualFileSystem } from "@/utils/VirtualFilesystem";
+import { fileExists } from "../utils/file_utils";
 
 type AsyncIterableStream<T> = AsyncIterable<T> & ReadableStream<T>;
 
@@ -339,32 +341,24 @@ ${componentSnippet}
         // Normal AI processing for non-test prompts
         const settings = readSettings();
 
-        // Extract codebase information if app is associated with the chat
-        let codebaseInfo = "";
-        let files: { path: string; content: string }[] = [];
-        if (updatedChat.app) {
-          const appPath = getDyadAppPath(updatedChat.app.path);
-          try {
-            const out = await extractCodebase({
-              appPath,
-              chatContext: req.selectedComponent
-                ? {
-                    contextPaths: [
-                      {
-                        globPath: req.selectedComponent.relativePath,
-                      },
-                    ],
-                    smartContextAutoIncludes: [],
-                  }
-                : validateChatContext(updatedChat.app.chatContext),
-            });
-            codebaseInfo = out.formattedOutput;
-            files = out.files;
-            logger.log(`Extracted codebase information from ${appPath}`);
-          } catch (error) {
-            logger.error("Error extracting codebase:", error);
-          }
-        }
+        const appPath = getDyadAppPath(updatedChat.app.path);
+        const chatContext = req.selectedComponent
+          ? {
+              contextPaths: [
+                {
+                  globPath: req.selectedComponent.relativePath,
+                },
+              ],
+              smartContextAutoIncludes: [],
+            }
+          : validateChatContext(updatedChat.app.chatContext);
+
+        const { formattedOutput: codebaseInfo, files } = await extractCodebase({
+          appPath,
+          chatContext,
+        });
+
+        logger.log(`Extracted codebase information from ${appPath}`);
         logger.log(
           "codebaseInfo: length",
           codebaseInfo.length,
@@ -472,7 +466,7 @@ This conversation includes one or more image attachments. When the user uploads 
           : ([
               {
                 role: "user",
-                content: "This is my codebase. " + codebaseInfo,
+                content: createCodebasePrompt(codebaseInfo),
               },
               {
                 role: "assistant",
@@ -529,8 +523,10 @@ This conversation includes one or more image attachments. When the user uploads 
 
         const simpleStreamText = async ({
           chatMessages,
+          modelClient,
         }: {
           chatMessages: CoreMessage[];
+          modelClient: ModelClient;
         }) => {
           return streamText({
             maxTokens: await getMaxTokens(settings.selectedModel),
@@ -607,7 +603,10 @@ This conversation includes one or more image attachments. When the user uploads 
         };
 
         // When calling streamText, the messages need to be properly formatted for mixed content
-        const { fullStream } = await simpleStreamText({ chatMessages });
+        const { fullStream } = await simpleStreamText({
+          chatMessages,
+          modelClient,
+        });
 
         // Process the stream as before
         try {
@@ -642,6 +641,7 @@ This conversation includes one or more image attachments. When the user uploads 
                   ...chatMessages,
                   { role: "assistant", content: fullResponse },
                 ],
+                modelClient,
               });
               for await (const part of contStream) {
                 // If the stream was aborted, exit early
@@ -694,9 +694,46 @@ ${problemReport.problems
                   autoFixAttempts++;
                   const problemFixPrompt =
                     createProblemFixPrompt(problemReport);
+
+                  const virtualFileSystem = new AsyncVirtualFileSystem(
+                    getDyadAppPath(updatedChat.app.path),
+                    {
+                      fileExists: (fileName: string) => fileExists(fileName),
+                      readFile: (fileName: string) =>
+                        readFileWithCache(fileName),
+                    },
+                  );
+                  virtualFileSystem.applyResponseChanges(fullResponse);
+
+                  const { formattedOutput: codebaseInfo, files } =
+                    await extractCodebase({
+                      appPath,
+                      chatContext,
+                      virtualFileSystem,
+                    });
+                  const { modelClient } = await getModelClient(
+                    settings.selectedModel,
+                    settings,
+                    files,
+                  );
+
                   const { fullStream } = await simpleStreamText({
+                    modelClient,
                     chatMessages: [
-                      ...chatMessages,
+                      ...chatMessages.map((msg, index) => {
+                        if (
+                          index === 0 &&
+                          msg.role === "user" &&
+                          typeof msg.content === "string" &&
+                          msg.content.startsWith(CODEBASE_PROMPT_PREFIX)
+                        ) {
+                          return {
+                            role: "user",
+                            content: createCodebasePrompt(codebaseInfo),
+                          } as const;
+                        }
+                        return msg;
+                      }),
                       {
                         role: "assistant",
                         content: originalFullResponse,
@@ -1072,4 +1109,9 @@ function escapeDyadTags(text: string): string {
   // 1. FE markdown parser
   // 2. Main process response processor
   return text.replace(/<dyad/g, "＜dyad").replace(/<\/dyad/g, "＜/dyad");
+}
+
+const CODEBASE_PROMPT_PREFIX = "This is my codebase.";
+function createCodebasePrompt(codebaseInfo: string): string {
+  return `${CODEBASE_PROMPT_PREFIX} ${codebaseInfo}`;
 }

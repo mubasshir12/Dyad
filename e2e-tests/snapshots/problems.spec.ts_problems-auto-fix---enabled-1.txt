@@ -359,6 +359,13 @@ export default App;
 
 </dyad-file>
 
+<dyad-file path="src/bad-file.ts">
+import NonExistentClass from 'non-existent-class';
+
+const x = new Object();
+x.nonExistentMethod();
+</dyad-file>
+
 <dyad-file path="src/main.tsx">
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
