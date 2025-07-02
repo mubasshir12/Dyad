@@ -6,12 +6,17 @@ import { Problem } from "../ipc_types";
 
 import { normalizePath } from "./normalizePath";
 import { SyncVirtualFileSystem } from "../../utils/VirtualFilesystem";
+import log from "electron-log";
+
+const logger = log.scope("tsc");
 
 function loadLocalTypeScript(appPath: string): typeof import("typescript") {
   try {
     // Try to load TypeScript from the project's node_modules
-    const tsPath = path.join(appPath, "node_modules", "typescript");
-    return require(tsPath);
+    const requirePath = require.resolve("typescript", { paths: [appPath] });
+    logger.info(`Loading TypeScript from ${requirePath} for app ${appPath}`);
+    const ts = require(requirePath);
+    return ts;
   } catch (error) {
     throw new Error(
       `Failed to load TypeScript from ${appPath} because of ${error}`,
