@@ -65,11 +65,9 @@ const RecheckButton = ({
   const { checkProblems, isChecking } = useCheckProblems(appId);
 
   const handleRecheck = async () => {
-    try {
-      await checkProblems();
-    } catch (err) {
-      console.error("Error checking problems:", err);
-      showError(err);
+    const res = await checkProblems();
+    if (res.error) {
+      showError(res.error);
     }
   };
 

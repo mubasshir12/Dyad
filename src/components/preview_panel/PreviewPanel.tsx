@@ -136,6 +136,7 @@ const PreviewHeader = ({
           }}
         />
         <button
+          data-testid="preview-mode-button"
           ref={previewRef}
           className="relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10"
           onClick={() => setPreviewMode("preview")}
@@ -144,6 +145,7 @@ const PreviewHeader = ({
           <span>Preview</span>
         </button>
         <button
+          data-testid="problems-mode-button"
           ref={problemsRef}
           className="relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10"
           onClick={() => setPreviewMode("problems")}
@@ -157,6 +159,7 @@ const PreviewHeader = ({
           )}
         </button>
         <button
+          data-testid="code-mode-button"
           ref={codeRef}
           className="relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10"
           onClick={() => setPreviewMode("code")}

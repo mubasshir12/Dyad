@@ -41,13 +41,5 @@ export function useCheckProblems(appId: number | null) {
     isChecking,
     error,
     checkProblems,
-    safeCheckProblems: async () => {
-      try {
-        await checkProblems();
-      } catch (err) {
-        // It's OK if this fails (e.g. TS has not been installed yet)
-        console.error("Error checking problems:", err);
-      }
-    },
   };
 }

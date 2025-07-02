@@ -9,6 +9,7 @@ import { safeJoin } from "../utils/path_utils";
 import { ProblemReport } from "../ipc_types";
 import { Problem } from "../ipc_types";
 import { logger } from "../handlers/app_upgrade_handlers";
+import { normalizePath } from "./normalizePath";
 
 function loadLocalTypeScript(appPath: string): typeof import("typescript") {
   try {
@@ -89,7 +90,6 @@ export async function generateProblemReport({
     virtualFiles,
     deletedFiles,
   );
-
   return result;
 }
 
@@ -112,7 +112,135 @@ function findTypeScriptConfig(appPath: string): string {
   );
 }
 
+function isProjectReferenceConfig(
+  ts: typeof import("typescript"),
+  tsconfigPath: string,
+): boolean {
+  try {
+    const configFile = ts.readConfigFile(tsconfigPath, ts.sys.readFile);
+    if (configFile.error) {
+      return false;
+    }
+
+    const config = configFile.config;
+
+    // A config uses project references if it has a "references" field
+    // and either no "files"/"include" or empty "files" array
+    const hasReferences =
+      config.references &&
+      Array.isArray(config.references) &&
+      config.references.length > 0;
+    const hasNoFiles =
+      !config.files ||
+      (Array.isArray(config.files) && config.files.length === 0);
+    const hasNoInclude =
+      !config.include ||
+      (Array.isArray(config.include) && config.include.length === 0);
+
+    return hasReferences && hasNoFiles && hasNoInclude;
+  } catch {
+    return false;
+  }
+}
+
 async function runTypeScriptCheck(
+  ts: typeof import("typescript"),
+  appPath: string,
+  tsconfigPath: string,
+  virtualFiles: Map<string, string>,
+  deletedFiles: Set<string>,
+): Promise<ProblemReport> {
+  // Check if this is a project references configuration
+  if (isProjectReferenceConfig(ts, tsconfigPath)) {
+    return runSolutionBuilder(
+      ts,
+      appPath,
+      tsconfigPath,
+      virtualFiles,
+      deletedFiles,
+    );
+  } else {
+    return runSingleProject(
+      ts,
+      appPath,
+      tsconfigPath,
+      virtualFiles,
+      deletedFiles,
+    );
+  }
+}
+
+async function runSolutionBuilder(
+  ts: typeof import("typescript"),
+  appPath: string,
+  tsconfigPath: string,
+  virtualFiles: Map<string, string>,
+  deletedFiles: Set<string>,
+): Promise<ProblemReport> {
+  const allProblems: Problem[] = [];
+
+  // Create a custom system that can handle virtual files
+  const customSystem: typeof import("typescript").System = {
+    ...ts.sys,
+    fileExists: (fileName: string) => {
+      const resolvedPath = path.resolve(fileName);
+      if (deletedFiles.has(resolvedPath)) return false;
+      if (virtualFiles.has(resolvedPath)) return true;
+      return ts.sys.fileExists(fileName);
+    },
+    readFile: (fileName: string) => {
+      const resolvedPath = path.resolve(fileName);
+      if (deletedFiles.has(resolvedPath)) return undefined;
+      if (virtualFiles.has(resolvedPath)) return virtualFiles.get(resolvedPath);
+      return ts.sys.readFile(fileName);
+    },
+  };
+
+  // Create solution builder host
+  const host = ts.createSolutionBuilderHost(
+    customSystem,
+    undefined, // createProgram - use default
+    (diagnostic: import("typescript").Diagnostic) => {
+      if (diagnostic.file) {
+        const { line, character } =
+          diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!);
+        const message = ts.flattenDiagnosticMessageText(
+          diagnostic.messageText,
+          "\n",
+        );
+
+        if (diagnostic.category === ts.DiagnosticCategory.Error) {
+          allProblems.push({
+            file: normalizePath(
+              path.relative(appPath, diagnostic.file.fileName),
+            ),
+            line: line + 1, // Convert to 1-based
+            column: character + 1, // Convert to 1-based
+            message,
+            code: diagnostic.code,
+          });
+        }
+      }
+    },
+    () => {}, // reportSolutionBuilderStatus - ignore status messages
+    () => {}, // reportErrorSummary - ignore error summary
+  );
+
+  // Create solution builder
+  const solutionBuilder = ts.createSolutionBuilder(host, [tsconfigPath], {
+    // Don't emit files, we just want diagnostics
+    noEmit: true,
+  });
+
+  // Build the solution to get all diagnostics
+  solutionBuilder.build();
+
+  return {
+    problems: allProblems,
+  };
+}
+
+async function runSingleProject(
   ts: typeof import("typescript"),
   appPath: string,
   tsconfigPath: string,

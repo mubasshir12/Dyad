@@ -85,7 +85,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
   const [selectedComponent, setSelectedComponent] = useAtom(
     selectedComponentPreviewAtom,
   );
-  const { safeCheckProblems } = useCheckProblems(appId);
+  const { checkProblems } = useCheckProblems(appId);
   // Use the attachments hook
   const {
     attachments,
@@ -208,7 +208,7 @@ export function ChatInput({ chatId }: { chatId?: number }) {
       setIsApproving(false);
       setIsPreviewOpen(true);
       refreshVersions();
-      safeCheckProblems();
+      checkProblems();
 
       // Keep same as handleReject
       refreshProposal();

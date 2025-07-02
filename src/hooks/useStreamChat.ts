@@ -48,7 +48,7 @@ export function useStreamChat({
   const { refreshAppIframe } = useRunApp();
   const { countTokens } = useCountTokens();
   const { refetchUserBudget } = useUserBudgetInfo();
-  const { safeCheckProblems } = useCheckProblems(selectedAppId);
+  const { checkProblems } = useCheckProblems(selectedAppId);
   const posthog = usePostHog();
   let chatId: number | undefined;
 
@@ -118,7 +118,7 @@ export function useStreamChat({
             if (response.updatedFiles) {
               setIsPreviewOpen(true);
               refreshAppIframe();
-              safeCheckProblems();
+              checkProblems();
             }
             if (response.extraFiles) {
               showExtraFilesToast({

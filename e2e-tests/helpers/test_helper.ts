@@ -371,6 +371,26 @@ export class PageObject {
     await this.page.getByRole("button", { name: "Restart" }).click();
   }
 
+  ////////////////////////////////
+  // Preview panel
+  ////////////////////////////////
+
+  async selectPreviewMode(mode: "code" | "problems" | "preview") {
+    await this.page.getByTestId(`${mode}-mode-button`).click();
+  }
+
+  async clickRecheckProblems() {
+    await this.page.getByTestId("recheck-button").click();
+  }
+
+  async clickFixAllProblems() {
+    await this.page.getByTestId("fix-all-button").click();
+  }
+
+  async snapshotProblemsPane() {
+    await expect(this.page.getByTestId("problems-pane")).toMatchAriaSnapshot();
+  }
+
   async clickRebuild() {
     await this.clickPreviewMoreOptions();
     await this.page.getByText("Rebuild").click();
@@ -783,8 +803,14 @@ export class PageObject {
     await this.page.getByRole("link", { name: "Hub" }).click();
   }
 
-  async selectTemplate(templateName: string) {
+  private async selectTemplate(templateName: string) {
     await this.page.getByRole("img", { name: templateName }).click();
+  }
+
+  async selectHubTemplate(templateName: "Next.js Template") {
+    await this.goToHubTab();
+    await this.selectTemplate(templateName);
+    await this.goToAppsTab();
   }
 
   ////////////////////////////////
