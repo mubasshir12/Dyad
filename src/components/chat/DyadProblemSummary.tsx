@@ -66,11 +66,11 @@ export const DyadProblemSummary: React.FC<DyadProblemSummaryProps> = ({
     while ((match = problemTagRegex.exec(children)) !== null) {
       try {
         problems.push({
-          file: match[2],
-          line: parseInt(match[3], 10),
-          column: parseInt(match[4], 10),
-          message: match[6].trim(),
-          code: parseInt(match[5], 10),
+          file: match[1],
+          line: parseInt(match[2], 10),
+          column: parseInt(match[3], 10),
+          message: match[5].trim(),
+          code: parseInt(match[4], 10),
         });
       } catch {
         return [

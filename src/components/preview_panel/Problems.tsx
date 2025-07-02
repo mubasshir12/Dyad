@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import { chatProblemsAtom, selectedChatIdAtom } from "@/atoms/chatAtoms";
+import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import {
   AlertTriangle,
@@ -10,10 +10,9 @@ import {
 } from "lucide-react";
 import { Problem, ProblemReport } from "@/ipc/ipc_types";
 import { Button } from "@/components/ui/button";
-import { IpcClient } from "@/ipc/ipc_client";
 
-import { useState } from "react";
 import { useStreamChat } from "@/hooks/useStreamChat";
+import { useCheckProblems } from "@/hooks/useCheckProblems";
 import { createProblemFixPrompt } from "@/shared/problem_prompt";
 
 interface ProblemItemProps {
@@ -45,7 +44,6 @@ const ProblemItem = ({ problem }: ProblemItemProps) => {
 
 interface RecheckButtonProps {
   appId: number;
-  onProblemReportUpdate: (appId: number, problemReport: ProblemReport) => void;
   size?: "sm" | "default" | "lg";
   variant?:
     | "default"
@@ -59,24 +57,14 @@ interface RecheckButtonProps {
 
 const RecheckButton = ({
   appId,
-  onProblemReportUpdate,
   size = "sm",
   variant = "outline",
   className = "h-7 px-3 text-xs",
 }: RecheckButtonProps) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const { checkProblems, isChecking } = useCheckProblems(appId);
 
-  const handleRecheck = async () => {
-    setIsLoading(true);
-    try {
-      const ipcClient = IpcClient.getInstance();
-      const problemReport = await ipcClient.checkProblems({ appId });
-      onProblemReportUpdate(appId, problemReport);
-    } catch (error) {
-      console.error("Failed to recheck problems:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRecheck = () => {
+    checkProblems();
   };
 
   return (
@@ -84,14 +72,14 @@ const RecheckButton = ({
       size={size}
       variant={variant}
       onClick={handleRecheck}
-      disabled={isLoading}
+      disabled={isChecking}
       className={className}
     >
       <RefreshCw
         size={14}
-        className={`mr-1 ${isLoading ? "animate-spin" : ""}`}
+        className={`mr-1 ${isChecking ? "animate-spin" : ""}`}
       />
-      {isLoading ? "Checking..." : "Recheck"}
+      {isChecking ? "Checking..." : "Recheck"}
     </Button>
   );
 };
@@ -99,14 +87,9 @@ const RecheckButton = ({
 interface ProblemsSummaryProps {
   problemReport: ProblemReport;
   appId: number;
-  onProblemReportUpdate: (appId: number, problemReport: ProblemReport) => void;
 }
 
-const ProblemsSummary = ({
-  problemReport,
-  appId,
-  onProblemReportUpdate,
-}: ProblemsSummaryProps) => {
+const ProblemsSummary = ({ problemReport, appId }: ProblemsSummaryProps) => {
   const { streamMessage } = useStreamChat();
   const { problems } = problemReport;
   const totalErrors = problems.length;
@@ -128,10 +111,7 @@ const ProblemsSummary = ({
           <div className="w-6 h-6 rounded-full bg-green-500"></div>
         </div>
         <p className="text-sm text-muted-foreground mb-3">No problems found</p>
-        <RecheckButton
-          appId={appId}
-          onProblemReportUpdate={onProblemReportUpdate}
-        />
+        <RecheckButton appId={appId} />
       </div>
     );
   }
@@ -149,10 +129,7 @@ const ProblemsSummary = ({
         )}
       </div>
       <div className="flex items-center gap-2">
-        <RecheckButton
-          appId={appId}
-          onProblemReportUpdate={onProblemReportUpdate}
-        />
+        <RecheckButton appId={appId} />
         <Button
           size="sm"
           variant="default"
@@ -169,20 +146,7 @@ const ProblemsSummary = ({
 
 export function Problems() {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
-  const [chatProblems, setChatProblems] = useAtom(chatProblemsAtom);
-
-  // Get the problem report for the selected app
-  const problemReport = selectedAppId ? chatProblems[selectedAppId] : null;
-
-  const handleProblemReportUpdate = (
-    appId: number,
-    problemReport: ProblemReport,
-  ) => {
-    setChatProblems((problems) => ({
-      ...problems,
-      [appId]: problemReport,
-    }));
-  };
+  const { problemReport } = useCheckProblems(selectedAppId);
 
   if (!selectedAppId) {
     return (
@@ -209,21 +173,14 @@ export function Problems() {
           No TypeScript diagnostics available for this app yet. Problems will
           appear here after running type checking.
         </p>
-        <RecheckButton
-          appId={selectedAppId}
-          onProblemReportUpdate={handleProblemReportUpdate}
-        />
+        <RecheckButton appId={selectedAppId} />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
-      <ProblemsSummary
-        problemReport={problemReport}
-        appId={selectedAppId}
-        onProblemReportUpdate={handleProblemReportUpdate}
-      />
+      <ProblemsSummary problemReport={problemReport} appId={selectedAppId} />
       <div className="flex-1 overflow-y-auto">
         {problemReport.problems.map((problem, index) => (
           <ProblemItem

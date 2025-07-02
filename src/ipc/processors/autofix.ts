@@ -152,7 +152,6 @@ async function runTypeScriptCheck(
   if (!parsedCommandLine) {
     throw new Error(`Failed to parse TypeScript config: ${tsconfigPath}`);
   }
-  console.log("parsedCommandLine", parsedCommandLine);
 
   let rootNames = parsedCommandLine.fileNames;
 
