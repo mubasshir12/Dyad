@@ -108,7 +108,8 @@ async function processStreamChunks({
   processResponseChunkUpdate: (params: {
     fullResponse: string;
   }) => Promise<string>;
-}): Promise<string> {
+}): Promise<{ fullResponse: string; incrementalResponse: string }> {
+  let incrementalResponse = "";
   let inThinkingBlock = false;
 
   for await (const part of fullStream) {
@@ -133,6 +134,7 @@ async function processStreamChunks({
     }
 
     fullResponse += chunk;
+    incrementalResponse += chunk;
     fullResponse = cleanFullResponse(fullResponse);
     fullResponse = await processResponseChunkUpdate({
       fullResponse,
@@ -145,7 +147,7 @@ async function processStreamChunks({
     }
   }
 
-  return fullResponse;
+  return { fullResponse, incrementalResponse };
 }
 
 export function registerChatStreamHandlers() {
@@ -610,13 +612,14 @@ This conversation includes one or more image attachments. When the user uploads 
 
         // Process the stream as before
         try {
-          fullResponse = await processStreamChunks({
+          const result = await processStreamChunks({
             fullStream,
             fullResponse,
             abortController,
             chatId: req.chatId,
             processResponseChunkUpdate,
           });
+          fullResponse = result.fullResponse;
 
           if (
             !abortController.signal.aborted &&
@@ -670,6 +673,8 @@ This conversation includes one or more image attachments. When the user uploads 
               const settings = readSettings();
               if (settings.enableAutoFixProblems) {
                 let autoFixAttempts = 0;
+                const originalFullResponse = fullResponse;
+                const previousAttempts: CoreMessage[] = [];
                 while (
                   problemReport.problems.length > 0 &&
                   autoFixAttempts < 2 &&
@@ -693,15 +698,29 @@ ${problemReport.problems
                   const { fullStream } = await simpleStreamText({
                     chatMessages: [
                       ...chatMessages,
+                      {
+                        role: "assistant",
+                        content: originalFullResponse,
+                      },
+                      ...previousAttempts,
                       { role: "user", content: problemFixPrompt },
                     ],
                   });
-                  fullResponse = await processStreamChunks({
+                  previousAttempts.push({
+                    role: "user",
+                    content: problemFixPrompt,
+                  });
+                  const result = await processStreamChunks({
                     fullStream,
                     fullResponse,
                     abortController,
                     chatId: req.chatId,
                     processResponseChunkUpdate,
+                  });
+                  fullResponse = result.fullResponse;
+                  previousAttempts.push({
+                    role: "assistant",
+                    content: result.incrementalResponse,
                   });
 
                   problemReport = await generateProblemReport({

@@ -45,6 +45,7 @@ x.nonExistentMethod2();
 </dyad-write>
 
       `;
+      messageContent += "\n\n" + generateDump(req);
     }
     if (
       lastMessage &&
@@ -65,6 +66,7 @@ x.toString(); // replaced with existing method
 </dyad-write>
 
       `;
+      messageContent += "\n\n" + generateDump(req);
     }
     if (
       lastMessage &&

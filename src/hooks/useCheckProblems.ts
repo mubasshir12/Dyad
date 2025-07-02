@@ -23,9 +23,7 @@ export function useCheckProblems(appId: number | null) {
       return ipcClient.checkProblems({ appId });
     },
     enabled: !!appId,
-    meta: {
-      showErrorToast: true,
-    },
+    // DO NOT SHOW ERROR TOAST.
   });
 
   // Sync the query result with the chatProblemsAtom

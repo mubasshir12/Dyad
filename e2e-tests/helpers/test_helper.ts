@@ -231,6 +231,14 @@ export class PageObject {
     await this.goToAppsTab();
   }
 
+  async runPnpmInstall() {
+    const appPath = await this.getCurrentAppPath();
+    if (!appPath) {
+      throw new Error("No app selected");
+    }
+    execSync("pnpm install", { cwd: appPath });
+  }
+
   async setUpDyadProvider() {
     await this.page
       .locator("div")
@@ -438,23 +446,43 @@ export class PageObject {
 
   async snapshotServerDump(
     type: "all-messages" | "last-message" | "request" = "all-messages",
-    { name = "" }: { name?: string } = {},
+    { name = "", dumpIndex = -1 }: { name?: string; dumpIndex?: number } = {},
   ) {
     // Get the text content of the messages list
     const messagesListText = await this.page
       .getByTestId("messages-list")
       .textContent();
 
-    // Find the dump path using regex
-    const dumpPathMatch = messagesListText?.match(
-      /.*\[\[dyad-dump-path=([^\]]+)\]\]/,
+    // Find ALL dump paths using global regex
+    const dumpPathMatches = messagesListText?.match(
+      /\[\[dyad-dump-path=([^\]]+)\]\]/g,
     );
 
-    if (!dumpPathMatch) {
+    if (!dumpPathMatches || dumpPathMatches.length === 0) {
       throw new Error("No dump path found in messages list");
     }
 
-    const dumpFilePath = dumpPathMatch[1];
+    // Extract the actual paths from the matches
+    const dumpPaths = dumpPathMatches
+      .map((match) => {
+        const pathMatch = match.match(/\[\[dyad-dump-path=([^\]]+)\]\]/);
+        return pathMatch ? pathMatch[1] : null;
+      })
+      .filter(Boolean);
+
+    // Select the dump path based on index
+    // -1 means last, -2 means second to last, etc.
+    // 0 means first, 1 means second, etc.
+    const selectedIndex =
+      dumpIndex < 0 ? dumpPaths.length + dumpIndex : dumpIndex;
+
+    if (selectedIndex < 0 || selectedIndex >= dumpPaths.length) {
+      throw new Error(
+        `Dump index ${dumpIndex} is out of range. Found ${dumpPaths.length} dump paths.`,
+      );
+    }
+
+    const dumpFilePath = dumpPaths[selectedIndex];
 
     // Read the JSON file
     const dumpContent: string = (

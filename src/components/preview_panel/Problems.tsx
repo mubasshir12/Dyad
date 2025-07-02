@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { useCheckProblems } from "@/hooks/useCheckProblems";
 import { createProblemFixPrompt } from "@/shared/problem_prompt";
+import { showError } from "@/lib/toast";
 
 interface ProblemItemProps {
   problem: Problem;
@@ -63,8 +64,13 @@ const RecheckButton = ({
 }: RecheckButtonProps) => {
   const { checkProblems, isChecking } = useCheckProblems(appId);
 
-  const handleRecheck = () => {
-    checkProblems();
+  const handleRecheck = async () => {
+    try {
+      await checkProblems();
+    } catch (err) {
+      console.error("Error checking problems:", err);
+      showError(err);
+    }
   };
 
   return (
@@ -74,6 +80,7 @@ const RecheckButton = ({
       onClick={handleRecheck}
       disabled={isChecking}
       className={className}
+      data-testid="recheck-button"
     >
       <RefreshCw
         size={14}
@@ -135,6 +142,7 @@ const ProblemsSummary = ({ problemReport, appId }: ProblemsSummaryProps) => {
           variant="default"
           onClick={handleFixAll}
           className="h-7 px-3 text-xs"
+          data-testid="fix-all-button"
         >
           <Wrench size={14} className="mr-1" />
           Fix All
@@ -145,6 +153,14 @@ const ProblemsSummary = ({ problemReport, appId }: ProblemsSummaryProps) => {
 };
 
 export function Problems() {
+  return (
+    <div data-testid="problems-pane">
+      <_Problems />
+    </div>
+  );
+}
+
+export function _Problems() {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const { problemReport } = useCheckProblems(selectedAppId);
 
