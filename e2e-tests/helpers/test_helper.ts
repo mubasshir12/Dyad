@@ -244,7 +244,34 @@ export class PageObject {
     if (!appPath) {
       throw new Error("No app selected");
     }
-    execSync("pnpm install", { cwd: appPath });
+
+    try {
+      execSync("pnpm install", {
+        cwd: appPath,
+        stdio: "pipe",
+        encoding: "utf8",
+      });
+    } catch (error: any) {
+      console.error(`Failed to run 'pnpm install' in ${appPath}`);
+      console.error(`Exit code: ${error.status}`);
+      console.error(`Command: ${error.cmd || "pnpm install"}`);
+
+      if (error.stdout) {
+        console.error(`STDOUT:\n${error.stdout}`);
+      }
+
+      if (error.stderr) {
+        console.error(`STDERR:\n${error.stderr}`);
+      }
+
+      // Re-throw with enhanced error message
+      throw new Error(
+        `pnpm install failed in ${appPath}. ` +
+          `Exit code: ${error.status}. ` +
+          `${error.stderr ? `Error: ${error.stderr}` : ""}` +
+          `${error.stdout ? ` Output: ${error.stdout}` : ""}`,
+      );
+    }
   }
 
   async setUpDyadProvider() {
