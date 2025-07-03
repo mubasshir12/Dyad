@@ -54,8 +54,16 @@ export abstract class BaseVirtualFileSystem {
     // Normalize separators and handle case-insensitive Windows paths
     const normalized = normalizePath(path.normalize(absolutePath));
 
-    // On Windows, convert to lowercase for consistent key comparison
-    return process.platform === "win32" ? normalized.toLowerCase() : normalized;
+    // Intentionally do NOT lowercase for Windows which is case-insensitive
+    // because this avoids issues with path comparison.
+    //
+    // This is a trade-off and introduces a small edge case where
+    // e.g. foo.txt and Foo.txt are treated as different files by the VFS
+    // even though Windows treats them as the same file.
+    //
+    // This should be a pretty rare occurence and it's not worth the extra
+    // complexity to handle it.
+    return normalized;
   }
 
   /**
