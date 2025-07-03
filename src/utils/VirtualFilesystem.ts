@@ -94,7 +94,7 @@ export abstract class BaseVirtualFileSystem {
   /**
    * Write a file to the virtual filesystem
    */
-  public writeFile(relativePath: string, content: string): void {
+  protected writeFile(relativePath: string, content: string): void {
     const absolutePath = path.resolve(this.baseDir, relativePath);
     const normalizedKey = this.normalizePathForKey(absolutePath);
 
@@ -106,7 +106,7 @@ export abstract class BaseVirtualFileSystem {
   /**
    * Delete a file from the virtual filesystem
    */
-  public deleteFile(relativePath: string): void {
+  protected deleteFile(relativePath: string): void {
     const absolutePath = path.resolve(this.baseDir, relativePath);
     const normalizedKey = this.normalizePathForKey(absolutePath);
 
@@ -118,7 +118,7 @@ export abstract class BaseVirtualFileSystem {
   /**
    * Rename a file in the virtual filesystem
    */
-  public renameFile(fromPath: string, toPath: string): void {
+  protected renameFile(fromPath: string, toPath: string): void {
     const fromAbsolute = path.resolve(this.baseDir, fromPath);
     const toAbsolute = path.resolve(this.baseDir, toPath);
     const fromNormalized = this.normalizePathForKey(fromAbsolute);
@@ -176,49 +176,6 @@ export abstract class BaseVirtualFileSystem {
       const denormalizedPath = this.denormalizePath(normalizedKey);
       return path.relative(this.baseDir, denormalizedPath);
     });
-  }
-
-  /**
-   * Get all files that should be considered (existing + virtual - deleted)
-   */
-  public getAllFiles(): string[] {
-    const allFiles = new Set<string>();
-
-    // Add virtual files
-    for (const [absolutePath] of this.virtualFiles.entries()) {
-      allFiles.add(path.relative(this.baseDir, absolutePath));
-    }
-
-    // Add existing files (this is a simplified version - in practice you might want to scan the directory)
-    // This method is mainly for getting the current state, consumers can combine with directory scanning
-
-    return Array.from(allFiles);
-  }
-
-  /**
-   * Check if a file has been modified in the virtual filesystem
-   */
-  public isFileModified(filePath: string): boolean {
-    const normalizedKey = this.normalizePathForKey(filePath);
-    return (
-      this.virtualFiles.has(normalizedKey) ||
-      this.deletedFiles.has(normalizedKey)
-    );
-  }
-
-  /**
-   * Clear all virtual changes
-   */
-  public clear(): void {
-    this.virtualFiles.clear();
-    this.deletedFiles.clear();
-  }
-
-  /**
-   * Get the base directory
-   */
-  public getBaseDir(): string {
-    return this.baseDir;
   }
 
   /**
