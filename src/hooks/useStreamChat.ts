@@ -144,6 +144,7 @@ export function useStreamChat({
       checkProblems,
       selectedAppId,
       refetchUserBudget,
+      settings,
     ],
   );
 
