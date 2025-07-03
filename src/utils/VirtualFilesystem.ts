@@ -5,6 +5,7 @@ import {
   getDyadRenameTags,
   getDyadDeleteTags,
 } from "../ipc/processors/response_processor";
+import { normalizePath } from "../ipc/processors/normalizePath";
 
 import log from "electron-log";
 
@@ -39,7 +40,31 @@ export abstract class BaseVirtualFileSystem {
   protected baseDir: string;
 
   constructor(baseDir: string) {
-    this.baseDir = baseDir;
+    this.baseDir = path.resolve(baseDir);
+  }
+
+  /**
+   * Normalize path for consistent cross-platform behavior
+   */
+  private normalizePathForKey(filePath: string): string {
+    const absolutePath = path.isAbsolute(filePath)
+      ? filePath
+      : path.resolve(this.baseDir, filePath);
+
+    // Normalize separators and handle case-insensitive Windows paths
+    const normalized = normalizePath(path.normalize(absolutePath));
+
+    // On Windows, convert to lowercase for consistent key comparison
+    return process.platform === "win32" ? normalized.toLowerCase() : normalized;
+  }
+
+  /**
+   * Convert normalized path back to platform-appropriate format
+   */
+  private denormalizePath(normalizedPath: string): string {
+    return process.platform === "win32"
+      ? normalizedPath.replace(/\//g, "\\")
+      : normalizedPath;
   }
 
   /**
@@ -71,9 +96,11 @@ export abstract class BaseVirtualFileSystem {
    */
   public writeFile(relativePath: string, content: string): void {
     const absolutePath = path.resolve(this.baseDir, relativePath);
-    this.virtualFiles.set(absolutePath, content);
+    const normalizedKey = this.normalizePathForKey(absolutePath);
+
+    this.virtualFiles.set(normalizedKey, content);
     // Remove from deleted files if it was previously deleted
-    this.deletedFiles.delete(absolutePath);
+    this.deletedFiles.delete(normalizedKey);
   }
 
   /**
@@ -81,9 +108,11 @@ export abstract class BaseVirtualFileSystem {
    */
   public deleteFile(relativePath: string): void {
     const absolutePath = path.resolve(this.baseDir, relativePath);
-    this.deletedFiles.add(absolutePath);
+    const normalizedKey = this.normalizePathForKey(absolutePath);
+
+    this.deletedFiles.add(normalizedKey);
     // Remove from virtual files if it exists there
-    this.virtualFiles.delete(absolutePath);
+    this.virtualFiles.delete(normalizedKey);
   }
 
   /**
@@ -92,20 +121,22 @@ export abstract class BaseVirtualFileSystem {
   public renameFile(fromPath: string, toPath: string): void {
     const fromAbsolute = path.resolve(this.baseDir, fromPath);
     const toAbsolute = path.resolve(this.baseDir, toPath);
+    const fromNormalized = this.normalizePathForKey(fromAbsolute);
+    const toNormalized = this.normalizePathForKey(toAbsolute);
 
     // Mark old file as deleted
-    this.deletedFiles.add(fromAbsolute);
+    this.deletedFiles.add(fromNormalized);
 
     // If the source file exists in virtual files, move its content
-    if (this.virtualFiles.has(fromAbsolute)) {
-      const content = this.virtualFiles.get(fromAbsolute)!;
-      this.virtualFiles.delete(fromAbsolute);
-      this.virtualFiles.set(toAbsolute, content);
+    if (this.virtualFiles.has(fromNormalized)) {
+      const content = this.virtualFiles.get(fromNormalized)!;
+      this.virtualFiles.delete(fromNormalized);
+      this.virtualFiles.set(toNormalized, content);
     } else {
       // Try to read from actual filesystem
       try {
         const content = fs.readFileSync(fromAbsolute, "utf8");
-        this.virtualFiles.set(toAbsolute, content);
+        this.virtualFiles.set(toNormalized, content);
       } catch (error) {
         // If we can't read the source file, we'll let the consumer handle it
         logger.warn(
@@ -116,7 +147,7 @@ export abstract class BaseVirtualFileSystem {
     }
 
     // Remove destination from deleted files if it was previously deleted
-    this.deletedFiles.delete(toAbsolute);
+    this.deletedFiles.delete(toNormalized);
   }
 
   /**
@@ -124,10 +155,15 @@ export abstract class BaseVirtualFileSystem {
    */
   public getVirtualFiles(): VirtualFile[] {
     return Array.from(this.virtualFiles.entries()).map(
-      ([absolutePath, content]) => ({
-        path: path.relative(this.baseDir, absolutePath),
-        content,
-      }),
+      ([normalizedKey, content]) => {
+        // Convert normalized key back to relative path
+        const denormalizedPath = this.denormalizePath(normalizedKey);
+
+        return {
+          path: path.relative(this.baseDir, denormalizedPath),
+          content,
+        };
+      },
     );
   }
 
@@ -135,9 +171,11 @@ export abstract class BaseVirtualFileSystem {
    * Get all deleted file paths (relative to base directory)
    */
   public getDeletedFiles(): string[] {
-    return Array.from(this.deletedFiles).map((absolutePath) =>
-      path.relative(this.baseDir, absolutePath),
-    );
+    return Array.from(this.deletedFiles).map((normalizedKey) => {
+      // Convert normalized key back to relative path
+      const denormalizedPath = this.denormalizePath(normalizedKey);
+      return path.relative(this.baseDir, denormalizedPath);
+    });
   }
 
   /**
@@ -161,12 +199,10 @@ export abstract class BaseVirtualFileSystem {
    * Check if a file has been modified in the virtual filesystem
    */
   public isFileModified(filePath: string): boolean {
-    const absolutePath = path.isAbsolute(filePath)
-      ? filePath
-      : path.resolve(this.baseDir, filePath);
-
+    const normalizedKey = this.normalizePathForKey(filePath);
     return (
-      this.virtualFiles.has(absolutePath) || this.deletedFiles.has(absolutePath)
+      this.virtualFiles.has(normalizedKey) ||
+      this.deletedFiles.has(normalizedKey)
     );
   }
 
@@ -189,30 +225,24 @@ export abstract class BaseVirtualFileSystem {
    * Check if a file is deleted in the virtual filesystem
    */
   protected isDeleted(filePath: string): boolean {
-    const absolutePath = path.isAbsolute(filePath)
-      ? filePath
-      : path.resolve(this.baseDir, filePath);
-    return this.deletedFiles.has(absolutePath);
+    const normalizedKey = this.normalizePathForKey(filePath);
+    return this.deletedFiles.has(normalizedKey);
   }
 
   /**
    * Check if a file exists in virtual files
    */
   protected hasVirtualFile(filePath: string): boolean {
-    const absolutePath = path.isAbsolute(filePath)
-      ? filePath
-      : path.resolve(this.baseDir, filePath);
-    return this.virtualFiles.has(absolutePath);
+    const normalizedKey = this.normalizePathForKey(filePath);
+    return this.virtualFiles.has(normalizedKey);
   }
 
   /**
    * Get virtual file content
    */
   protected getVirtualFileContent(filePath: string): string | undefined {
-    const absolutePath = path.isAbsolute(filePath)
-      ? filePath
-      : path.resolve(this.baseDir, filePath);
-    return this.virtualFiles.get(absolutePath);
+    const normalizedKey = this.normalizePathForKey(filePath);
+    return this.virtualFiles.get(normalizedKey);
   }
 }
 
