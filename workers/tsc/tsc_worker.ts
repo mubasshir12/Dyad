@@ -50,18 +50,36 @@ function findTypeScriptConfig(appPath: string): string {
 
 async function runTypeScriptCheck(
   ts: typeof import("typescript"),
-  appPath: string,
-  tsconfigPath: string,
   vfs: SyncVirtualFileSystem,
+  {
+    appPath,
+    tsconfigPath,
+    tsBuildInfoCacheDir,
+  }: {
+    appPath: string;
+    tsconfigPath: string;
+    tsBuildInfoCacheDir: string;
+  },
 ): Promise<ProblemReport> {
-  return runSingleProject(ts, appPath, tsconfigPath, vfs);
+  return runSingleProject(ts, vfs, {
+    appPath,
+    tsconfigPath,
+    tsBuildInfoCacheDir,
+  });
 }
 
 async function runSingleProject(
   ts: typeof import("typescript"),
-  appPath: string,
-  tsconfigPath: string,
   vfs: SyncVirtualFileSystem,
+  {
+    appPath,
+    tsconfigPath,
+    tsBuildInfoCacheDir,
+  }: {
+    appPath: string;
+    tsconfigPath: string;
+    tsBuildInfoCacheDir: string;
+  },
 ): Promise<ProblemReport> {
   // Use the idiomatic way to parse TypeScript config
   const parsedCommandLine = ts.getParsedCommandLineOfConfigFile(
@@ -84,6 +102,27 @@ async function runSingleProject(
 
   if (!parsedCommandLine) {
     throw new Error(`Failed to parse TypeScript config: ${tsconfigPath}`);
+  }
+
+  // Enable incremental compilation by setting tsBuildInfoFile if not already set
+  const options = { ...parsedCommandLine.options };
+  if (!options.tsBuildInfoFile && options.incremental !== false) {
+    // Place the buildinfo file in a temp directory to avoid polluting the project
+    const tmpDir = tsBuildInfoCacheDir;
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+
+    // Create a unique filename based on both the app path and tsconfig path to prevent collisions
+    const configName = path.basename(tsconfigPath, path.extname(tsconfigPath));
+    const appHash = Buffer.from(appPath)
+      .toString("base64")
+      .replace(/[/+=]/g, "_");
+    options.tsBuildInfoFile = path.join(
+      tmpDir,
+      `${appHash}-${configName}.tsbuildinfo`,
+    );
+    options.incremental = true;
   }
 
   let rootNames = parsedCommandLine.fileNames;
@@ -110,22 +149,26 @@ async function runSingleProject(
   }
 
   // Create custom compiler host
-  const host = createVirtualCompilerHost(
-    ts,
-    appPath,
-    vfs,
-    parsedCommandLine.options,
-  );
+  const host = createVirtualCompilerHost(ts, appPath, vfs, options);
 
-  // Create TypeScript program - this is the idiomatic way
-  const program = ts.createProgram(rootNames, parsedCommandLine.options, host);
+  // Create incremental program - TypeScript will automatically use the tsBuildInfo file
+  const builderProgram = ts.createIncrementalProgram({
+    rootNames,
+    options,
+    host,
+    configFileParsingDiagnostics:
+      ts.getConfigFileParsingDiagnostics(parsedCommandLine),
+  });
 
-  // Get diagnostics
+  // Get diagnostics - the incremental program optimizes this by only checking changed files
   const diagnostics = [
-    ...program.getSyntacticDiagnostics(),
-    ...program.getSemanticDiagnostics(),
-    ...program.getGlobalDiagnostics(),
+    ...builderProgram.getSyntacticDiagnostics(),
+    ...builderProgram.getSemanticDiagnostics(),
+    ...builderProgram.getGlobalDiagnostics(),
   ];
+
+  // Emit the build info file to persist the incremental state
+  builderProgram.emit();
 
   // Convert diagnostics to our format
   const problems: Problem[] = [];
@@ -165,7 +208,7 @@ function createVirtualCompilerHost(
   vfs: SyncVirtualFileSystem,
   compilerOptions: import("typescript").CompilerOptions,
 ): import("typescript").CompilerHost {
-  const host = ts.createCompilerHost(compilerOptions);
+  const host = ts.createIncrementalCompilerHost(compilerOptions);
 
   // Override file reading to use virtual files
   host.readFile = (fileName: string) => {
@@ -175,6 +218,31 @@ function createVirtualCompilerHost(
   // Override file existence check
   host.fileExists = (fileName: string) => {
     return vfs.fileExists(fileName);
+  };
+
+  // Override getCurrentDirectory to ensure proper resolution
+  host.getCurrentDirectory = () => appPath;
+
+  // Override writeFile to handle virtual file system
+  // This is important for writing the tsBuildInfo file
+  const originalWriteFile = host.writeFile;
+  host.writeFile = (
+    fileName: string,
+    data: string,
+    writeByteOrderMark?: boolean,
+    onError?: (message: string) => void,
+  ) => {
+    // Only write build info files to disk, not emit files
+    if (fileName.endsWith(".tsbuildinfo")) {
+      originalWriteFile?.call(
+        host,
+        fileName,
+        data,
+        !!writeByteOrderMark,
+        onError,
+      );
+    }
+    // Ignore other emit files since we're only doing type checking
   };
 
   return host;
@@ -189,7 +257,7 @@ async function processTypeScriptCheck(
   input: WorkerInput,
 ): Promise<WorkerOutput> {
   try {
-    const { appPath, virtualChanges } = input;
+    const { appPath, virtualChanges, tsBuildInfoCacheDir } = input;
     const vfs = new SyncVirtualFileSystemImpl(appPath, {
       fileExists: (fileName: string) => ts.sys.fileExists(fileName),
       readFile: (fileName: string) => ts.sys.readFile(fileName),
@@ -203,7 +271,11 @@ async function processTypeScriptCheck(
     const tsconfigPath = findTypeScriptConfig(appPath);
 
     // Create TypeScript program with virtual file system
-    const result = await runTypeScriptCheck(ts, appPath, tsconfigPath, vfs);
+    const result = await runTypeScriptCheck(ts, vfs, {
+      appPath,
+      tsconfigPath,
+      tsBuildInfoCacheDir,
+    });
 
     return {
       success: true,
@@ -222,7 +294,6 @@ parentPort?.on("message", async (input: WorkerInput) => {
   const output = await processTypeScriptCheck(input);
   parentPort?.postMessage(output);
 });
-
 /**
  * Normalize the path to use forward slashes instead of backslashes.
  * This is important to prevent weird Git issues, particularly on Windows.

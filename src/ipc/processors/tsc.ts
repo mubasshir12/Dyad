@@ -10,6 +10,7 @@ import {
   getDyadRenameTags,
   getDyadWriteTags,
 } from "../utils/dyad_tag_parser";
+import { getTypeScriptCachePath } from "@/paths/paths";
 
 const logger = log.scope("tsc");
 
@@ -70,6 +71,7 @@ export async function generateProblemReport({
     const input: WorkerInput = {
       virtualChanges,
       appPath,
+      tsBuildInfoCacheDir: getTypeScriptCachePath(),
     };
 
     logger.info(`Sending input to TSC worker for app ${appPath}`);

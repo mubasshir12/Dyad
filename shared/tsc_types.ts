@@ -26,6 +26,7 @@ export interface ProblemReport {
 export interface WorkerInput {
   appPath: string;
   virtualChanges: VirtualChanges;
+  tsBuildInfoCacheDir: string;
 }
 
 export interface WorkerOutput {
