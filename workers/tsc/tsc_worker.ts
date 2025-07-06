@@ -195,7 +195,6 @@ async function processTypeScriptCheck(
       readFile: (fileName: string) => ts.sys.readFile(fileName),
     });
     vfs.applyResponseChanges(virtualChanges);
-    console.error("*******************vfs", vfs);
 
     // Load the local TypeScript version from the app's node_modules
     const ts = loadLocalTypeScript(appPath);
