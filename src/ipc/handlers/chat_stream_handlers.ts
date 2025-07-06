@@ -48,7 +48,7 @@ import { safeSend } from "../utils/safe_sender";
 import { cleanFullResponse } from "../utils/cleanFullResponse";
 import { generateProblemReport } from "../processors/tsc";
 import { createProblemFixPrompt } from "@/shared/problem_prompt";
-import { AsyncVirtualFileSystem } from "../../../shared/VirtualFileSystem";
+import { AsyncVirtualFileSystem } from "../../../shared/VirtualFilesystem";
 import {
   getDyadAddDependencyTags,
   getDyadWriteTags,

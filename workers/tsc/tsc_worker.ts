@@ -9,7 +9,7 @@ import {
   WorkerInput,
   WorkerOutput,
 } from "../../shared/tsc_types";
-import { SyncVirtualFileSystemImpl } from "../../shared/VirtualFileSystem";
+import { SyncVirtualFileSystemImpl } from "../../shared/VirtualFilesystem";
 
 function loadLocalTypeScript(appPath: string): typeof import("typescript") {
   try {
