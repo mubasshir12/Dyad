@@ -2,134 +2,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { parentPort } from "node:worker_threads";
 
-// Copy necessary types locally to avoid external dependencies
-interface Problem {
-  file: string;
-  line: number;
-  column: number;
-  message: string;
-  code: number;
-}
-
-interface ProblemReport {
-  problems: Problem[];
-}
-
-interface WorkerInput {
-  fullResponse: string;
-  appPath: string;
-}
-
-interface WorkerOutput {
-  success: boolean;
-  data?: ProblemReport;
-  error?: string;
-}
-
-// Copy VirtualFilesystem functionality locally
-interface VirtualFile {
-  path: string;
-  content: string;
-}
-
-interface FileSystemDelegate {
-  fileExists: (fileName: string) => boolean;
-  readFile: (fileName: string) => string | undefined;
-}
-
-class SyncVirtualFileSystem {
-  private virtualFiles: Map<string, string> = new Map();
-  private deletedFiles: Set<string> = new Set();
-
-  constructor(
-    private basePath: string,
-    private delegate: FileSystemDelegate,
-  ) {}
-
-  applyResponseChanges(fullResponse: string): void {
-    // Parse the response to extract file changes
-    const codeBlocks = this.extractCodeBlocks(fullResponse);
-
-    for (const block of codeBlocks) {
-      if (block.type === "create" || block.type === "edit") {
-        this.virtualFiles.set(block.path, block.content);
-      } else if (block.type === "delete") {
-        this.deletedFiles.add(block.path);
-        this.virtualFiles.delete(block.path);
-      }
-    }
-  }
-
-  private extractCodeBlocks(
-    response: string,
-  ): Array<{ type: string; path: string; content: string }> {
-    const blocks: Array<{ type: string; path: string; content: string }> = [];
-
-    // This is a simplified extraction - in the real implementation this would be more sophisticated
-    const fileRegex =
-      /```(?:typescript|javascript|tsx|jsx|ts|js)(?:\s+(.+))?\n([\s\S]*?)```/g;
-    let match;
-
-    while ((match = fileRegex.exec(response)) !== null) {
-      const filePath = match[1];
-      const content = match[2];
-
-      if (filePath && content) {
-        blocks.push({
-          type: "edit",
-          path: filePath,
-          content: content,
-        });
-      }
-    }
-
-    return blocks;
-  }
-
-  fileExists(fileName: string): boolean {
-    const relativePath = path.relative(this.basePath, fileName);
-
-    if (this.deletedFiles.has(relativePath)) {
-      return false;
-    }
-
-    if (this.virtualFiles.has(relativePath)) {
-      return true;
-    }
-
-    return this.delegate.fileExists(fileName);
-  }
-
-  readFile(fileName: string): string | undefined {
-    const relativePath = path.relative(this.basePath, fileName);
-
-    if (this.deletedFiles.has(relativePath)) {
-      return undefined;
-    }
-
-    if (this.virtualFiles.has(relativePath)) {
-      return this.virtualFiles.get(relativePath);
-    }
-
-    return this.delegate.readFile(fileName);
-  }
-
-  getVirtualFiles(): VirtualFile[] {
-    return Array.from(this.virtualFiles.entries()).map(([path, content]) => ({
-      path,
-      content,
-    }));
-  }
-
-  getDeletedFiles(): string[] {
-    return Array.from(this.deletedFiles);
-  }
-}
-
-// Copy normalizePath functionality
-function normalizePath(filePath: string): string {
-  return filePath.replace(/\\/g, "/");
-}
+import {
+  Problem,
+  ProblemReport,
+  SyncVirtualFileSystem,
+  WorkerInput,
+  WorkerOutput,
+} from "../../shared/tsc_types";
+import { SyncVirtualFileSystemImpl } from "../../shared/VirtualFileSystem";
 
 function loadLocalTypeScript(appPath: string): typeof import("typescript") {
   try {
@@ -309,17 +189,16 @@ async function processTypeScriptCheck(
   input: WorkerInput,
 ): Promise<WorkerOutput> {
   try {
-    const { fullResponse, appPath } = input;
-
-    // Load the local TypeScript version from the app's node_modules
-    const ts = loadLocalTypeScript(appPath);
-
-    // Create virtual file system with TypeScript system delegate and apply changes from response
-    const vfs = new SyncVirtualFileSystem(appPath, {
+    const { appPath, virtualChanges } = input;
+    const vfs = new SyncVirtualFileSystemImpl(appPath, {
       fileExists: (fileName: string) => ts.sys.fileExists(fileName),
       readFile: (fileName: string) => ts.sys.readFile(fileName),
     });
-    vfs.applyResponseChanges(fullResponse);
+    vfs.applyResponseChanges(virtualChanges);
+    console.error("*******************vfs", vfs);
+
+    // Load the local TypeScript version from the app's node_modules
+    const ts = loadLocalTypeScript(appPath);
 
     // Find TypeScript config - throw error if not found
     const tsconfigPath = findTypeScriptConfig(appPath);
@@ -344,3 +223,13 @@ parentPort?.on("message", async (input: WorkerInput) => {
   const output = await processTypeScriptCheck(input);
   parentPort?.postMessage(output);
 });
+
+/**
+ * Normalize the path to use forward slashes instead of backslashes.
+ * This is important to prevent weird Git issues, particularly on Windows.
+ * @param path Source path.
+ * @returns Normalized path.
+ */
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, "/");
+}

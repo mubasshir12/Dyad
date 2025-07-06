@@ -3,19 +3,15 @@ import { Worker } from "node:worker_threads";
 
 import { ProblemReport } from "../ipc_types";
 import log from "electron-log";
+import { WorkerInput, WorkerOutput } from "../../../shared/tsc_types";
+
+import {
+  getDyadDeleteTags,
+  getDyadRenameTags,
+  getDyadWriteTags,
+} from "../utils/dyad_tag_parser";
 
 const logger = log.scope("tsc");
-
-interface WorkerInput {
-  fullResponse: string;
-  appPath: string;
-}
-
-interface WorkerOutput {
-  success: boolean;
-  data?: ProblemReport;
-  error?: string;
-}
 
 export async function generateProblemReport({
   fullResponse,
@@ -26,10 +22,7 @@ export async function generateProblemReport({
 }): Promise<ProblemReport> {
   return new Promise((resolve, reject) => {
     // Determine the worker script path
-    const workerPath = path.join(
-      __dirname,
-      "../../../workers/dist/tsc-worker.js",
-    );
+    const workerPath = path.join(__dirname, "tsc_worker.js");
 
     logger.info(`Starting TSC worker for app ${appPath}`);
 
@@ -64,11 +57,22 @@ export async function generateProblemReport({
       }
     });
 
+    const writeTags = getDyadWriteTags(fullResponse);
+    const renameTags = getDyadRenameTags(fullResponse);
+    const deletePaths = getDyadDeleteTags(fullResponse);
+    const virtualChanges = {
+      deletePaths,
+      renameTags,
+      writeTags,
+    };
+
     // Send input to worker
     const input: WorkerInput = {
-      fullResponse,
+      virtualChanges,
       appPath,
     };
+
+    logger.info(`Sending input to TSC worker for app ${appPath}`);
 
     worker.postMessage(input);
   });
