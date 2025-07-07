@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 const SETTINGS_SECTIONS = [
@@ -14,6 +15,7 @@ const SETTINGS_SECTIONS = [
 ];
 
 export function SettingsList({ show }: { show: boolean }) {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string | null>(
     "general-settings",
   );
@@ -47,7 +49,10 @@ export function SettingsList({ show }: { show: boolean }) {
     return null;
   }
 
-  const handleScrollTo = (id: string) => {
+  const handleScrollAndNavigateTo = async (id: string) => {
+    await navigate({
+      to: "/settings",
+    });
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -65,12 +70,12 @@ export function SettingsList({ show }: { show: boolean }) {
           {SETTINGS_SECTIONS.map((section) => (
             <button
               key={section.id}
-              onClick={() => handleScrollTo(section.id)}
+              onClick={() => handleScrollAndNavigateTo(section.id)}
               className={cn(
                 "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
                 activeSection === section.id
                   ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                  : "hover:bg-sidebar-muted",
+                  : "hover:bg-sidebar-accent",
               )}
             >
               {section.label}

@@ -50,6 +50,7 @@ const items = [
 type HoverState =
   | "start-hover:app"
   | "start-hover:chat"
+  | "start-hover:settings"
   | "clear-hover"
   | "no-hover";
 
@@ -61,10 +62,7 @@ export function AppSidebar() {
   const [isDropdownOpen] = useAtom(dropdownOpenAtom);
 
   useEffect(() => {
-    if (
-      (hoverState === "start-hover:app" || hoverState === "start-hover:chat") &&
-      state === "collapsed"
-    ) {
+    if (hoverState.startsWith("start-hover") && state === "collapsed") {
       expandedByHover.current = true;
       toggleSidebar();
     }
@@ -92,6 +90,8 @@ export function AppSidebar() {
     selectedItem = "Apps";
   } else if (hoverState === "start-hover:chat") {
     selectedItem = "Chat";
+  } else if (hoverState === "start-hover:settings") {
+    selectedItem = "Settings";
   } else if (state === "expanded") {
     if (isAppRoute) {
       selectedItem = "Apps";
@@ -193,6 +193,8 @@ function AppIcons({
                         onHoverChange("start-hover:app");
                       } else if (item.title === "Chat") {
                         onHoverChange("start-hover:chat");
+                      } else if (item.title === "Settings") {
+                        onHoverChange("start-hover:settings");
                       }
                     }}
                   >
