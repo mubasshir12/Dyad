@@ -258,14 +258,15 @@ async function processTypeScriptCheck(
 ): Promise<WorkerOutput> {
   try {
     const { appPath, virtualChanges, tsBuildInfoCacheDir } = input;
+
+    // Load the local TypeScript version from the app's node_modules
+    const ts = loadLocalTypeScript(appPath);
+
     const vfs = new SyncVirtualFileSystemImpl(appPath, {
       fileExists: (fileName: string) => ts.sys.fileExists(fileName),
       readFile: (fileName: string) => ts.sys.readFile(fileName),
     });
     vfs.applyResponseChanges(virtualChanges);
-
-    // Load the local TypeScript version from the app's node_modules
-    const ts = loadLocalTypeScript(appPath);
 
     // Find TypeScript config - throw error if not found
     const tsconfigPath = findTypeScriptConfig(appPath);
@@ -294,6 +295,7 @@ parentPort?.on("message", async (input: WorkerInput) => {
   const output = await processTypeScriptCheck(input);
   parentPort?.postMessage(output);
 });
+
 /**
  * Normalize the path to use forward slashes instead of backslashes.
  * This is important to prevent weird Git issues, particularly on Windows.
