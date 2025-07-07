@@ -20,6 +20,7 @@ import {
 import { ChatList } from "./ChatList";
 import { AppList } from "./AppList";
 import { HelpDialog } from "./HelpDialog"; // Import the new dialog
+import { SettingsList } from "./SettingsList";
 
 // Menu items.
 const items = [
@@ -84,6 +85,7 @@ export function AppSidebar() {
     routerState.location.pathname === "/" ||
     routerState.location.pathname.startsWith("/app-details");
   const isChatRoute = routerState.location.pathname === "/chat";
+  const isSettingsRoute = routerState.location.pathname === "/settings";
 
   let selectedItem: string | null = null;
   if (hoverState === "start-hover:app") {
@@ -95,6 +97,8 @@ export function AppSidebar() {
       selectedItem = "Apps";
     } else if (isChatRoute) {
       selectedItem = "Chat";
+    } else if (isSettingsRoute) {
+      selectedItem = "Settings";
     }
   }
 
@@ -122,6 +126,7 @@ export function AppSidebar() {
           <div className="w-[240px]">
             <AppList show={selectedItem === "Apps"} />
             <ChatList show={selectedItem === "Chat"} />
+            <SettingsList show={selectedItem === "Settings"} />
           </div>
         </div>
       </SidebarContent>
