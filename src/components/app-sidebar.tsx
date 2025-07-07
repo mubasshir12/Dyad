@@ -83,7 +83,7 @@ export function AppSidebar() {
     routerState.location.pathname === "/" ||
     routerState.location.pathname.startsWith("/app-details");
   const isChatRoute = routerState.location.pathname === "/chat";
-  const isSettingsRoute = routerState.location.pathname === "/settings";
+  const isSettingsRoute = routerState.location.pathname.startsWith("/settings");
 
   let selectedItem: string | null = null;
   if (hoverState === "start-hover:app") {
