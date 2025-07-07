@@ -24,7 +24,7 @@ if (settings.enableAutoUpdate) {
   // but this is more explicit and falls back to stable if there's an unknown
   // release channel.
   const postfix = settings.releaseChannel === "beta" ? "beta" : "stable";
-  const host = `http://api.dyad.sh/v1/update/${postfix}`;
+  const host = `https://api.dyad.sh/v1/update/${postfix}`;
   updateElectronApp({
     logger,
     updateSource: {
