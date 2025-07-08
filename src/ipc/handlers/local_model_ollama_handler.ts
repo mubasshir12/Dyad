@@ -28,7 +28,12 @@ export function parseOllamaHost(host?: string): string {
     return `http://${host}`;
   }
 
-  // If it's just a hostname (including IPv6), add default port
+  // Check if it's a plain IPv6 address (contains :: or multiple colons)
+  if (host.includes("::") || host.split(":").length > 2) {
+    return `http://[${host}]:11434`;
+  }
+
+  // If it's just a hostname, add default port
   return `http://${host}:11434`;
 }
 

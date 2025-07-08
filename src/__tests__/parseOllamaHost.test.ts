@@ -103,7 +103,19 @@ describe("parseOllamaHost", () => {
     it("should handle IPv6 hostname", () => {
       const input = "::1";
       const result = parseOllamaHost(input);
-      expect(result).toBe("http://::1:11434");
+      expect(result).toBe("http://[::1]:11434");
+    });
+
+    it("should handle full IPv6 hostname", () => {
+      const input = "2001:db8:85a3:0:0:8a2e:370:7334";
+      const result = parseOllamaHost(input);
+      expect(result).toBe("http://[2001:db8:85a3:0:0:8a2e:370:7334]:11434");
+    });
+
+    it("should handle compressed IPv6 hostname", () => {
+      const input = "2001:db8::1";
+      const result = parseOllamaHost(input);
+      expect(result).toBe("http://[2001:db8::1]:11434");
     });
   });
 
