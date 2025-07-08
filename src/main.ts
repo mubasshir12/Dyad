@@ -80,10 +80,6 @@ export async function onReady() {
   }
 }
 
-/**
- * Is this the first run of Fiddle? If so, perform
- * tasks that we only want to do in this case.
- */
 export async function onFirstRunMaybe(settings: UserSettings) {
   if (!settings.hasRunBefore) {
     await promptMoveToApplicationsFolder();
