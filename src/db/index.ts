@@ -89,4 +89,6 @@ export const db = new Proxy({} as any, {
     const database = getDb();
     return database[prop as keyof typeof database];
   },
-});
+}) as BetterSQLite3Database<typeof schema> & {
+  $client: Database.Database;
+};
