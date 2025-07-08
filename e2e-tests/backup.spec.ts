@@ -8,6 +8,10 @@ const testWithLastVersion = testWithConfig({
   preLaunchHook: async ({ userDataDir }) => {
     fs.mkdirSync(path.join(userDataDir), { recursive: true });
     fs.writeFileSync(path.join(userDataDir, ".last_version"), "0.1.0");
+    fs.copyFileSync(
+      path.join(__dirname, "fixtures", "backups", "empty-v0.12.0-beta.1.db"),
+      path.join(userDataDir, "sqlite.db"),
+    );
   },
 });
 

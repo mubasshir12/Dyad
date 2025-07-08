@@ -15,7 +15,7 @@ import { handleSupabaseOAuthReturn } from "./supabase_admin/supabase_return_hand
 import { handleDyadProReturn } from "./main/pro";
 import { IS_TEST_BUILD } from "./ipc/utils/test_utils";
 import { BackupManager } from "./backup_manager";
-import { getDatabasePath } from "./db";
+import { getDatabasePath, initializeDatabase } from "./db";
 
 log.errorHandler.startCatching();
 log.eventLogger.startLogging();
@@ -69,7 +69,9 @@ export async function onReady() {
     dbFile: getDatabasePath(),
   });
   await backupManager.initialize();
+  initializeDatabase();
   await onFirstRunMaybe();
+  createWindow();
 }
 
 app.whenReady().then(onReady);
@@ -174,11 +176,6 @@ if (!gotTheLock) {
     }
     // the commandLine is array of strings in which last element is deep link url
     handleDeepLinkReturn(commandLine.pop()!);
-  });
-
-  // Create mainWindow, load the rest of the app, etc...
-  app.whenReady().then(() => {
-    createWindow();
   });
 }
 
