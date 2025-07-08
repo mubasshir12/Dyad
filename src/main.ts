@@ -74,8 +74,6 @@ export async function onReady() {
   createWindow();
 }
 
-app.whenReady().then(onReady);
-
 /**
  * Is this the first run of Fiddle? If so, perform
  * tasks that we only want to do in this case.
@@ -177,6 +175,7 @@ if (!gotTheLock) {
     // the commandLine is array of strings in which last element is deep link url
     handleDeepLinkReturn(commandLine.pop()!);
   });
+  app.whenReady().then(onReady);
 }
 
 // Handle the protocol. In this case, we choose to show an Error Box.
