@@ -6,10 +6,16 @@ import dotenv from "dotenv";
 import started from "electron-squirrel-startup";
 import { updateElectronApp, UpdateSourceType } from "update-electron-app";
 import log from "electron-log";
-import { readSettings, writeSettings } from "./main/settings";
+import {
+  getSettingsFilePath,
+  readSettings,
+  writeSettings,
+} from "./main/settings";
 import { handleSupabaseOAuthReturn } from "./supabase_admin/supabase_return_handler";
 import { handleDyadProReturn } from "./main/pro";
 import { IS_TEST_BUILD } from "./ipc/utils/test_utils";
+import { BackupManager } from "./backup_manager";
+import { getDatabasePath } from "./db";
 
 log.errorHandler.startCatching();
 log.eventLogger.startLogging();
@@ -58,6 +64,11 @@ if (process.defaultApp) {
 }
 
 export async function onReady() {
+  const backupManager = new BackupManager({
+    settingsFile: getSettingsFilePath(),
+    dbFile: getDatabasePath(),
+  });
+  await backupManager.initialize();
   await onFirstRunMaybe();
 }
 
