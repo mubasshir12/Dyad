@@ -7,6 +7,7 @@ import type {
   CreateAppParams,
   RenameBranchParams,
   CopyAppParams,
+  EditAppFileReturnType,
 } from "../ipc_types";
 import fs from "node:fs";
 import path from "node:path";
@@ -608,7 +609,7 @@ export function registerAppHandlers() {
         filePath,
         content,
       }: { appId: number; filePath: string; content: string },
-    ): Promise<void> => {
+    ): Promise<EditAppFileReturnType> => {
       const app = await db.query.apps.findFirst({
         where: eq(apps.id, appId),
       });
@@ -659,11 +660,12 @@ export function registerAppHandlers() {
           });
         } catch (error) {
           logger.error(`Error deploying Supabase function ${filePath}:`, error);
-          throw new Error(
-            `Failed to deploy Supabase function: ${filePath}: ${error}`,
-          );
+          return {
+            warning: `File saved, but failed to deploy Supabase function: ${filePath}: ${error}`,
+          };
         }
       }
+      return {};
     },
   );
 

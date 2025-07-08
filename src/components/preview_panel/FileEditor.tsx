@@ -5,7 +5,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { ChevronRight, Circle, Save } from "lucide-react";
 import "@/components/chat/monaco";
 import { IpcClient } from "@/ipc/ipc_client";
-import { showError, showSuccess } from "@/lib/toast";
+import { showError, showSuccess, showWarning } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -15,8 +15,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useSettings } from "@/hooks/useSettings";
 import { useCheckProblems } from "@/hooks/useCheckProblems";
-import { selectedAppIdAtom } from "@/atoms/appAtoms";
-import { useAtomValue } from "jotai";
 
 interface FileEditorProps {
   appId: number | null;
@@ -99,9 +97,9 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
   const isSavingRef = useRef<boolean>(false);
   const needsSaveRef = useRef<boolean>(false);
   const currentValueRef = useRef<string | undefined>(undefined);
-  const selectedAppId = useAtomValue(selectedAppIdAtom);
+
   const queryClient = useQueryClient();
-  const { checkProblems } = useCheckProblems(selectedAppId);
+  const { checkProblems } = useCheckProblems(appId);
 
   // Update state when content loads
   useEffect(() => {
@@ -165,12 +163,20 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
       setIsSaving(true);
 
       const ipcClient = IpcClient.getInstance();
-      await ipcClient.editAppFile(appId, filePath, currentValueRef.current);
+      const { warning } = await ipcClient.editAppFile(
+        appId,
+        filePath,
+        currentValueRef.current,
+      );
       await queryClient.invalidateQueries({ queryKey: ["versions", appId] });
       if (settings?.enableAutoFixProblems) {
         checkProblems();
       }
-      showSuccess("File saved");
+      if (warning) {
+        showWarning(warning);
+      } else {
+        showSuccess("File saved");
+      }
 
       originalValueRef.current = currentValueRef.current;
       needsSaveRef.current = false;
