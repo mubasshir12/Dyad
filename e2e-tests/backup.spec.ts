@@ -205,6 +205,7 @@ function cleanSettings(settings: string) {
   const parsed = JSON.parse(settings);
   delete parsed.hasRunBefore;
   delete parsed.isTestMode;
+  delete parsed.lastShownReleaseNotesVersion;
   return parsed;
 }
 
