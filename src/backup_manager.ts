@@ -3,6 +3,7 @@ import * as fs from "fs/promises";
 import { app } from "electron";
 import * as crypto from "crypto";
 import log from "electron-log";
+import Database from "better-sqlite3";
 
 const logger = log.scope("backup_manager");
 
@@ -173,77 +174,6 @@ export class BackupManager {
   }
 
   /**
-   * Restore from a specific backup
-   */
-  async restoreBackup(backupName: string): Promise<boolean> {
-    const backupPath = path.join(this.backupBasePath, backupName);
-
-    logger.info(`Starting restore from backup: ${backupName}`);
-
-    try {
-      // Verify backup exists and read metadata
-      const metadataPath = path.join(backupPath, "backup.json");
-      const metadataContent = await fs.readFile(metadataPath, "utf8");
-      const metadata: BackupMetadata = JSON.parse(metadataContent);
-
-      logger.debug(
-        `Backup metadata loaded - version: ${metadata.version}, timestamp: ${metadata.timestamp}`,
-      );
-
-      // Create a safety backup of current state before restoring
-      logger.info("Creating safety backup before restore...");
-      await this.createBackup("pre_restore_safety");
-
-      // Restore settings
-      if (metadata.files.settings) {
-        const settingsBackupPath = path.join(backupPath, this.settingsFilePath);
-        const settingsPath = path.join(
-          this.userDataPath,
-          this.settingsFilePath,
-        );
-
-        // Verify checksum
-        const currentChecksum = await this.getFileChecksum(settingsBackupPath);
-        if (currentChecksum !== metadata.checksums.settings) {
-          throw new Error(
-            "Settings backup checksum mismatch - file may be corrupted",
-          );
-        }
-
-        await fs.copyFile(settingsBackupPath, settingsPath);
-        logger.info("Settings restored successfully");
-      } else {
-        logger.debug("No settings file in backup, skipping settings restore");
-      }
-
-      // Restore database
-      if (metadata.files.database) {
-        const dbBackupPath = path.join(backupPath, this.dbFilePath);
-        const dbPath = path.join(this.userDataPath, this.dbFilePath);
-
-        // Verify checksum
-        const currentChecksum = await this.getFileChecksum(dbBackupPath);
-        if (currentChecksum !== metadata.checksums.database) {
-          throw new Error(
-            "Database backup checksum mismatch - file may be corrupted",
-          );
-        }
-
-        await fs.copyFile(dbBackupPath, dbPath);
-        logger.info("Database restored successfully");
-      } else {
-        logger.debug("No database file in backup, skipping database restore");
-      }
-
-      logger.info(`Restore completed successfully from: ${backupName}`);
-      return true;
-    } catch (error) {
-      logger.error("Restore failed:", error);
-      throw new Error(`Backup restoration failed: ${error}`);
-    }
-  }
-
-  /**
    * List all available backups
    */
   async listBackups(): Promise<BackupInfo[]> {
@@ -360,15 +290,22 @@ export class BackupManager {
     destPath: string,
   ): Promise<void> {
     logger.debug(`Backing up SQLite database: ${sourcePath} → ${destPath}`);
+    const sourceDb = new Database(sourcePath, {
+      readonly: true,
+      timeout: 10000,
+    });
 
-    // For a production app with better-sqlite3:
-    // import Database from 'better-sqlite3';
-    // const sourceDb = new Database(sourcePath, { readonly: true });
-    // await sourceDb.backup(destPath);
-    // sourceDb.close();
-
-    // Simple file copy (ensure your app isn't writing to the DB during this)
-    await fs.copyFile(sourcePath, destPath);
+    try {
+      // This is safe even if other connections are active
+      await sourceDb.backup(destPath);
+      logger.info("Database backup completed successfully");
+    } catch (error) {
+      logger.error("Database backup failed:", error);
+      throw error;
+    } finally {
+      // Always close the temporary connection
+      sourceDb.close();
+    }
   }
 
   /**
