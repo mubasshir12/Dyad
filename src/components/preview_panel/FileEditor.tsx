@@ -63,6 +63,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 onClick={onSave}
                 disabled={!hasUnsavedChanges || isSaving}
                 className="h-6 w-6 p-0"
+                data-testid="save-file-button"
               >
                 <Save size={12} />
               </Button>
