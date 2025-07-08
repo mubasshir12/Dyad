@@ -70,7 +70,6 @@ const RecheckButton = ({
   const handleRecheck = async () => {
     setShowingFeedback(true);
 
-    // Ensure minimum 800ms of visual feedback
     const res = await checkProblems();
 
     setShowingFeedback(false);
