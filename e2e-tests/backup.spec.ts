@@ -18,6 +18,8 @@ const testWithLastVersion = testWithConfig({
 const testWithMultipleBackups = testWithConfig({
   preLaunchHook: async ({ userDataDir }) => {
     fs.mkdirSync(path.join(userDataDir), { recursive: true });
+    // Make sure there's a last version file so the version upgrade is detected.
+    fs.writeFileSync(path.join(userDataDir, ".last_version"), "0.1.0");
 
     // Create backups directory
     const backupsDir = path.join(userDataDir, "backups");
@@ -106,8 +108,7 @@ const ensureAppIsRunning = async (po: PageObject) => {
 test("backup is not created for first run", async ({ po }) => {
   await ensureAppIsRunning(po);
 
-  const backups = fs.readdirSync(path.join(po.userDataDir, "backups"));
-  expect(backups).toHaveLength(0);
+  expect(fs.existsSync(path.join(po.userDataDir, "backups"))).toEqual(false);
 });
 
 testWithLastVersion(
@@ -167,16 +168,22 @@ testWithMultipleBackups(
     // Should have only 3 backups remaining (MAX_BACKUPS = 3)
     expect(backups).toHaveLength(3);
 
-    // The remaining backups should be the 3 newest ones
     const expectedRemainingBackups = [
-      "v1.0.4_2023-01-05T10-00-00-000Z_upgrade_from_1.0.3", // newest
+      "*",
+      // These are the two older backups
+      "v1.0.4_2023-01-05T10-00-00-000Z_upgrade_from_1.0.3",
       "v1.0.3_2023-01-04T10-00-00-000Z_upgrade_from_1.0.2",
-      "v1.0.2_2023-01-03T10-00-00-000Z_upgrade_from_1.0.1", // oldest of remaining
     ];
 
     // Check that the expected backups exist
-    for (const expectedBackup of expectedRemainingBackups) {
-      expect(backups).toContain(expectedBackup);
+    for (let backup of expectedRemainingBackups) {
+      let expectedBackup = backup;
+      if (backup === "*") {
+        expectedBackup = backups[0];
+        expect(expectedBackup.endsWith("_upgrade_from_0.1.0")).toEqual(true);
+      } else {
+        expect(backups).toContain(expectedBackup);
+      }
 
       // Verify the backup directory and metadata still exist
       const backupPath = path.join(backupsDir, expectedBackup);
@@ -185,13 +192,19 @@ testWithMultipleBackups(
       expect(fs.existsSync(path.join(backupPath, "user-settings.json"))).toBe(
         true,
       );
-      expect(fs.existsSync(path.join(backupPath, "sqlite.db"))).toBe(true);
+
+      // The first backup does NOT have a SQLite database because the backup
+      // manager is run before the DB is initialized.
+      expect(fs.existsSync(path.join(backupPath, "sqlite.db"))).toBe(
+        backup !== "*",
+      );
     }
 
     // The 2 oldest backups should have been deleted
     const deletedBackups = [
       "v1.0.0_2023-01-01T10-00-00-000Z_upgrade_from_0.9.0", // oldest
       "v1.0.1_2023-01-02T10-00-00-000Z_upgrade_from_1.0.0", // second oldest
+      "v1.0.2_2023-01-03T10-00-00-000Z_upgrade_from_1.0.1", // third oldest
     ];
 
     for (const deletedBackup of deletedBackups) {

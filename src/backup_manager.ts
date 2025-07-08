@@ -51,45 +51,43 @@ export class BackupManager {
   async initialize(): Promise<void> {
     logger.info("Initializing backup system...");
 
-    try {
-      // Set paths after app is ready
-      this.userDataPath = app.getPath("userData");
-      this.backupBasePath = path.join(this.userDataPath, "backups");
+    // Set paths after app is ready
+    this.userDataPath = app.getPath("userData");
+    this.backupBasePath = path.join(this.userDataPath, "backups");
 
-      logger.info(
-        `Backup system paths - UserData: ${this.userDataPath}, Backups: ${this.backupBasePath}`,
-      );
+    logger.info(
+      `Backup system paths - UserData: ${this.userDataPath}, Backups: ${this.backupBasePath}`,
+    );
 
-      // Ensure backup directory exists
-      await fs.mkdir(this.backupBasePath, { recursive: true });
-      logger.debug("Backup directory created/verified");
+    // Check if this is a version upgrade
+    const currentVersion = app.getVersion();
+    const lastVersion = await this.getLastRunVersion();
 
-      // Check if this is a version upgrade
-      const currentVersion = app.getVersion();
-      const lastVersion = await this.getLastRunVersion();
-
-      if (lastVersion && lastVersion !== currentVersion) {
-        logger.info(
-          `Version upgrade detected: ${lastVersion} → ${currentVersion}`,
-        );
-        await this.createBackup(`upgrade_from_${lastVersion}`);
-      } else {
-        logger.debug(
-          `No version upgrade detected. Current version: ${currentVersion}`,
-        );
-      }
-
-      // Save current version
-      await this.saveCurrentVersion(currentVersion);
-
-      // Clean up old backups
-      await this.cleanupOldBackups();
-
-      logger.info("Backup system initialized successfully");
-    } catch (error) {
-      logger.error("Failed to initialize backup system:", error);
-      throw new Error(`Backup system initialization failed: ${error}`);
+    if (lastVersion === null) {
+      logger.info("No previous version found, skipping backup");
+      return;
     }
+
+    if (lastVersion === currentVersion) {
+      logger.info(
+        `No version upgrade detected. Current version: ${currentVersion}`,
+      );
+      return;
+    }
+
+    // Ensure backup directory exists
+    await fs.mkdir(this.backupBasePath, { recursive: true });
+    logger.debug("Backup directory created/verified");
+
+    logger.info(`Version upgrade detected: ${lastVersion} → ${currentVersion}`);
+    await this.createBackup(`upgrade_from_${lastVersion}`);
+
+    // Save current version
+    await this.saveCurrentVersion(currentVersion);
+
+    // Clean up old backups
+    await this.cleanupOldBackups();
+    logger.info("Backup system initialized successfully");
   }
 
   /**
