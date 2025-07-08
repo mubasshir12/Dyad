@@ -2,11 +2,21 @@ import React, { useState, useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import { useLoadAppFile } from "@/hooks/useLoadAppFile";
 import { useTheme } from "@/contexts/ThemeContext";
-import { ChevronRight, Circle } from "lucide-react";
+import { ChevronRight, Circle, Save } from "lucide-react";
 import "@/components/chat/monaco";
 import { IpcClient } from "@/ipc/ipc_client";
+import { showError, showSuccess } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSettings } from "@/hooks/useSettings";
-import { showError } from "@/lib/toast";
+import { useCheckProblems } from "@/hooks/useCheckProblems";
+import { selectedAppIdAtom } from "@/atoms/appAtoms";
+import { useAtomValue } from "jotai";
 
 interface FileEditorProps {
   appId: number | null;
@@ -16,9 +26,16 @@ interface FileEditorProps {
 interface BreadcrumbProps {
   path: string;
   hasUnsavedChanges: boolean;
+  onSave: () => void;
+  isSaving: boolean;
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ path, hasUnsavedChanges }) => {
+const Breadcrumb: React.FC<BreadcrumbProps> = ({
+  path,
+  hasUnsavedChanges,
+  onSave,
+  isSaving,
+}) => {
   const segments = path.split("/").filter(Boolean);
 
   return (
@@ -39,7 +56,23 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ path, hasUnsavedChanges }) => {
             </React.Fragment>
           ))}
         </div>
-        <div className="flex-shrink-0 ml-2">
+        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onSave}
+                disabled={!hasUnsavedChanges || isSaving}
+                className="h-6 w-6 p-0"
+              >
+                <Save size={12} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {hasUnsavedChanges ? "Save changes" : "No unsaved changes"}
+            </TooltipContent>
+          </Tooltip>
           {hasUnsavedChanges && (
             <Circle
               size={8}
@@ -56,16 +89,19 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ path, hasUnsavedChanges }) => {
 export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
   const { content, loading, error } = useLoadAppFile(appId, filePath);
   const { theme } = useTheme();
-  const { settings } = useSettings();
   const [value, setValue] = useState<string | undefined>(undefined);
   const [displayUnsavedChanges, setDisplayUnsavedChanges] = useState(false);
-
+  const [isSaving, setIsSaving] = useState(false);
+  const { settings } = useSettings();
   // Use refs for values that need to be current in event handlers
   const originalValueRef = useRef<string | undefined>(undefined);
   const editorRef = useRef<any>(null);
   const isSavingRef = useRef<boolean>(false);
   const needsSaveRef = useRef<boolean>(false);
   const currentValueRef = useRef<string | undefined>(undefined);
+  const selectedAppId = useAtomValue(selectedAppIdAtom);
+  const queryClient = useQueryClient();
+  const { checkProblems } = useCheckProblems(selectedAppId);
 
   // Update state when content loads
   useEffect(() => {
@@ -75,6 +111,7 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
       currentValueRef.current = content;
       needsSaveRef.current = false;
       setDisplayUnsavedChanges(false);
+      setIsSaving(false);
     }
   }, [content, filePath]);
 
@@ -125,9 +162,15 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
 
     try {
       isSavingRef.current = true;
+      setIsSaving(true);
 
       const ipcClient = IpcClient.getInstance();
       await ipcClient.editAppFile(appId, filePath, currentValueRef.current);
+      await queryClient.invalidateQueries({ queryKey: ["versions", appId] });
+      if (settings?.enableAutoFixProblems) {
+        checkProblems();
+      }
+      showSuccess("File saved");
 
       originalValueRef.current = currentValueRef.current;
       needsSaveRef.current = false;
@@ -136,6 +179,7 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
       showError(error);
     } finally {
       isSavingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -182,7 +226,12 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
 
   return (
     <div className="h-full flex flex-col">
-      <Breadcrumb path={filePath} hasUnsavedChanges={displayUnsavedChanges} />
+      <Breadcrumb
+        path={filePath}
+        hasUnsavedChanges={displayUnsavedChanges}
+        onSave={saveFile}
+        isSaving={isSaving}
+      />
       <div className="flex-1 overflow-hidden">
         <Editor
           height="100%"
@@ -199,7 +248,6 @@ export const FileEditor = ({ appId, filePath }: FileEditorProps) => {
             fontFamily: "monospace",
             fontSize: 13,
             lineNumbers: "on",
-            readOnly: !settings?.experiments?.enableFileEditing,
           }}
         />
       </div>

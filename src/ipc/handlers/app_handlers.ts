@@ -32,7 +32,10 @@ import fixPath from "fix-path";
 import killPort from "kill-port";
 import util from "util";
 import log from "electron-log";
-import { getSupabaseProjectName } from "../../supabase_admin/supabase_management_client";
+import {
+  deploySupabaseFunctions,
+  getSupabaseProjectName,
+} from "../../supabase_admin/supabase_management_client";
 import { createLoggedHandler } from "./safe_handle";
 import { getLanguageModelProviders } from "../shared/language_model_helpers";
 import { startProxy } from "../utils/start_proxy_server";
@@ -41,6 +44,7 @@ import { createFromTemplate } from "./createFromTemplate";
 import { gitCommit } from "../utils/git_utils";
 import { safeSend } from "../utils/safe_sender";
 import { normalizePath } from "../../../shared/normalizePath";
+import { isServerFunction } from "@/supabase_admin/supabase_utils";
 
 async function copyDir(
   source: string,
@@ -641,11 +645,24 @@ export function registerAppHandlers() {
             message: `Updated ${filePath}`,
           });
         }
-
-        return;
       } catch (error: any) {
         logger.error(`Error writing file ${filePath} for app ${appId}:`, error);
         throw new Error(`Failed to write file: ${error.message}`);
+      }
+
+      if (isServerFunction(filePath) && app.supabaseProjectId) {
+        try {
+          await deploySupabaseFunctions({
+            supabaseProjectId: app.supabaseProjectId,
+            functionName: path.basename(path.dirname(filePath)),
+            content: content,
+          });
+        } catch (error) {
+          logger.error(`Error deploying Supabase function ${filePath}:`, error);
+          throw new Error(
+            `Failed to deploy Supabase function: ${filePath}: ${error}`,
+          );
+        }
       }
     },
   );
