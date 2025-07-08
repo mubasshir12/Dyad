@@ -64,11 +64,15 @@ if (process.defaultApp) {
 }
 
 export async function onReady() {
-  const backupManager = new BackupManager({
-    settingsFile: getSettingsFilePath(),
-    dbFile: getDatabasePath(),
-  });
-  await backupManager.initialize();
+  try {
+    const backupManager = new BackupManager({
+      settingsFile: getSettingsFilePath(),
+      dbFile: getDatabasePath(),
+    });
+    await backupManager.initialize();
+  } catch (e) {
+    logger.error("Error initializing backup manager", e);
+  }
   initializeDatabase();
   await onFirstRunMaybe();
   createWindow();
