@@ -52,17 +52,17 @@ jobs:
           echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
         shell: bash
 
-      - name: Install DigiCert SSM CLI (Windows)
-        if: contains(matrix.os.name, 'windows')
-        run: |
-          choco install digicertone-ssm --yes
-        shell: powershell
+      # REMOVED: - name: Install DigiCert SSM CLI (Windows)
+      # REMOVED:   if: contains(matrix.os.name, 'windows')
+      # REMOVED:   run: |
+      # REMOVED:     choco install digicertone-ssm --yes
+      # REMOVED:   shell: powershell
 
-      - name: Verify SSM Installation (Windows)
-        if: contains(matrix.os.name, 'windows')
-        run: |
-          smctl --version
-        shell: bash
+      # REMOVED: - name: Verify SSM Installation (Windows)
+      # REMOVED:   if: contains(matrix.os.name, 'windows')
+      # REMOVED:   run: |
+      # REMOVED:     smctl --version
+      # REMOVED:   shell: bash
 
       - name: Code signing with Software Trust Manager (Windows)
         if: contains(matrix.os.name, 'windows')
