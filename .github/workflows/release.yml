@@ -2,6 +2,7 @@
 
 permissions:
   contents: write
+  id-token: write # Required for Sigstore to get ephemeral certificates
 
 name: Release app
 on:
@@ -36,49 +37,103 @@ jobs:
         run: |
           npm ci || npm install
 
-      - name: Set up certificate (Windows)
-        if: contains(matrix.os.name, 'windows')
-        run: |
-          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
-        shell: bash
-
-      - name: Set environment variables (Windows)
-        if: contains(matrix.os.name, 'windows')
-        id: variables
-        run: |
-          echo "SM_HOST=${{ secrets.SM_HOST }}" >> "$GITHUB_ENV"
-          echo "SM_API_KEY=${{ secrets.SM_API_KEY }}" >> "$GITHUB_ENV"
-          echo "SM_CLIENT_CERT_FILE=D:\\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
-          echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
-        shell: bash
-
-      # REMOVED: - name: Install DigiCert SSM CLI (Windows)
-      # REMOVED:   if: contains(matrix.os.name, 'windows')
-      # REMOVED:   run: |
-      # REMOVED:     choco install digicertone-ssm --yes
-      # REMOVED:   shell: powershell
-
-      # REMOVED: - name: Verify SSM Installation (Windows)
-      # REMOVED:   if: contains(matrix.os.name, 'windows')
-      # REMOVED:   run: |
-      # REMOVED:     smctl --version
-      # REMOVED:   shell: bash
-
-      - name: Code signing with Software Trust Manager (Windows)
-        if: contains(matrix.os.name, 'windows')
-        uses: digicert/ssm-code-signing@v1.0.0
-
-      - name: Sync certificate (Windows)
-        if: contains(matrix.os.name, 'windows')
-        run: |
-          smctl windows certsync --keypair-alias=${{ secrets.DIGICERT_KEYPAIR_ALIAS }}
-        shell: bash
-
       - name: Publish app
         env:
-          SM_CODE_SIGNING_CERT_SHA1_HASH: ${{ secrets.SM_CODE_SIGNING_CERT_SHA1_HASH }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: npm run publish
+        # IMPORTANT: After this step, you need to know the path to the executable to sign and upload.
+        # For example, if it creates 'dist/my-app.exe' and 'dist/my-app-linux', that's what we'll use.
+
+      # =====================================================================
+      # SIGSTORE (COSIGN) INTEGRATION FOR WINDOWS
+      # =====================================================================
+      - name: Install Cosign (Sigstore client)
+        if: contains(matrix.os.name, 'windows')
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-version: 'v2.2.0'
+
+      - name: Sign Windows Executable with Cosign
+        if: contains(matrix.os.name, 'windows')
+        # YOU MUST REPLACE 'dist/my-app.exe' with the actual path to your executable!
+        # Make sure this matches the file name you want to use for release.
+        run: |
+          $executablePath = "dist/your-app-windows.exe" # <-- **CHANGE THIS PATH**
+          if (-Not (Test-Path $executablePath)) {
+              Write-Error "Executable not found at $executablePath. Please verify the path."
+              exit 1
+          }
+          cosign sign --yes --output-file "${{ github.workspace }}/$(Split-Path -Leaf $executablePath).sig" $executablePath
+          Write-Host "Signed $executablePath successfully. Signature written to ${{ github.workspace }}\$(Split-Path -Leaf $executablePath).sig"
+        shell: powershell
+
+      # =====================================================================
+      # UPLOAD BUILT APPLICATIONS AS JOB ARTIFACTS
+      # This makes them available for download from the workflow run summary.
+      # =====================================================================
+      - name: Upload Windows App Artifact
+        if: contains(matrix.os.name, 'windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-app
+          path: dist/your-app-windows.exe # <-- **CHANGE THIS PATH** to your actual Windows build output
+          retention-days: 7 # How long to keep the artifact (optional)
+
+      - name: Upload Windows Signature Artifact
+        if: contains(matrix.os.name, 'windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-app-signature
+          path: ${{ github.workspace }}/your-app-windows.exe.sig # <-- Uses the name from signing step
+          retention-days: 7
+
+      - name: Upload Linux App Artifact
+        if: contains(matrix.os.name, 'linux')
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-app
+          path: dist/your-app-linux # <-- **CHANGE THIS PATH** to your actual Linux build output
+          retention-days: 7
+
+  # =====================================================================
+  # CREATE GITHUB RELEASE
+  # This job depends on the 'build' job and runs only once.
+  # =====================================================================
+  release:
+    name: Create GitHub Release
+    needs: build # This job will run only after all 'build' jobs are successful
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for creating a release
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts # Downloads all artifacts into this directory
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is automatically provided by GitHub Actions
+        with:
+          tag_name: v1.0.0 # <-- **CHANGE THIS TO A DYNAMIC TAG OR VERSION** (e.g., from package.json or git tag)
+          name: Release v1.0.0 # <-- **CHANGE THIS TO A DYNAMIC NAME**
+          body: |
+            ## Release Notes
+
+            * Initial release of the application.
+            * Signed with Sigstore (Windows).
+
+            ## Downloads
+
+            See attached artifacts.
+          draft: false # Set to true to create a draft release
+          prerelease: false # Set to true for pre-releases
+          files: |
+            artifacts/windows-app/*
+            artifacts/windows-app-signature/*
+            artifacts/linux-app/*
