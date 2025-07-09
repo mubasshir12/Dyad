@@ -1,12 +1,18 @@
 # .github/workflows/release.yml
 
 permissions:
-  contents: write
-  id-token: write # Required for Sigstore to get ephemeral certificates
+  contents: write # Needed for uploading artifacts and creating a release
+  # id-token: write # No longer needed if Sigstore is removed
+  # actions: write # Might be implicitly needed for some actions, but contents:write is primary for release
 
 name: Release app
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Version (e.g., v1.0.0)'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -40,35 +46,14 @@ jobs:
       - name: Publish app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # These Apple secrets are likely for macOS notarization/distribution,
+          # keep them if your 'npm run publish' uses them for Apple builds.
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: npm run publish
-        # IMPORTANT: After this step, you need to know the path to the executable to sign and upload.
-        # For example, if it creates 'dist/my-app.exe' and 'dist/my-app-linux', that's what we'll use.
-
-      # =====================================================================
-      # SIGSTORE (COSIGN) INTEGRATION FOR WINDOWS
-      # =====================================================================
-      - name: Install Cosign (Sigstore client)
-        if: contains(matrix.os.name, 'windows')
-        uses: sigstore/cosign-installer@main
-        with:
-          cosign-version: 'v2.2.0'
-
-      - name: Sign Windows Executable with Cosign
-        if: contains(matrix.os.name, 'windows')
-        # YOU MUST REPLACE 'dist/my-app.exe' with the actual path to your executable!
-        # Make sure this matches the file name you want to use for release.
-        run: |
-          $executablePath = "dist/your-app-windows.exe" # <-- **CHANGE THIS PATH**
-          if (-Not (Test-Path $executablePath)) {
-              Write-Error "Executable not found at $executablePath. Please verify the path."
-              exit 1
-          }
-          cosign sign --yes --output-file "${{ github.workspace }}/$(Split-Path -Leaf $executablePath).sig" $executablePath
-          Write-Host "Signed $executablePath successfully. Signature written to ${{ github.workspace }}\$(Split-Path -Leaf $executablePath).sig"
-        shell: powershell
+        # IMPORTANT: After this step, you need to know the path to your built artifacts.
+        # For example: 'dist/your-app-windows.exe' and 'dist/your-app-linux'.
 
       # =====================================================================
       # UPLOAD BUILT APPLICATIONS AS JOB ARTIFACTS
@@ -80,14 +65,6 @@ jobs:
         with:
           name: windows-app
           path: dist/your-app-windows.exe # <-- **CHANGE THIS PATH** to your actual Windows build output
-          retention-days: 7 # How long to keep the artifact (optional)
-
-      - name: Upload Windows Signature Artifact
-        if: contains(matrix.os.name, 'windows')
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-app-signature
-          path: ${{ github.workspace }}/your-app-windows.exe.sig # <-- Uses the name from signing step
           retention-days: 7
 
       - name: Upload Linux App Artifact
@@ -120,13 +97,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is automatically provided by GitHub Actions
         with:
-          tag_name: v1.0.0 # <-- **CHANGE THIS TO A DYNAMIC TAG OR VERSION** (e.g., from package.json or git tag)
-          name: Release v1.0.0 # <-- **CHANGE THIS TO A DYNAMIC NAME**
+          tag_name: ${{ github.event.inputs.version }} # Uses the version input from workflow_dispatch
+          name: Release ${{ github.event.inputs.version }}
           body: |
             ## Release Notes
 
             * Initial release of the application.
-            * Signed with Sigstore (Windows).
+            * This release is **unsigned**.
 
             ## Downloads
 
@@ -135,5 +112,4 @@ jobs:
           prerelease: false # Set to true for pre-releases
           files: |
             artifacts/windows-app/*
-            artifacts/windows-app-signature/*
             artifacts/linux-app/*
