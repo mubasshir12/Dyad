@@ -60,6 +60,8 @@ const config: ForgeConfig = {
     ],
     icon: "./assets/icon/logo",
 
+    // Keep osxSign and osxNotarize as they are, as they are conditional on isEndToEndTestBuild
+    // and use different environment variables (APPLE_ID, APPLE_PASSWORD, APPLE_TEAM_ID).
     osxSign: isEndToEndTestBuild
       ? undefined
       : {
@@ -82,7 +84,8 @@ const config: ForgeConfig = {
   },
   makers: [
     new MakerSquirrel({
-      signWithParams: `/sha1 ${process.env.SM_CODE_SIGNING_CERT_SHA1_HASH} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256`,
+      // REMOVED OR COMMENTED OUT THIS LINE TO DISABLE WINDOWS SIGNING
+      // signWithParams: `/sha1 ${process.env.SM_CODE_SIGNING_CERT_SHA1_HASH} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256`,
     }),
     new MakerZIP({}, ["darwin"]),
     new MakerRpm({}),
