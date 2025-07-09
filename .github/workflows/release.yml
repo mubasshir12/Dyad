@@ -1,9 +1,9 @@
 # .github/workflows/release.yml
 
+# Need to write to repo contents to upload the app to GitHub Release
+# See: https://www.electronforge.io/config/publishers/github#authentication
 permissions:
-  contents: write # Needed for uploading artifacts and creating a release
-  # id-token: write # No longer needed if Sigstore is removed
-  # actions: write # Might be implicitly needed for some actions, but contents:write is primary for release
+  contents: write
 
 name: Release app
 on:
@@ -18,75 +18,122 @@ jobs:
   build:
     environment: release
     strategy:
+      # Uncomment max-parallel to prevent race condition (where multiple releases are
+      # created concurrently). Typically though, we'll create a release manually ahead of time
+      # which prevents the race.
+      # max-parallel: 1
       matrix:
         os: [
-          { name: "windows", image: "windows-latest" },
-          { name: "linux", image: "ubuntu-22.04" }
-        ]
+            { name: "windows", image: "windows-latest" },
+            { name: "linux", image: "ubuntu-22.04" },
+          ]
     runs-on: ${{ matrix.os.image }}
     steps:
-      - name: GitHub Checkout
-        uses: actions/checkout@v4.1.1
+      - name: Github checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
+      - name: Use Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: 20
 
-      - name: Confirm Node and NPM version
-        run: |
-          node -v
-          npm -v
-
-      - name: Install dependencies
-        run: |
-          npm ci || npm install
+      - run: npm ci
 
       - name: Publish app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # These Apple secrets are likely for macOS notarization/distribution,
-          # keep them if your 'npm run publish' uses them for Apple builds.
+          # Keep Apple secrets if 'npm run publish' uses them for non-signing/notarization purposes
+          # If they are solely for Apple notarization/signing, they can be removed.
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: npm run publish
-        # IMPORTANT: After this step, you need to know the path to your built artifacts.
-        # For example: 'dist/your-app-windows.exe' and 'dist/your-app-linux'.
+        # This step will produce your built artifacts in a specific location.
+
+      # =====================================================================
+      # DYNAMIC ARTIFACT PATH DETECTION
+      # =====================================================================
+      - name: Find Build Output Path (Windows)
+        id: find_windows_output
+        if: contains(matrix.os.name, 'windows')
+        run: |
+          # Based on your Playwright output, the Windows build output is consistently in 'out/dyad-win32-x64'
+          $outputDir = "out/dyad-win32-x64"
+
+          if (-Not (Test-Path $outputDir)) {
+              Write-Error "Expected Windows build output directory '$outputDir' not found."
+              # For debugging, list 'out' directory if 'out/dyad-win32-x64' isn't exact
+              if (Test-Path "out") {
+                  Write-Host "Contents of 'out' directory:"
+                  Get-ChildItem -Path "out" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
+              }
+              exit 1
+          }
+
+          Write-Host "Detected Windows output directory: $outputDir"
+          # List contents of the detected output directory to confirm what will be uploaded
+          Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
+          
+          echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        shell: powershell
+
+      - name: Find Build Output Path (Linux)
+        id: find_linux_output
+        if: contains(matrix.os.name, 'linux')
+        run: |
+          # !! IMPORTANT: You will need to observe the output of your Linux build to set this path accurately.
+          # Common for Electron are 'out/dyad-linux-x64', 'dist/dyad-linux-x64', or 'release/dyad-linux-x64'.
+          # Using a common placeholder based on the Windows pattern for now.
+          output_dir="out/dyad-linux-x64" # <-- **ADJUST THIS BASED ON YOUR LINUX BUILD OUTPUT!**
+
+          if [ ! -d "$output_dir" ]; then
+              echo "Expected Linux build output directory '$output_dir' not found."
+              # For debugging, list 'out' directory if '$output_dir' isn't exact
+              if [ -d "out" ]; then
+                  echo "Contents of 'out' directory:"
+                  ls -R "out"
+              fi
+              exit 1
+          fi
+
+          echo "Detected Linux output directory: $output_dir"
+          ls -R "$output_dir"
+
+          echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
+        shell: bash
 
       # =====================================================================
       # UPLOAD BUILT APPLICATIONS AS JOB ARTIFACTS
-      # This makes them available for download from the workflow run summary.
+      # Now using the dynamically detected path
       # =====================================================================
       - name: Upload Windows App Artifact
         if: contains(matrix.os.name, 'windows')
         uses: actions/upload-artifact@v4
         with:
           name: windows-app
-          path: dist/your-app-windows.exe # <-- **CHANGE THIS PATH** to your actual Windows build output
-          retention-days: 7
+          # Uploads all contents of the detected directory
+          path: ${{ steps.find_windows_output.outputs.artifact_path }}/* retention-days: 7
 
       - name: Upload Linux App Artifact
         if: contains(matrix.os.name, 'linux')
         uses: actions/upload-artifact@v4
         with:
           name: linux-app
-          path: dist/your-app-linux # <-- **CHANGE THIS PATH** to your actual Linux build output
-          retention-days: 7
+          # Uploads all contents of the detected directory
+          path: ${{ steps.find_linux_output.outputs.artifact_path }}/* retention-days: 7
 
   # =====================================================================
   # CREATE GITHUB RELEASE
-  # This job depends on the 'build' job and runs only once.
+  # This job depends on the 'build' job and runs only once after all builds.
   # =====================================================================
   release:
     name: Create GitHub Release
-    needs: build # This job will run only after all 'build' jobs are successful
+    needs: build # This job will run only after all 'build' matrix jobs are successful
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed for creating a release
+      contents: write # Needed for creating a release and uploading assets
     steps:
-      - name: Download all build artifacts
+      - name: Download all built artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts # Downloads all artifacts into this directory
@@ -101,7 +148,6 @@ jobs:
           name: Release ${{ github.event.inputs.version }}
           body: |
             ## Release Notes
-
             * Initial release of the application.
             * This release is **unsigned**.
 
@@ -111,5 +157,5 @@ jobs:
           draft: false # Set to true to create a draft release
           prerelease: false # Set to true for pre-releases
           files: |
-            artifacts/windows-app/*
-            artifacts/linux-app/*
+            artifacts/windows-app/**/* # Adjust to include all contents, including subdirectories
+            artifacts/linux-app/**/* # Adjust to include all contents, including subdirectories
