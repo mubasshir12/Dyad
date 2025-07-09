@@ -1,11 +1,11 @@
 # .github/workflows/release.yml
-
 # Need to write to repo contents to upload the app to GitHub Release
 # See: https://www.electronforge.io/config/publishers/github#authentication
 permissions:
   contents: write
 
 name: Release app
+
 on:
   workflow_dispatch:
     inputs:
@@ -17,31 +17,30 @@ on:
 jobs:
   build:
     environment: release
+    # Grant write access to repository contents for this specific job's GITHUB_TOKEN
+    permissions:
+      contents: write
     strategy:
       # Uncomment max-parallel to prevent race condition (where multiple releases are
       # created concurrently). Typically though, we'll create a release manually ahead of time
       # which prevents the race.
       # max-parallel: 1
       matrix:
-        os: [
-            { name: "windows", image: "windows-latest" },
-            { name: "linux", image: "ubuntu-22.04" },
-          ]
+        os:
+          - { name: "windows", image: "windows-latest" }
+          - { name: "linux", image: "ubuntu-22.04" }
     runs-on: ${{ matrix.os.image }}
     steps:
       - name: Github checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
       - name: Use Node.js
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
           node-version: 20
-
       - run: npm ci
-
       - name: Publish app
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token will now have 'contents: write' scope
           # Keep Apple secrets if 'npm run publish' uses them for non-signing/notarization purposes
           # If they are solely for Apple notarization/signing, they can be removed.
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -49,7 +48,6 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: npm run publish
         # This step will produce your built artifacts in a specific location.
-
       # =====================================================================
       # DYNAMIC ARTIFACT PATH DETECTION
       # =====================================================================
@@ -59,7 +57,6 @@ jobs:
         run: |
           # Based on your Playwright output, the Windows build output is consistently in 'out/dyad-win32-x64'
           $outputDir = "out/dyad-win32-x64"
-
           if (-Not (Test-Path $outputDir)) {
               Write-Error "Expected Windows build output directory '$outputDir' not found."
               # For debugging, list 'out' directory if 'out/dyad-win32-x64' isn't exact
@@ -69,14 +66,12 @@ jobs:
               }
               exit 1
           }
-
           Write-Host "Detected Windows output directory: $outputDir"
           # List contents of the detected output directory to confirm what will be uploaded
           Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-          
+
           echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         shell: powershell
-
       - name: Find Build Output Path (Linux)
         id: find_linux_output
         if: contains(matrix.os.name, 'linux')
@@ -85,7 +80,6 @@ jobs:
           # Common for Electron are 'out/dyad-linux-x64', 'dist/dyad-linux-x64', or 'release/dyad-linux-x64'.
           # Using a common placeholder based on the Windows pattern for now.
           output_dir="out/dyad-linux-x64" # <-- **ADJUST THIS BASED ON YOUR LINUX BUILD OUTPUT!**
-
           if [ ! -d "$output_dir" ]; then
               echo "Expected Linux build output directory '$output_dir' not found."
               # For debugging, list 'out' directory if '$output_dir' isn't exact
@@ -95,13 +89,10 @@ jobs:
               fi
               exit 1
           fi
-
           echo "Detected Linux output directory: $output_dir"
           ls -R "$output_dir"
-
           echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
         shell: bash
-
       # =====================================================================
       # UPLOAD BUILT APPLICATIONS AS JOB ARTIFACTS
       # Now using the dynamically detected path
@@ -113,8 +104,7 @@ jobs:
           name: windows-app
           # Uploads all contents of the detected directory
           path: ${{ steps.find_windows_output.outputs.artifact_path }}/*
-          retention-days: 7 # <-- This was on the same line as path, causing the error
-
+          retention-days: 7
       - name: Upload Linux App Artifact
         if: contains(matrix.os.name, 'linux')
         uses: actions/upload-artifact@v4
@@ -122,7 +112,7 @@ jobs:
           name: linux-app
           # Uploads all contents of the detected directory
           path: ${{ steps.find_linux_output.outputs.artifact_path }}/*
-          retention-days: 7 # <-- This was on the same line as path, causing the error
+          retention-days: 7
 
   # =====================================================================
   # CREATE GITHUB RELEASE
@@ -139,7 +129,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts # Downloads all artifacts into this directory
-
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -152,9 +141,7 @@ jobs:
             ## Release Notes
             * Initial release of the application.
             * This release is **unsigned**.
-
             ## Downloads
-
             See attached artifacts.
           draft: false # Set to true to create a draft release
           prerelease: false # Set to true for pre-releases
