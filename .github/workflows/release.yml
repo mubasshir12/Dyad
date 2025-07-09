@@ -52,6 +52,18 @@ jobs:
           echo "SM_CLIENT_CERT_PASSWORD=${{ secrets.SM_CLIENT_CERT_PASSWORD }}" >> "$GITHUB_ENV"
         shell: bash
 
+      - name: Install DigiCert SSM CLI (Windows)
+        if: contains(matrix.os.name, 'windows')
+        run: |
+          choco install digicertone-ssm --yes
+        shell: powershell
+
+      - name: Verify SSM Installation (Windows)
+        if: contains(matrix.os.name, 'windows')
+        run: |
+          smctl --version
+        shell: bash
+
       - name: Code signing with Software Trust Manager (Windows)
         if: contains(matrix.os.name, 'windows')
         uses: digicert/ssm-code-signing@v1.0.0
