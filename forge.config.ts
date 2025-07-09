@@ -49,13 +49,15 @@ const ignore = (file: string) => {
 };
 
 const isEndToEndTestBuild = process.env.E2E_TEST_BUILD === "true";
+// Detect if running in a CI environment (GitHub Actions sets CI to 'true')
+const isCiBuild = process.env.CI === "true";
 
 const config: ForgeConfig = {
   packagerConfig: {
     protocols: [
       {
-        name: "Dyad",
-        schemes: ["dyad"],
+        name: "Trio", // Changed from "Dyad" to "Trio"
+        schemes: ["trio"], // Changed from "dyad" to "trio"
       },
     ],
     icon: "./assets/icon/logo",
@@ -87,27 +89,32 @@ const config: ForgeConfig = {
       // REMOVED OR COMMENTED OUT THIS LINE TO DISABLE WINDOWS SIGNING
       // signWithParams: `/sha1 ${process.env.SM_CODE_SIGNING_CERT_SHA1_HASH} /tr http://timestamp.digicert.com /td SHA256 /fd SHA256`,
     }),
-    new MakerZIP({}, ["darwin"]),
+    new MakerZIP({}, ["darwin"]), // This will only run for macOS builds
     new MakerRpm({}),
     new MakerDeb({
       options: {
-        mimeType: ["x-scheme-handler/dyad"],
+        mimeType: ["x-scheme-handler/trio"], // Changed from "dyad" to "trio"
       },
     }),
   ],
-  publishers: [
-    {
-      name: "@electron-forge/publisher-github",
-      config: {
-        repository: {
-          owner: "dyad-sh",
-          name: "dyad",
+  // Conditionally include publishers based on whether it's a CI build
+  // If it's a CI build, we disable the publisher and let GitHub Actions handle the release.
+  // Otherwise (e.g., local publish), use the GitHub publisher.
+  publishers: isCiBuild
+    ? [] // No publishers if it's a CI build
+    : [
+        {
+          name: "@electron-forge/publisher-github",
+          config: {
+            repository: {
+              owner: "Hansade2005", // <--- CORRECTED OWNER HERE
+              name: "dyad",
+            },
+            draft: true,
+            force: true,
+          },
         },
-        draft: true,
-        force: true,
-      },
-    },
-  ],
+      ],
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new VitePlugin({
