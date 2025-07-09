@@ -112,7 +112,8 @@ jobs:
         with:
           name: windows-app
           # Uploads all contents of the detected directory
-          path: ${{ steps.find_windows_output.outputs.artifact_path }}/* retention-days: 7
+          path: ${{ steps.find_windows_output.outputs.artifact_path }}/*
+          retention-days: 7 # <-- This was on the same line as path, causing the error
 
       - name: Upload Linux App Artifact
         if: contains(matrix.os.name, 'linux')
@@ -120,7 +121,8 @@ jobs:
         with:
           name: linux-app
           # Uploads all contents of the detected directory
-          path: ${{ steps.find_linux_output.outputs.artifact_path }}/* retention-days: 7
+          path: ${{ steps.find_linux_output.outputs.artifact_path }}/*
+          retention-days: 7 # <-- This was on the same line as path, causing the error
 
   # =====================================================================
   # CREATE GITHUB RELEASE
