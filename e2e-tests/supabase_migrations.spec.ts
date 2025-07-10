@@ -46,7 +46,6 @@ test("supabase migrations", async ({ po }) => {
   expect(await fs.readFile(path.join(migrationsDir, files[0]), "utf8")).toEqual(
     "CREATE TABLE users (id serial primary key);",
   );
-  console.log("APPPAPTH", appPath);
   // Make sure git is clean.
   const gitStatus = execSync("git status --porcelain", {
     cwd: appPath,
