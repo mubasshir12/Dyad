@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState, useCallback } from "react";
-import {} from "react-resizable-panels";
 
 import { useRunApp } from "@/hooks/useRunApp";
 import {
