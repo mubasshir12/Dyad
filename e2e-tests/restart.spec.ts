@@ -6,8 +6,8 @@ testSkipIfWindows("restart app", async ({ po }) => {
   await po.sendPrompt("hi");
 
   await po.clickRestart();
-  await expect(po.locateStartingAppPreview()).toBeVisible();
-  await expect(po.locateStartingAppPreview()).not.toBeVisible({
+  await expect(po.locateLoadingAppPreview()).toBeVisible();
+  await expect(po.locateLoadingAppPreview()).not.toBeVisible({
     timeout: Timeout.LONG,
   });
 
