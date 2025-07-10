@@ -191,9 +191,7 @@ export class IpcClient {
     return this.ipcRenderer.invoke("get-app-env-vars", params);
   }
 
-  public async setAppEnvVars(
-    params: SetAppEnvVarsParams,
-  ): Promise<{ success: boolean }> {
+  public async setAppEnvVars(params: SetAppEnvVarsParams): Promise<void> {
     return this.ipcRenderer.invoke("set-app-env-vars", params);
   }
 

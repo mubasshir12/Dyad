@@ -5,10 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Edit2, Plus, Save, X } from "lucide-react";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import { Trash2, Edit2, Plus, Save, X, HelpCircle } from "lucide-react";
 import { showError, showSuccess } from "@/lib/toast";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
+
+const EnvironmentVariablesTitle = () => (
+  <div className="flex items-center gap-2">
+    <span className="text-lg font-semibold">Environment Variables</span>
+    <span className="text-sm text-muted-foreground font-normal">Local</span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <HelpCircle size={16} className="text-muted-foreground cursor-help" />
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>
+          To modify environment variables for Supabase or production,
+          <br />
+          access your hosting provider's console and update them there.
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  </div>
+);
 
 export const ConfigurePanel = () => {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
@@ -139,8 +163,8 @@ export const ConfigurePanel = () => {
       <div className="p-4 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Environment Variables
+            <CardTitle>
+              <EnvironmentVariablesTitle />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -161,8 +185,8 @@ export const ConfigurePanel = () => {
       <div className="p-4 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Environment Variables
+            <CardTitle>
+              <EnvironmentVariablesTitle />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -183,8 +207,8 @@ export const ConfigurePanel = () => {
       <div className="p-4 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              Environment Variables
+            <CardTitle>
+              <EnvironmentVariablesTitle />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -203,8 +227,8 @@ export const ConfigurePanel = () => {
     <div className="p-4 space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">
-            Environment Variables
+          <CardTitle>
+            <EnvironmentVariablesTitle />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
