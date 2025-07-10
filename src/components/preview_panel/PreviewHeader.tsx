@@ -40,10 +40,10 @@ export const PreviewHeader = () => {
   const { restartApp, refreshAppIframe } = useRunApp();
 
   const selectPanel = (panel: PreviewMode) => {
-    setPreviewMode(panel);
     if (previewMode === panel) {
-      setIsPreviewOpen(false);
+      setIsPreviewOpen(!isPreviewOpen);
     } else {
+      setPreviewMode(panel);
       setIsPreviewOpen(true);
     }
   };
