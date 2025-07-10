@@ -52,7 +52,7 @@ export function useSettings() {
     } finally {
       setLoading(false);
     }
-  }, [setSettingsAtom, setEnvVarsAtom]);
+  }, [setSettingsAtom, setEnvVarsAtom, appVersion]);
 
   useEffect(() => {
     // Only run once on mount, dependencies are stable getters/setters
