@@ -54,6 +54,7 @@ const isCiBuild = process.env.CI === "true";
 
 const config: ForgeConfig = {
   packagerConfig: {
+    executableName: "Trio", // Ensures the app binary is named 'Trio' for all platforms
     protocols: [
       {
         name: "Trio", // Changed from "Dyad" to "Trio"
