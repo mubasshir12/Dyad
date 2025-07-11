@@ -55,7 +55,7 @@ jobs:
         id: find_windows_output
         if: contains(matrix.os.name, 'windows')
         run: |
-          # Based on your Playwright output, the Windows build output is consistently in 'out/trio-win32-x64'
+          # Updated: Based on your build output, the Windows build output is in 'out/trio-win32-x64'
           $outputDir = "out/trio-win32-x64"
           if (-Not (Test-Path $outputDir)) {
               Write-Error "Expected Windows build output directory '$outputDir' not found."
@@ -69,17 +69,14 @@ jobs:
           Write-Host "Detected Windows output directory: $outputDir"
           # List contents of the detected output directory to confirm what will be uploaded
           Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-
           echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
         shell: powershell
       - name: Find Build Output Path (Linux)
         id: find_linux_output
         if: contains(matrix.os.name, 'linux')
         run: |
-          # !! IMPORTANT: You will need to observe the output of your Linux build to set this path accurately.
-          # Common for Electron are 'out/dyad-linux-x64', 'dist/dyad-linux-x64', or 'release/dyad-linux-x64'.
-          # Using a common placeholder based on the Windows pattern for now.
-          output_dir="out/dyad-linux-x64" # <-- **ADJUST THIS BASED ON YOUR LINUX BUILD OUTPUT!**
+          # Updated: Based on your build output, the Linux build output is in 'out/trio-linux-x64'
+          output_dir="out/trio-linux-x64"
           if [ ! -d "$output_dir" ]; then
               echo "Expected Linux build output directory '$output_dir' not found."
               # For debugging, list 'out' directory if '$output_dir' isn't exact
@@ -112,6 +109,13 @@ jobs:
           name: linux-app
           # Uploads all contents of the detected directory
           path: ${{ steps.find_linux_output.outputs.artifact_path }}/*
+          retention-days: 7
+      - name: Upload Windows Installer Artifact
+        if: contains(matrix.os.name, 'windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: out/make/squirrel.windows/x64/*.exe
           retention-days: 7
 
   # =====================================================================
@@ -147,4 +151,5 @@ jobs:
           prerelease: false # Set to true for pre-releases
           files: |
             artifacts/windows-app/**/* # Adjust to include all contents, including subdirectories
+            artifacts/windows-installer/*.exe # Include the Windows installer
             artifacts/linux-app/**/* # Adjust to include all contents, including subdirectories
