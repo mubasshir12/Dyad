@@ -1,11 +1,7 @@
-# .github/workflows/release.yml
-# Need to write to repo contents to upload the app to GitHub Release
-# See: https://www.electronforge.io/config/publishers/github#authentication
+name: Release app
 
 permissions:
   contents: write
-
-name: Release app
 
 on:
   workflow_dispatch:
@@ -26,7 +22,6 @@ jobs:
           - { name: "windows", image: "windows-latest" }
           - { name: "linux", image: "ubuntu-22.04" }
     runs-on: ${{ matrix.os.image }}
-
     steps:
       - name: GitHub Checkout
         uses: actions/checkout@v4.1.1
@@ -36,54 +31,41 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm ci
+      - name: Install Dependencies
+        run: npm ci
 
-      - name: Publish app
+      - name: Publish App
+        run: npm run publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-        run: npm run publish
 
-      # Detect build output paths
       - name: Find Build Output Path (Windows)
-        id: find_windows_output
         if: contains(matrix.os.name, 'windows')
+        id: find_windows_output
         shell: powershell
         run: |
           $outputDir = "out/dyad-win32-x64"
           if (-Not (Test-Path $outputDir)) {
-              Write-Error "Expected Windows build output directory '$outputDir' not found."
-              if (Test-Path "out") {
-                  Write-Host "Contents of 'out' directory:"
-                  Get-ChildItem -Path "out" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-              }
+              Write-Error "Expected directory '$outputDir' not found."
               exit 1
           }
-          Write-Host "Detected Windows output directory: $outputDir"
-          Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
           echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: Find Build Output Path (Linux)
-        id: find_linux_output
         if: contains(matrix.os.name, 'linux')
+        id: find_linux_output
         shell: bash
         run: |
           output_dir="out/dyad-linux-x64"
           if [ ! -d "$output_dir" ]; then
-              echo "Expected Linux build output directory '$output_dir' not found."
-              if [ -d "out" ]; then
-                  echo "Contents of 'out' directory:"
-                  ls -R "out"
-              fi
+              echo "Expected directory '$output_dir' not found."
               exit 1
           fi
-          echo "Detected Linux output directory: $output_dir"
-          ls -R "$output_dir"
           echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
 
-      # Upload artifacts
       - name: Upload Windows App Artifact
         if: contains(matrix.os.name, 'windows')
         uses: actions/upload-artifact@v4
@@ -114,15 +96,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
-      - name: Download all built artifacts
+      - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
       - name: Create Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -131,10 +111,8 @@ jobs:
           name: Release ${{ github.event.inputs.version }}
           body: |
             ## Release Notes
-            * Initial release of the application.
-            * This release is **unsigned**.
-            ## Downloads
-            See attached artifacts.
+            - Initial release of the application.
+            - This release is **unsigned**.
           draft: false
           prerelease: false
           files: |
