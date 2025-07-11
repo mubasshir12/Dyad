@@ -68,12 +68,18 @@ export default function SettingsPage() {
           <WorkflowSettings />
           <AISettings />
 
-          <div id="provider-settings" className="glass-panel">
+          <div
+            id="provider-settings"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm"
+          >
             <ProviderSettingsGrid />
           </div>
 
           <div className="space-y-6">
-            <div id="telemetry" className="glass-panel p-6">
+            <div
+              id="telemetry"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6"
+            >
               <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
                 Telemetry
               </h2>
@@ -94,7 +100,10 @@ export default function SettingsPage() {
           </div>
 
           {/* Integrations Section */}
-          <div id="integrations" className="glass-panel p-6">
+          <div
+            id="integrations"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6"
+          >
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Integrations
             </h2>
@@ -105,7 +114,10 @@ export default function SettingsPage() {
           </div>
 
           {/* Experiments Section */}
-          <div id="experiments" className="glass-panel p-6">
+          <div
+            id="experiments"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6"
+          >
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
               Experiments
             </h2>
@@ -144,7 +156,7 @@ export default function SettingsPage() {
           {/* Danger Zone */}
           <div
             id="danger-zone"
-            className="glass-panel p-6 border border-red-200 dark:border-red-800"
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-red-200 dark:border-red-800"
           >
             <h2 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">
               Danger Zone
@@ -164,7 +176,7 @@ export default function SettingsPage() {
                 <button
                   onClick={() => setIsResetDialogOpen(true)}
                   disabled={isResetting}
-                  className="btn-soft bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isResetting ? "Resetting..." : "Reset Everything"}
                 </button>

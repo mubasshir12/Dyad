@@ -1,6 +1,6 @@
 {
-  "name": "Trio",
-  "productName": "trio",
+  "name": "dyad",
+  "productName": "dyad",
   "version": "0.12.0-beta.2",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
