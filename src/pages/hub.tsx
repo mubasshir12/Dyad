@@ -5,7 +5,6 @@ import { useRouter } from "@tanstack/react-router";
 import { useSettings } from "@/hooks/useSettings";
 import { IpcClient } from "@/ipc/ipc_client";
 import { DEFAULT_TEMPLATE_ID, templatesData } from "@/shared/templates";
-
 const HubPage: React.FC = () => {
   const { settings, updateSettings } = useSettings();
   const router = useRouter();
