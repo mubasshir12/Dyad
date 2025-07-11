@@ -1,10 +1,8 @@
 # .github/workflows/release.yml
-# Need to write to repo contents to upload the app to GitHub Release
-# See: https://www.electronforge.io/config/publishers/github#authentication
+name: Release app
+
 permissions:
   contents: write
-
-name: Release app
 
 on:
   workflow_dispatch:
@@ -17,182 +15,61 @@ on:
 jobs:
   build:
     environment: release
-    # Grant write access to repository contents for this specific job's GITHUB_TOKEN
     permissions:
       contents: write
     strategy:
-      # Uncomment max-parallel to prevent race condition (where multiple releases are
-      # created concurrently). Typically though, we'll create a release manually ahead of time
-      # which prevents the race.
-      # max-parallel: 1
       matrix:
         os:
           - { name: "windows", image: "windows-latest" }
           - { name: "linux", image: "ubuntu-22.04" }
     runs-on: ${{ matrix.os.image }}
+
     steps:
-      - name: Github checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-      - name: Use Node.js
-        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - run: npm ci
-      - name: Publish app
+
+      - name: Publish App
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token will now have 'contents: write' scope
-          # Keep Apple secrets if 'npm run publish' uses them for non-signing/notarization purposes
-          # If they are solely for Apple notarization/signing, they can be removed.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: npm run publish
-        # This step will produce your built artifacts in a specific location.
-      # =====================================================================
-      # DYNAMIC ARTIFACT PATH DETECTION
-      # =====================================================================
-        # DYNAMIC ARTIFACT PATH DETECTION (Dyad)
-        # Detect and use the correct build output directories for Dyad
-        - name: Find Build Output Path (Windows)
-          id: find_windows_output
-          if: contains(matrix.os.name, 'windows')
-          shell: powershell
-          run: |
-            # Dyad: Windows build output is in 'out/dyad-win32-x64'
-            $outputDir = "out/dyad-win32-x64"
-            if (-Not (Test-Path $outputDir)) {
-            Write-Error "Expected Windows build output directory '$outputDir' not found."
-            # For debugging, list 'out' directory if 'out/dyad-win32-x64' isn't exact
-            if (Test-Path "out") {
-            Write-Host "Contents of 'out' directory:"
-            Get-ChildItem -Path "out" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-            }
-            exit 1
-            }
-            Write-Host "Detected Windows output directory: $outputDir"
-            # List contents of the detected output directory to confirm what will be uploaded
-            Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-            echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
-        - name: Find Build Output Path (Linux)
-          id: find_linux_output
-          if: contains(matrix.os.name, 'linux')
-          shell: bash
-          run: |
-            # Dyad: Linux build output is in 'out/dyad-linux-x64'
-            output_dir="out/dyad-linux-x64"
-            if [ ! -d "$output_dir" ]; then
-            echo "Expected Linux build output directory '$output_dir' not found."
-            # For debugging, list 'out' directory if '$output_dir' isn't exact
-            if [ -d "out" ]; then
-            echo "Contents of 'out' directory:"
-            ls -R "out"
-            fi
-            exit 1
-            fi
-            echo "Detected Linux output directory: $output_dir"
-            ls -R "$output_dir"
-            echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
-      # =====================================================================
-      - name: Find Build Output Path (Windows)
-        id: find_windows_output
-        if: contains(matrix.os.name, 'windows')
-        run: |
-          # Updated: Based on your build output, the Windows build output is in 'out/trio-win32-x64'
-          $outputDir = "out/trio-win32-x64"
-          if (-Not (Test-Path $outputDir)) {
-              Write-Error "Expected Windows build output directory '$outputDir' not found."
-              # For debugging, list 'out' directory if 'out/trio-win32-x64' isn't exact
-              if (Test-Path "out") {
-                  Write-Host "Contents of 'out' directory:"
-                  Get-ChildItem -Path "out" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-              }
-              exit 1
-          }
-          Write-Host "Detected Windows output directory: $outputDir"
-          # List contents of the detected output directory to confirm what will be uploaded
-          Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-          echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-         shell: powershell
-          - name: Find Build Output Path (Windows)
-            id: find_windows_output
-            if: contains(matrix.os.name, 'windows')
-            run: |
-              # Updated: Based on your build output, the Windows build output is in 'out/dyad-win32-x64'
-              $outputDir = "out/dyad-win32-x64"
-              if (-Not (Test-Path $outputDir)) {
-              Write-Error "Expected Windows build output directory '$outputDir' not found."
-              # For debugging, list 'out' directory if 'out/dyad-win32-x64' isn't exact
-              if (Test-Path "out") {
-              Write-Host "Contents of 'out' directory:"
-              Get-ChildItem -Path "out" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-              }
-              exit 1
-              }
-              Write-Host "Detected Windows output directory: $outputDir"
-              # List contents of the detected output directory to confirm what will be uploaded
-              Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
-              echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-            shell: powershell
-          - name: Find Build Output Path (Linux)
-            id: find_linux_output
-            if: contains(matrix.os.name, 'linux')
-            run: |
-              # Updated: Based on your build output, the Linux build output is in 'out/dyad-linux-x64'
-              output_dir="out/dyad-linux-x64"
-              if [ ! -d "$output_dir" ]; then
-              echo "Expected Linux build output directory '$output_dir' not found."
-              # For debugging, list 'out' directory if '$output_dir' isn't exact
-              if [ -d "out" ]; then
-              echo "Contents of 'out' directory:"
-              ls -R "out"
-              fi
-              exit 1
-              fi
-              echo "Detected Linux output directory: $output_dir"
-              ls -R "$output_dir"
-              echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
-            shell: bash
-      - name: Find Build Output Path (Linux)
-        id: find_linux_output
-        if: contains(matrix.os.name, 'linux')
-        run: |
-          # Updated: Based on your build output, the Linux build output is in 'out/trio-linux-x64'
-          output_dir="out/trio-linux-x64"
-          if [ ! -d "$output_dir" ]; then
-              echo "Expected Linux build output directory '$output_dir' not found."
-              # For debugging, list 'out' directory if '$output_dir' isn't exact
-              if [ -d "out" ]; then
-                  echo "Contents of 'out' directory:"
-                  ls -R "out"
-              fi
-              exit 1
-          fi
-          echo "Detected Linux output directory: $output_dir"
-          ls -R "$output_dir"
-          echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
+      - name: Find Build Output Path
+        id: find_output
         shell: bash
-      # =====================================================================
-      # UPLOAD BUILT APPLICATIONS AS JOB ARTIFACTS
-      # Now using the dynamically detected path
-      # =====================================================================
-      - name: Upload Windows App Artifact
-        if: contains(matrix.os.name, 'windows')
+        run: |
+          if [[ "${{ matrix.os.name }}" == "windows" ]]; then
+            OUTPUT_DIR="out/trio-win32-x64"
+          else
+            OUTPUT_DIR="out/trio-linux-x64"
+          fi
+
+          if [ ! -d "$OUTPUT_DIR" ]; then
+            echo "Expected output directory '$OUTPUT_DIR' not found."
+            ls -R out || true
+            exit 1
+          fi
+
+          echo "Detected output directory: $OUTPUT_DIR"
+          echo "artifact_path=$OUTPUT_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Upload App Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-app
-          # Uploads all contents of the detected directory
-          path: ${{ steps.find_windows_output.outputs.artifact_path }}/*
+          name: ${{ matrix.os.name }}-app
+          path: ${{ steps.find_output.outputs.artifact_path }}/*
           retention-days: 7
-      - name: Upload Linux App Artifact
-        if: contains(matrix.os.name, 'linux')
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-app
-          # Uploads all contents of the detected directory
-          path: ${{ steps.find_linux_output.outputs.artifact_path }}/*
-          retention-days: 7
-      - name: Upload Windows Installer Artifact
+
+      - name: Upload Windows Installer
         if: contains(matrix.os.name, 'windows')
         uses: actions/upload-artifact@v4
         with:
@@ -200,28 +77,25 @@ jobs:
           path: out/make/squirrel.windows/x64/*.exe
           retention-days: 7
 
-  # =====================================================================
-  # CREATE GITHUB RELEASE
-  # This job depends on the 'build' job and runs only once after all builds.
-  # =====================================================================
   release:
     name: Create GitHub Release
-    needs: build # This job will run only after all 'build' matrix jobs are successful
+    needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Needed for creating a release and uploading assets
+      contents: write
+
     steps:
       - name: Download all built artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts # Downloads all artifacts into this directory
+          path: artifacts
+
       - name: Create Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is automatically provided by GitHub Actions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.inputs.version }} # Uses the version input from workflow_dispatch
+          tag_name: ${{ github.event.inputs.version }}
           name: Release ${{ github.event.inputs.version }}
           body: |
             ## Release Notes
@@ -229,9 +103,9 @@ jobs:
             * This release is **unsigned**.
             ## Downloads
             See attached artifacts.
-          draft: false # Set to true to create a draft release
-          prerelease: false # Set to true for pre-releases
+          draft: false
+          prerelease: false
           files: |
-            artifacts/windows-app/**/* # Adjust to include all contents, including subdirectories
-            artifacts/windows-installer/*.exe # Include the Windows installer
-            artifacts/linux-app/**/* # Adjust to include all contents, including subdirectories
+            artifacts/windows-app/**/*
+            artifacts/windows-installer/*.exe
+            artifacts/linux-app/**/*
