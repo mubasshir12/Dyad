@@ -1,7 +1,8 @@
-name: Release app
-
+# .github/workflows/release.yml
 permissions:
   contents: write
+
+name: Release app
 
 on:
   workflow_dispatch:
@@ -34,14 +35,17 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Publish App
-        run: npm run publish
+      - name: Publish App (Create Build and Installer)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: npm run publish
 
+      # =========================
+      # Detect Dyad Output Paths
+      # =========================
       - name: Find Build Output Path (Windows)
         if: contains(matrix.os.name, 'windows')
         id: find_windows_output
@@ -49,7 +53,11 @@ jobs:
         run: |
           $outputDir = "out/dyad-win32-x64"
           if (-Not (Test-Path $outputDir)) {
-              Write-Error "Expected directory '$outputDir' not found."
+              Write-Error "Expected Windows build output directory '$outputDir' not found."
+              if (Test-Path "out") {
+                  Write-Host "Contents of 'out' directory:"
+                  Get-ChildItem -Path "out" -Recurse
+              }
               exit 1
           }
           echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
@@ -61,25 +69,24 @@ jobs:
         run: |
           output_dir="out/dyad-linux-x64"
           if [ ! -d "$output_dir" ]; then
-              echo "Expected directory '$output_dir' not found."
+              echo "Expected Linux build output directory '$output_dir' not found."
+              if [ -d "out" ]; then
+                  echo "Contents of 'out' directory:"
+                  ls -R "out"
+              fi
               exit 1
           fi
           echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
 
+      # ===============================
+      # Upload App + Installer Artifacts
+      # ===============================
       - name: Upload Windows App Artifact
         if: contains(matrix.os.name, 'windows')
         uses: actions/upload-artifact@v4
         with:
           name: windows-app
           path: ${{ steps.find_windows_output.outputs.artifact_path }}/*
-          retention-days: 7
-
-      - name: Upload Linux App Artifact
-        if: contains(matrix.os.name, 'linux')
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-app
-          path: ${{ steps.find_linux_output.outputs.artifact_path }}/*
           retention-days: 7
 
       - name: Upload Windows Installer Artifact
@@ -90,6 +97,17 @@ jobs:
           path: out/make/squirrel.windows/x64/*.exe
           retention-days: 7
 
+      - name: Upload Linux App Artifact
+        if: contains(matrix.os.name, 'linux')
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-app
+          path: ${{ steps.find_linux_output.outputs.artifact_path }}/*
+          retention-days: 7
+
+  # ===============================
+  # Create GitHub Release
+  # ===============================
   release:
     name: Create GitHub Release
     needs: build
@@ -103,6 +121,7 @@ jobs:
           path: artifacts
 
       - name: Create Release
+        id: create_release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -111,8 +130,10 @@ jobs:
           name: Release ${{ github.event.inputs.version }}
           body: |
             ## Release Notes
-            - Initial release of the application.
-            - This release is **unsigned**.
+            - Initial release of **Dyad** 🎉
+            - This release includes installers and portable builds for Windows and Linux.
+            ## Downloads
+            See the attached files below.
           draft: false
           prerelease: false
           files: |
