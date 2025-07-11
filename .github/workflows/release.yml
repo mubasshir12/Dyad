@@ -51,6 +51,49 @@ jobs:
       # =====================================================================
       # DYNAMIC ARTIFACT PATH DETECTION
       # =====================================================================
+        # DYNAMIC ARTIFACT PATH DETECTION (Dyad)
+        # Detect and use the correct build output directories for Dyad
+        - name: Find Build Output Path (Windows)
+          id: find_windows_output
+          if: contains(matrix.os.name, 'windows')
+          shell: powershell
+          run: |
+            # Dyad: Windows build output is in 'out/dyad-win32-x64'
+            $outputDir = "out/dyad-win32-x64"
+            if (-Not (Test-Path $outputDir)) {
+            Write-Error "Expected Windows build output directory '$outputDir' not found."
+            # For debugging, list 'out' directory if 'out/dyad-win32-x64' isn't exact
+            if (Test-Path "out") {
+            Write-Host "Contents of 'out' directory:"
+            Get-ChildItem -Path "out" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
+            }
+            exit 1
+            }
+            Write-Host "Detected Windows output directory: $outputDir"
+            # List contents of the detected output directory to confirm what will be uploaded
+            Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
+            echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+        - name: Find Build Output Path (Linux)
+          id: find_linux_output
+          if: contains(matrix.os.name, 'linux')
+          shell: bash
+          run: |
+            # Dyad: Linux build output is in 'out/dyad-linux-x64'
+            output_dir="out/dyad-linux-x64"
+            if [ ! -d "$output_dir" ]; then
+            echo "Expected Linux build output directory '$output_dir' not found."
+            # For debugging, list 'out' directory if '$output_dir' isn't exact
+            if [ -d "out" ]; then
+            echo "Contents of 'out' directory:"
+            ls -R "out"
+            fi
+            exit 1
+            fi
+            echo "Detected Linux output directory: $output_dir"
+            ls -R "$output_dir"
+            echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
+      # =====================================================================
       - name: Find Build Output Path (Windows)
         id: find_windows_output
         if: contains(matrix.os.name, 'windows')
@@ -70,7 +113,46 @@ jobs:
           # List contents of the detected output directory to confirm what will be uploaded
           Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
           echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-        shell: powershell
+         shell: powershell
+          - name: Find Build Output Path (Windows)
+            id: find_windows_output
+            if: contains(matrix.os.name, 'windows')
+            run: |
+              # Updated: Based on your build output, the Windows build output is in 'out/dyad-win32-x64'
+              $outputDir = "out/dyad-win32-x64"
+              if (-Not (Test-Path $outputDir)) {
+              Write-Error "Expected Windows build output directory '$outputDir' not found."
+              # For debugging, list 'out' directory if 'out/dyad-win32-x64' isn't exact
+              if (Test-Path "out") {
+              Write-Host "Contents of 'out' directory:"
+              Get-ChildItem -Path "out" -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
+              }
+              exit 1
+              }
+              Write-Host "Detected Windows output directory: $outputDir"
+              # List contents of the detected output directory to confirm what will be uploaded
+              Get-ChildItem -Path $outputDir -Recurse | Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize
+              echo "artifact_path=$outputDir" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            shell: powershell
+          - name: Find Build Output Path (Linux)
+            id: find_linux_output
+            if: contains(matrix.os.name, 'linux')
+            run: |
+              # Updated: Based on your build output, the Linux build output is in 'out/dyad-linux-x64'
+              output_dir="out/dyad-linux-x64"
+              if [ ! -d "$output_dir" ]; then
+              echo "Expected Linux build output directory '$output_dir' not found."
+              # For debugging, list 'out' directory if '$output_dir' isn't exact
+              if [ -d "out" ]; then
+              echo "Contents of 'out' directory:"
+              ls -R "out"
+              fi
+              exit 1
+              fi
+              echo "Detected Linux output directory: $output_dir"
+              ls -R "$output_dir"
+              echo "artifact_path=$output_dir" >> "$GITHUB_OUTPUT"
+            shell: bash
       - name: Find Build Output Path (Linux)
         id: find_linux_output
         if: contains(matrix.os.name, 'linux')
