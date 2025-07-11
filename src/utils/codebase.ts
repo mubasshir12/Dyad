@@ -6,7 +6,7 @@ import log from "electron-log";
 import { IS_TEST_BUILD } from "../ipc/utils/test_utils";
 import { glob } from "glob";
 import { AppChatContext } from "../lib/schemas";
-import { readSettings } from "@/main/settings";
+// ...existing code...
 import { AsyncVirtualFileSystem } from "../../shared/VirtualFilesystem";
 
 const logger = log.scope("utils/codebase");
@@ -397,9 +397,7 @@ export async function extractCodebase({
   formattedOutput: string;
   files: CodebaseFile[];
 }> {
-  const settings = readSettings();
-  const isSmartContextEnabled =
-    settings?.enableDyadPro && settings?.enableProSmartFilesContextMode;
+  // const settings = readSettings(); // Removed: unused
 
   try {
     await fsAsync.access(appPath);
@@ -459,11 +457,7 @@ export async function extractCodebase({
   }
 
   // Add files from smartContextAutoIncludes
-  if (
-    isSmartContextEnabled &&
-    smartContextAutoIncludes &&
-    smartContextAutoIncludes.length > 0
-  ) {
+  if (smartContextAutoIncludes && smartContextAutoIncludes.length > 0) {
     for (const p of smartContextAutoIncludes) {
       const pattern = createFullGlobPath({
         appPath,
