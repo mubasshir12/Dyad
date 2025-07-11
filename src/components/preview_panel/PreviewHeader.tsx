@@ -151,7 +151,7 @@ export const PreviewHeader = () => {
         <button
           data-testid="preview-mode-button"
           ref={previewRef}
-          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10"
+          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10 hover:bg-[var(--background)]"
           onClick={() => selectPanel("preview")}
         >
           <Eye size={14} />
@@ -160,7 +160,7 @@ export const PreviewHeader = () => {
         <button
           data-testid="problems-mode-button"
           ref={problemsRef}
-          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10"
+          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10 hover:bg-[var(--background)]"
           onClick={() => selectPanel("problems")}
         >
           <AlertTriangle size={14} />
@@ -175,7 +175,7 @@ export const PreviewHeader = () => {
         <button
           data-testid="code-mode-button"
           ref={codeRef}
-          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10"
+          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10 hover:bg-[var(--background)]"
           onClick={() => selectPanel("code")}
         >
           <Code size={14} />
@@ -184,7 +184,7 @@ export const PreviewHeader = () => {
         <button
           data-testid="configure-mode-button"
           ref={configureRef}
-          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10"
+          className="cursor-pointer relative flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium z-10 hover:bg-[var(--background)]"
           onClick={() => selectPanel("configure")}
         >
           <Wrench size={14} />

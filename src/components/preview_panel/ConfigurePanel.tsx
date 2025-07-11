@@ -10,10 +10,19 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import { Trash2, Edit2, Plus, Save, X, HelpCircle } from "lucide-react";
+import {
+  Trash2,
+  Edit2,
+  Plus,
+  Save,
+  X,
+  HelpCircle,
+  ArrowRight,
+} from "lucide-react";
 import { showError, showSuccess } from "@/lib/toast";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { IpcClient } from "@/ipc/ipc_client";
+import { useNavigate } from "@tanstack/react-router";
 
 const EnvironmentVariablesTitle = () => (
   <div className="flex items-center gap-2">
@@ -44,6 +53,7 @@ export const ConfigurePanel = () => {
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const navigate = useNavigate();
 
   // Query to get environment variables
   const {
@@ -310,6 +320,7 @@ export const ConfigurePanel = () => {
                       </div>
                       <div className="flex gap-1">
                         <Button
+                          data-testid={`save-edit-env-var`}
                           onClick={handleSaveEdit}
                           size="sm"
                           variant="outline"
@@ -318,6 +329,7 @@ export const ConfigurePanel = () => {
                           <Save size={14} />
                         </Button>
                         <Button
+                          data-testid={`cancel-edit-env-var`}
                           onClick={handleCancelEdit}
                           size="sm"
                           variant="outline"
@@ -338,6 +350,7 @@ export const ConfigurePanel = () => {
                       </div>
                       <div className="flex gap-1">
                         <Button
+                          data-testid={`edit-env-var-${envVar.key}`}
                           onClick={() => handleEdit(envVar)}
                           size="sm"
                           variant="ghost"
@@ -346,6 +359,7 @@ export const ConfigurePanel = () => {
                           <Edit2 size={14} />
                         </Button>
                         <Button
+                          data-testid={`delete-env-var-${envVar.key}`}
                           onClick={() => handleDelete(envVar.key)}
                           size="sm"
                           variant="ghost"
@@ -360,6 +374,25 @@ export const ConfigurePanel = () => {
                 </div>
               ))
             )}
+          </div>
+
+          {/* More app configurations button */}
+          <div className="pt-4 border-t">
+            <Button
+              variant="outline"
+              className="w-full text-sm justify-between"
+              onClick={() => {
+                if (selectedAppId) {
+                  navigate({
+                    to: "/app-details",
+                    search: { appId: selectedAppId },
+                  });
+                }
+              }}
+            >
+              <span>More app settings</span>
+              <ArrowRight size={16} />
+            </Button>
           </div>
         </CardContent>
       </Card>
