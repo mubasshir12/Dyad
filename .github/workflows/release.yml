@@ -66,14 +66,14 @@ jobs:
         shell: bash
         run: |
           output_dir="out/dyad-linux-x64"
-          executable="$output_dir/Trio"
+          executable="$output_dir/dyad"
           if [ ! -d "$output_dir" ]; then
             echo "Directory '$output_dir' not found."
             ls -R out || true
             exit 1
           fi
           if [ ! -f "$executable" ]; then
-            echo "Binary 'Trio' not found in '$output_dir'."
+            echo "Binary 'dyad' not found in '$output_dir'."
             ls -lh "$output_dir"
             exit 1
           fi

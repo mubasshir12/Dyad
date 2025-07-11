@@ -54,11 +54,12 @@ const isCiBuild = process.env.CI === "true";
 
 const config: ForgeConfig = {
   packagerConfig: {
-    executableName: "Trio", // Ensures the app binary is named 'Trio' for all platforms
+    // Set executableName to 'dyad' for all platforms to ensure consistent artifact naming
+    executableName: "dyad",
     protocols: [
       {
-        name: "Trio", // Changed from "Dyad" to "Trio"
-        schemes: ["trio"], // Changed from "dyad" to "trio"
+        name: "Dyad",
+        schemes: ["dyad"],
       },
     ],
     icon: "./assets/icon/logo",
@@ -94,7 +95,7 @@ const config: ForgeConfig = {
     new MakerRpm({}),
     new MakerDeb({
       options: {
-        mimeType: ["x-scheme-handler/trio"], // Changed from "dyad" to "trio"
+        mimeType: ["x-scheme-handler/dyad"],
       },
     }),
   ],
