@@ -188,7 +188,7 @@
   }
   /* Glass navbar/header [Glassmorphism] */
   .navbar-glass {
-    @apply sticky top-0 z-10 bg-white/20 dark:bg-black/30 border-b border-border backdrop-filter backdrop-blur-lg;
+    @apply sticky top-0 z-10 bg-white/20 dark:bg-black/30 border-b backdrop-filter backdrop-blur-lg;
   }
   /* 🔄 Soft/neumorphic button [Neumorphism: freefrontend.com, dev.to, github.com] */
   .btn-soft {
@@ -225,7 +225,7 @@
 }
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
