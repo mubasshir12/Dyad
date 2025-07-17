@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Globe } from "lucide-react";
+import { Globe } from "lucide-react";
 import { IpcClient } from "@/ipc/ipc_client";
 import { useSettings } from "@/hooks/useSettings";
 import { useLoadApp } from "@/hooks/useLoadApp";
@@ -14,7 +14,7 @@ import {
 import {} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { App } from "@/ipc/ipc_types";
+import { App, VercelDeployment } from "@/ipc/ipc_types";
 
 interface VercelConnectorProps {
   appId: number | null;
@@ -48,16 +48,7 @@ function ConnectedVercelConnector({
 }: ConnectedVercelConnectorProps) {
   const [isLoadingDeployments, setIsLoadingDeployments] = useState(false);
   const [deploymentsError, setDeploymentsError] = useState<string | null>(null);
-  const [deployments, setDeployments] = useState<
-    {
-      uid: string;
-      url: string;
-      state: string;
-      createdAt: number;
-      target: string;
-      readyState: string;
-    }[]
-  >([]);
+  const [deployments, setDeployments] = useState<VercelDeployment[]>([]);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
 
@@ -104,7 +95,7 @@ function ConnectedVercelConnector({
         onClick={(e) => {
           e.preventDefault();
           IpcClient.getInstance().openExternalUrl(
-            `https://vercel.com/${app.vercelTeamSlug ? `${app.vercelTeamSlug}/` : ""}${app.vercelProjectName}`,
+            `https://vercel.com/${app.vercelTeamSlug}/${app.vercelProjectName}`,
           );
         }}
         className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400"
@@ -239,9 +230,6 @@ function UnconnectedVercelConnector({
   refreshSettings,
   refreshApp,
 }: UnconnectedVercelConnectorProps) {
-  // --- Collapsible State ---
-  const [isExpanded, setIsExpanded] = useState(false);
-
   // --- Manual Token Entry State ---
   const [accessToken, setAccessToken] = useState("");
   const [isSavingToken, setIsSavingToken] = useState(false);
@@ -319,7 +307,6 @@ function UnconnectedVercelConnector({
       setTokenSuccess(true);
       setAccessToken("");
       refreshSettings();
-      setIsExpanded(true);
     } catch (err: any) {
       setTokenError(err.message || "Failed to save access token.");
     } finally {
@@ -397,11 +384,8 @@ function UnconnectedVercelConnector({
   if (!settings?.vercelAccessToken) {
     return (
       <div className="mt-1 w-full" data-testid="vercel-unconnected-project">
-        <div className="w-full border border-gray-200 rounded-md p-4">
+        <div className="w-ful">
           <div className="flex items-center gap-2 mb-4">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 22.525H0l12-21.05 12 21.05z" />
-            </svg>
             <h3 className="font-medium">Connect to Vercel</h3>
           </div>
 
@@ -412,27 +396,34 @@ function UnconnectedVercelConnector({
                 token:
               </p>
               <ol className="list-decimal list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                <li>
-                  Go to{" "}
-                  <a
-                    onClick={(e) => {
-                      e.preventDefault();
-                      IpcClient.getInstance().openExternalUrl(
-                        "https://vercel.com/account/settings/tokens",
-                      );
-                    }}
-                    className="cursor-pointer font-medium underline hover:no-underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    https://vercel.com/account/settings/tokens
-                  </a>
-                </li>
-                <li>Click "Create Token"</li>
-                <li>Give it a name (e.g. "Dyad")</li>
-                <li>Select the appropriate scope permissions</li>
+                <li>If you don't have a Vercel account, sign up first</li>
+                <li>Go to Vercel settings to create a token</li>
                 <li>Copy the token and paste it below</li>
               </ol>
+
+              <div className="flex gap-2 mt-3">
+                <Button
+                  onClick={() => {
+                    IpcClient.getInstance().openExternalUrl(
+                      "https://vercel.com/signup",
+                    );
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Sign Up for Vercel
+                </Button>
+                <Button
+                  onClick={() => {
+                    IpcClient.getInstance().openExternalUrl(
+                      "https://vercel.com/account/settings/tokens",
+                    );
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Open Vercel Settings
+                </Button>
+              </div>
             </div>
 
             <form onSubmit={handleSaveAccessToken} className="space-y-3">
@@ -510,28 +501,13 @@ function UnconnectedVercelConnector({
   return (
     <div className="mt-4 w-full rounded-md" data-testid="vercel-setup-project">
       {/* Collapsible Header */}
-      <button
-        type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`cursor-pointer w-full p-4 text-left transition-colors rounded-md flex items-center justify-between ${
-          !isExpanded ? "hover:bg-gray-50 dark:hover:bg-gray-800/50" : ""
-        }`}
-      >
-        <span className="font-medium">Set up your Vercel project</span>
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-gray-500" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-gray-500" />
-        )}
-      </button>
+      <div className="font-medium mb-2">Set up your Vercel project</div>
 
       {/* Collapsible Content */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${
-          isExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
-        }`}
+        className={`overflow-hidden transition-all duration-300 ease-in-out`}
       >
-        <div className="p-4 pt-0 space-y-4">
+        <div className="pt-0 space-y-4">
           {/* Mode Selection */}
           <div>
             <div className="flex rounded-md border border-gray-200 dark:border-gray-700">
