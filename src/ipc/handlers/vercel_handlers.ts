@@ -1,5 +1,5 @@
-import { ipcMain, BrowserWindow, IpcMainInvokeEvent } from "electron";
-import fetch from "node-fetch";
+import { ipcMain, IpcMainInvokeEvent } from "electron";
+import { Vercel } from "@vercel/sdk";
 import { writeSettings, readSettings } from "../../main/settings";
 import * as schema from "../../db/schema";
 import { db } from "../../db";
@@ -7,142 +7,160 @@ import { apps } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import log from "electron-log";
 import { IS_TEST_BUILD } from "../utils/test_utils";
+import * as fs from "fs";
+import * as path from "path";
+import { CreateProjectFramework } from "@vercel/sdk/models/createprojectop.js";
+import { getDyadAppPath } from "@/paths/paths";
 
 const logger = log.scope("vercel_handlers");
-
-// --- Vercel OAuth Constants ---
-const VERCEL_CLIENT_ID =
-  process.env.VERCEL_CLIENT_ID || "your-vercel-client-id";
 
 // Use test server URLs when in test mode
 const TEST_SERVER_BASE = "http://localhost:3500";
 
-const VERCEL_OAUTH_TOKEN_URL = IS_TEST_BUILD
-  ? `${TEST_SERVER_BASE}/vercel/oauth/access_token`
-  : "https://api.vercel.com/v2/oauth/access_token";
 const VERCEL_API_BASE = IS_TEST_BUILD
   ? `${TEST_SERVER_BASE}/vercel/api`
   : "https://api.vercel.com";
 
-const VERCEL_SCOPES =
-  "read:project,write:project,read:deployment,write:deployment";
+// --- Helper Functions ---
 
-// --- State Management ---
-interface DeviceFlowState {
-  deviceCode: string;
-  interval: number;
-  timeoutId: NodeJS.Timeout | null;
-  isPolling: boolean;
-  window: BrowserWindow | null;
-}
-
-let currentFlowState: DeviceFlowState | null = null;
-
-function stopPolling() {
-  if (currentFlowState?.timeoutId) {
-    clearTimeout(currentFlowState.timeoutId);
-    currentFlowState.timeoutId = null;
-  }
-  if (currentFlowState) {
-    currentFlowState.isPolling = false;
-  }
-}
-
-async function pollForAccessToken(event: IpcMainInvokeEvent) {
-  if (!currentFlowState || !currentFlowState.isPolling) {
-    logger.debug("[Vercel Handler] Polling stopped or no active flow.");
-    return;
-  }
-
-  const { deviceCode, interval } = currentFlowState;
-
-  logger.debug("[Vercel Handler] Polling for token with device code");
-  event.sender.send("vercel:flow-update", {
-    message: "Polling Vercel for authorization...",
+function createVercelClient(token: string): Vercel {
+  return new Vercel({
+    bearerToken: token,
+    ...(IS_TEST_BUILD && { serverURL: VERCEL_API_BASE }),
   });
+}
 
+async function validateVercelToken(token: string): Promise<boolean> {
   try {
-    // For now, simulate the OAuth flow since Vercel doesn't have device flow like GitHub
-    // In a real implementation, you'd use Vercel's OAuth flow
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const vercel = createVercelClient(token);
+    await vercel.user.getAuthUser();
+    return true;
+  } catch (error) {
+    logger.error("Error validating Vercel token:", error);
+    return false;
+  }
+}
 
-    // Simulate successful authentication
-    const accessToken = "test-vercel-token";
-
-    logger.log("Successfully obtained Vercel Access Token.");
-    event.sender.send("vercel:flow-success", {
-      message: "Successfully connected!",
-    });
-
-    writeSettings({
-      vercelAccessToken: {
-        value: accessToken,
+async function getDefaultTeamId(token: string): Promise<string> {
+  try {
+    const response = await fetch(`${VERCEL_API_BASE}/v2/teams?limit=1`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
 
-    stopPolling();
-  } catch (error: any) {
-    logger.error("Error during Vercel polling:", error);
-    event.sender.send("vercel:flow-error", {
-      error: `Failed to authenticate with Vercel: ${error.message}`,
-    });
-    stopPolling();
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch teams: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const data = await response.json();
+
+    // Use the first team (typically the personal account or default team)
+    if (data.teams && data.teams.length > 0) {
+      return data.teams[0].id;
+    }
+
+    throw new Error("No teams found for this user");
+  } catch (error) {
+    logger.error("Error getting default team ID:", error);
+    throw new Error("Failed to get team information");
+  }
+}
+
+async function detectFramework(
+  appPath: string,
+): Promise<CreateProjectFramework | undefined> {
+  try {
+    // Check for specific config files first
+    const configFiles: Array<{
+      file: string;
+      framework: CreateProjectFramework;
+    }> = [
+      { file: "next.config.js", framework: "nextjs" },
+      { file: "next.config.mjs", framework: "nextjs" },
+      { file: "next.config.ts", framework: "nextjs" },
+      { file: "vite.config.js", framework: "vite" },
+      { file: "vite.config.ts", framework: "vite" },
+      { file: "vite.config.mjs", framework: "vite" },
+      { file: "nuxt.config.js", framework: "nuxtjs" },
+      { file: "nuxt.config.ts", framework: "nuxtjs" },
+      { file: "astro.config.js", framework: "astro" },
+      { file: "astro.config.mjs", framework: "astro" },
+      { file: "astro.config.ts", framework: "astro" },
+      { file: "svelte.config.js", framework: "svelte" },
+    ];
+
+    for (const { file, framework } of configFiles) {
+      if (fs.existsSync(path.join(appPath, file))) {
+        return framework;
+      }
+    }
+
+    // Check package.json for dependencies
+    const packageJsonPath = path.join(appPath, "package.json");
+    if (fs.existsSync(packageJsonPath)) {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+      const dependencies = {
+        ...packageJson.dependencies,
+        ...packageJson.devDependencies,
+      };
+
+      // Check for framework dependencies in order of preference
+      if (dependencies.next) return "nextjs";
+      if (dependencies.vite) return "vite";
+      if (dependencies.nuxt) return "nuxtjs";
+      if (dependencies.astro) return "astro";
+      if (dependencies.svelte) return "svelte";
+      if (dependencies["@angular/core"]) return "angular";
+      if (dependencies.vue) return "vue";
+      if (dependencies["react-scripts"]) return "create-react-app";
+      if (dependencies.gatsby) return "gatsby";
+      if (dependencies.remix) return "remix";
+    }
+
+    // Default fallback
+    return undefined;
+  } catch (error) {
+    logger.error("Error detecting framework:", error);
+    return undefined;
   }
 }
 
 // --- IPC Handlers ---
 
-function handleStartVercelFlow(
+async function handleSaveVercelToken(
   event: IpcMainInvokeEvent,
-  args: { appId: number | null },
-) {
-  logger.debug(`Received vercel:start-flow for appId: ${args.appId}`);
+  { token }: { token: string },
+): Promise<void> {
+  logger.debug("Saving Vercel access token");
 
-  if (currentFlowState && currentFlowState.isPolling) {
-    logger.warn("Another Vercel flow is already in progress.");
-    event.sender.send("vercel:flow-error", {
-      error: "Another connection process is already active.",
-    });
-    return;
+  if (!token || token.trim() === "") {
+    throw new Error("Access token is required.");
   }
 
-  const window = BrowserWindow.fromWebContents(event.sender);
-  if (!window) {
-    logger.error("Could not get BrowserWindow instance.");
-    return;
-  }
+  try {
+    // Validate the token by making a test API call
+    const isValid = await validateVercelToken(token.trim());
+    if (!isValid) {
+      throw new Error(
+        "Invalid access token. Please check your token and try again.",
+      );
+    }
 
-  currentFlowState = {
-    deviceCode: "test-device-code",
-    interval: 5,
-    timeoutId: null,
-    isPolling: false,
-    window: window,
-  };
-
-  event.sender.send("vercel:flow-update", {
-    message: "Starting Vercel authentication...",
-  });
-
-  // Simulate device flow for now
-  setTimeout(() => {
-    if (!currentFlowState) return;
-
-    currentFlowState.isPolling = true;
-
-    // Send simulated user code and verification URI
-    event.sender.send("vercel:flow-update", {
-      userCode: "ABCD-1234",
-      verificationUri: "https://vercel.com/login/device",
-      message: "Please authorize in your browser.",
+    writeSettings({
+      vercelAccessToken: {
+        value: token.trim(),
+      },
     });
 
-    // Start polling
-    currentFlowState.timeoutId = setTimeout(
-      () => pollForAccessToken(event),
-      currentFlowState.interval * 1000,
-    );
-  }, 1000);
+    logger.log("Successfully saved Vercel access token.");
+  } catch (error: any) {
+    logger.error("Error saving Vercel token:", error);
+    throw new Error(`Failed to save access token: ${error.message}`);
+  }
 }
 
 // --- Vercel List Projects Handler ---
@@ -156,13 +174,18 @@ async function handleListVercelProjects(): Promise<
       throw new Error("Not authenticated with Vercel.");
     }
 
-    // For now, return mock data
-    // In a real implementation, you'd call Vercel's API
-    return [
-      { id: "prj_1", name: "my-app", framework: "nextjs" },
-      { id: "prj_2", name: "another-project", framework: "react" },
-      { id: "prj_3", name: "static-site", framework: null },
-    ];
+    const vercel = createVercelClient(accessToken);
+    const response = await vercel.projects.getProjects({});
+
+    if (!response.projects) {
+      throw new Error("Failed to retrieve projects from Vercel.");
+    }
+
+    return response.projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      framework: project.framework || null,
+    }));
   } catch (err: any) {
     logger.error("[Vercel Handler] Failed to list projects:", err);
     throw new Error(err.message || "Failed to list Vercel projects.");
@@ -181,14 +204,27 @@ async function handleIsProjectAvailable(
       return { available: false, error: "Not authenticated with Vercel." };
     }
 
-    // For now, simulate availability check
-    // In a real implementation, you'd check against Vercel's API
-    const unavailableNames = ["vercel", "nextjs", "react", "test"];
-    const isAvailable = !unavailableNames.includes(name.toLowerCase());
+    const vercel = createVercelClient(accessToken);
+
+    // Check if project name is available by searching for projects with that name
+    const response = await vercel.projects.getProjects({
+      search: name,
+    });
+
+    if (!response.projects) {
+      return {
+        available: false,
+        error: "Failed to check project availability.",
+      };
+    }
+
+    const projectExists = response.projects.some(
+      (project) => project.name === name,
+    );
 
     return {
-      available: isAvailable,
-      error: isAvailable ? undefined : "Project name is not available.",
+      available: !projectExists,
+      error: projectExists ? "Project name is not available." : undefined,
     };
   } catch (err: any) {
     return { available: false, error: err.message || "Unknown error" };
@@ -206,21 +242,103 @@ async function handleCreateProject(
     throw new Error("Not authenticated with Vercel.");
   }
 
-  // For now, simulate project creation
-  // In a real implementation, you'd call Vercel's API to create the project
-  logger.info(`Creating Vercel project: ${name} for app ${appId}`);
+  try {
+    logger.info(`Creating Vercel project: ${name} for app ${appId}`);
 
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Get app details to determine the framework
+    const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
+    if (!app) {
+      throw new Error("App not found.");
+    }
 
-  // Store project info in the app's DB row
-  await updateAppVercelProject({
-    appId,
-    projectId: `prj_${Date.now()}`,
-    projectName: name,
-    teamId: null,
-    deploymentUrl: `https://${name}.vercel.app`,
-  });
+    // Check if app has GitHub repository configured
+    if (!app.githubOrg || !app.githubRepo) {
+      throw new Error(
+        "App must be connected to a GitHub repository before creating a Vercel project.",
+      );
+    }
+
+    // Detect the framework from the app's directory
+    const detectedFramework = await detectFramework(getDyadAppPath(app.path));
+
+    logger.info(
+      `Detected framework: ${detectedFramework || "none detected"} for app at ${app.path}`,
+    );
+
+    const vercel = createVercelClient(accessToken);
+
+    const projectData = await vercel.projects.createProject({
+      requestBody: {
+        name: name,
+        gitRepository: {
+          type: "github",
+          repo: `${app.githubOrg}/${app.githubRepo}`,
+        },
+        framework: detectedFramework,
+      },
+    });
+
+    if (!projectData.id) {
+      throw new Error("Failed to create project: No project ID returned.");
+    }
+
+    // Get the default team ID
+    const teamId = await getDefaultTeamId(accessToken);
+
+    // Store project info in the app's DB row
+    await updateAppVercelProject({
+      appId,
+      projectId: projectData.id,
+      projectName: projectData.name,
+      teamId: teamId,
+      deploymentUrl: null, // Will be set after first deployment
+    });
+
+    logger.info(
+      `Successfully created Vercel project: ${projectData.id} with GitHub repo: ${app.githubOrg}/${app.githubRepo}`,
+    );
+
+    // Trigger the first deployment
+    logger.info(`Triggering first deployment for project: ${projectData.id}`);
+    try {
+      // Create deployment via Vercel SDK using the project settings we just created
+      const deploymentData = await vercel.deployments.createDeployment({
+        requestBody: {
+          name: projectData.name,
+          project: projectData.id,
+          target: "production",
+          gitSource: {
+            type: "github",
+            org: app.githubOrg,
+            repo: app.githubRepo,
+            ref: app.githubBranch || "main",
+          },
+          // projectSettings: {
+          //   framework: "vite",
+          // },
+        },
+      });
+
+      if (deploymentData.url) {
+        // Update deployment URL in the database
+        const deploymentUrl = `https://${deploymentData.url}`;
+        await db
+          .update(apps)
+          .set({ vercelDeploymentUrl: deploymentUrl })
+          .where(eq(apps.id, appId));
+
+        logger.info(`First deployment successful: ${deploymentUrl}`);
+      } else {
+        logger.warn("First deployment failed: No deployment URL returned");
+      }
+    } catch (deployError: any) {
+      logger.warn(`First deployment failed with error: ${deployError.message}`);
+      // Don't throw here - project creation was successful, deployment failure is non-critical
+    }
+  } catch (err: any) {
+    logger.error("[Vercel Handler] Failed to create project:", err);
+    throw new Error(err.message || "Failed to create Vercel project.");
+  }
 }
 
 // --- Vercel Connect to Existing Project Handler ---
@@ -235,23 +353,37 @@ async function handleConnectToExistingProject(
       throw new Error("Not authenticated with Vercel.");
     }
 
-    // For now, simulate connecting to existing project
-    // In a real implementation, you'd verify the project exists via Vercel's API
     logger.info(
       `Connecting to existing Vercel project: ${projectId} for app ${appId}`,
     );
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const vercel = createVercelClient(accessToken);
+
+    // Verify the project exists and get its details
+    const response = await vercel.projects.getProjects({});
+    const projectData = response.projects?.find(
+      (p) => p.id === projectId || p.name === projectId,
+    );
+
+    if (!projectData) {
+      throw new Error("Project not found. Please check the project ID.");
+    }
+
+    // Get the default team ID
+    const teamId = await getDefaultTeamId(accessToken);
 
     // Store project info in the app's DB row
     await updateAppVercelProject({
       appId,
-      projectId,
-      projectName: `project-${projectId}`,
-      teamId: null,
-      deploymentUrl: `https://project-${projectId}.vercel.app`,
+      projectId: projectData.id,
+      projectName: projectData.name,
+      teamId: teamId,
+      deploymentUrl: projectData.targets?.production?.url
+        ? `https://${projectData.targets.production.url}`
+        : null,
     });
+
+    logger.info(`Successfully connected to Vercel project: ${projectData.id}`);
   } catch (err: any) {
     logger.error(
       "[Vercel Handler] Failed to connect to existing project:",
@@ -281,22 +413,58 @@ async function handleDeployToVercel(
       };
     }
 
-    // For now, simulate deployment
-    // In a real implementation, you'd trigger a deployment via Vercel's API
+    if (!app.path) {
+      return {
+        success: false,
+        error: "App directory path is not set.",
+      };
+    }
+
     logger.info(
       `Deploying to Vercel project: ${app.vercelProjectId} for app ${appId}`,
     );
 
-    // Simulate deployment delay
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const vercel = createVercelClient(accessToken);
 
-    // Update deployment URL
-    const newDeploymentUrl = `https://${app.vercelProjectName}-${Date.now()}.vercel.app`;
+    // Check if app has GitHub repository configured
+    if (!app.githubOrg || !app.githubRepo) {
+      return {
+        success: false,
+        error:
+          "App must be connected to a GitHub repository before deploying to Vercel.",
+      };
+    }
+
+    // Create deployment via Vercel SDK
+    const deploymentData = await vercel.deployments.createDeployment({
+      requestBody: {
+        name: app.vercelProjectName || app.name,
+        project: app.vercelProjectId,
+        target: "production",
+        gitSource: {
+          type: "github",
+          org: app.githubOrg,
+          repo: app.githubRepo,
+          ref: app.githubBranch || "main",
+        },
+      },
+    });
+
+    if (!deploymentData.url) {
+      return {
+        success: false,
+        error: "Failed to create deployment: No deployment URL returned.",
+      };
+    }
+
+    // Update deployment URL in the database
+    const deploymentUrl = `https://${deploymentData.url}`;
     await db
       .update(apps)
-      .set({ vercelDeploymentUrl: newDeploymentUrl })
+      .set({ vercelDeploymentUrl: deploymentUrl })
       .where(eq(apps.id, appId));
 
+    logger.info(`Successfully deployed to: ${deploymentUrl}`);
     return { success: true };
   } catch (err: any) {
     logger.error("[Vercel Handler] Failed to deploy:", err);
@@ -304,6 +472,63 @@ async function handleDeployToVercel(
       success: false,
       error: err.message || "Failed to deploy to Vercel.",
     };
+  }
+}
+
+// --- Vercel Get Deployments Handler ---
+async function handleGetVercelDeployments(
+  event: IpcMainInvokeEvent,
+  { appId }: { appId: number },
+): Promise<
+  {
+    uid: string;
+    url: string;
+    state: string;
+    createdAt: number;
+    target: string;
+    readyState: string;
+  }[]
+> {
+  try {
+    const settings = readSettings();
+    const accessToken = settings.vercelAccessToken?.value;
+    if (!accessToken) {
+      throw new Error("Not authenticated with Vercel.");
+    }
+
+    const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
+    if (!app || !app.vercelProjectId) {
+      throw new Error("App is not linked to a Vercel project.");
+    }
+
+    logger.info(
+      `Getting deployments for Vercel project: ${app.vercelProjectId} for app ${appId}`,
+    );
+
+    const vercel = createVercelClient(accessToken);
+
+    // Get deployments for the project
+    const deploymentsResponse = await vercel.deployments.getDeployments({
+      projectId: app.vercelProjectId,
+      limit: 3, // Get last 3 deployments
+    });
+
+    if (!deploymentsResponse.deployments) {
+      throw new Error("Failed to retrieve deployments from Vercel.");
+    }
+
+    // Map deployments to our interface format
+    return deploymentsResponse.deployments.map((deployment) => ({
+      uid: deployment.uid,
+      url: deployment.url,
+      state: deployment.state || "unknown",
+      createdAt: deployment.createdAt || 0,
+      target: deployment.target || "production",
+      readyState: deployment.readyState || "unknown",
+    }));
+  } catch (err: any) {
+    logger.error("[Vercel Handler] Failed to get deployments:", err);
+    throw new Error(err.message || "Failed to get Vercel deployments.");
   }
 }
 
@@ -335,7 +560,7 @@ async function handleDisconnectVercelProject(
 
 // --- Registration ---
 export function registerVercelHandlers() {
-  ipcMain.handle("vercel:start-flow", handleStartVercelFlow);
+  ipcMain.handle("vercel:save-token", handleSaveVercelToken);
   ipcMain.handle("vercel:list-projects", handleListVercelProjects);
   ipcMain.handle("vercel:is-project-available", handleIsProjectAvailable);
   ipcMain.handle("vercel:create-project", handleCreateProject);
@@ -344,6 +569,7 @@ export function registerVercelHandlers() {
     handleConnectToExistingProject,
   );
   ipcMain.handle("vercel:deploy", handleDeployToVercel);
+  ipcMain.handle("vercel:get-deployments", handleGetVercelDeployments);
   ipcMain.handle("vercel:disconnect", handleDisconnectVercelProject);
 }
 
@@ -357,7 +583,7 @@ export async function updateAppVercelProject({
   appId: number;
   projectId: string;
   projectName: string;
-  teamId?: string | null;
+  teamId: string;
   deploymentUrl?: string | null;
 }): Promise<void> {
   await db

@@ -3,6 +3,7 @@ import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useLoadApp } from "@/hooks/useLoadApp";
 import { GitHubConnector } from "@/components/GitHubConnector";
 import { VercelConnector } from "@/components/VercelConnector";
+import { IpcClient } from "@/ipc/ipc_client";
 
 export const PublishPanel = () => {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
@@ -103,10 +104,22 @@ export const PublishPanel = () => {
         <div className="space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 22.525H0l12-21.05 12 21.05z" />
-              </svg>
-              Vercel
+              <button
+                onClick={() => {
+                  const ipcClient = IpcClient.getInstance();
+                  ipcClient.openExternalUrl("https://vercel.com/dashboard");
+                }}
+                className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer bg-transparent border-none p-0"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M24 22.525H0l12-21.05 12 21.05z" />
+                </svg>
+                Vercel
+              </button>
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Deploy your application to Vercel for instant global distribution.

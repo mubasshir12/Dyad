@@ -83,7 +83,7 @@ export interface App {
   supabaseProjectName: string | null;
   vercelProjectId: string | null;
   vercelProjectName: string | null;
-  vercelTeamId: string | null;
+  vercelTeamSlug: string | null;
   vercelDeploymentUrl: string | null;
 }
 
@@ -269,4 +269,13 @@ export interface SetAppEnvVarsParams {
 
 export interface GetAppEnvVarsParams {
   appId: number;
+}
+
+export interface VercelDeployment {
+  uid: string;
+  url: string;
+  state: string;
+  createdAt: number;
+  target: string;
+  readyState: string;
 }

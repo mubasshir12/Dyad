@@ -646,45 +646,11 @@ export class IpcClient {
   }
   // --- End GitHub Repo Management ---
 
-  // --- Vercel Device Flow ---
-  public startVercelDeviceFlow(appId: number | null): void {
-    this.ipcRenderer.invoke("vercel:start-flow", { appId });
+  // --- Vercel Token Management ---
+  public async saveVercelAccessToken(token: string): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:save-token", { token });
   }
-
-  public onVercelDeviceFlowUpdate(
-    callback: (data: {
-      userCode?: string;
-      verificationUri?: string;
-      message?: string;
-    }) => void,
-  ): () => void {
-    const listener = (_: any, data: any) => callback(data);
-    this.ipcRenderer.on("vercel:flow-update", listener);
-    return () => {
-      this.ipcRenderer.removeListener("vercel:flow-update", listener);
-    };
-  }
-
-  public onVercelDeviceFlowSuccess(
-    callback: (data: { message: string }) => void,
-  ): () => void {
-    const listener = (_: any, data: any) => callback(data);
-    this.ipcRenderer.on("vercel:flow-success", listener);
-    return () => {
-      this.ipcRenderer.removeListener("vercel:flow-success", listener);
-    };
-  }
-
-  public onVercelDeviceFlowError(
-    callback: (data: { error: string }) => void,
-  ): () => void {
-    const listener = (_: any, data: any) => callback(data);
-    this.ipcRenderer.on("vercel:flow-error", listener);
-    return () => {
-      this.ipcRenderer.removeListener("vercel:flow-error", listener);
-    };
-  }
-  // --- End Vercel Device Flow ---
+  // --- End Vercel Token Management ---
 
   // --- Vercel Project Management ---
   public async listVercelProjects(): Promise<
@@ -723,6 +689,22 @@ export class IpcClient {
     appId: number,
   ): Promise<{ success: boolean; error?: string }> {
     return this.ipcRenderer.invoke("vercel:deploy", {
+      appId,
+    });
+  }
+
+  // Get Vercel Deployments
+  public async getVercelDeployments(appId: number): Promise<
+    {
+      uid: string;
+      url: string;
+      state: string;
+      createdAt: number;
+      target: string;
+      readyState: string;
+    }[]
+  > {
+    return this.ipcRenderer.invoke("vercel:get-deployments", {
       appId,
     });
   }

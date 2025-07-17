@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ExternalLink,
-  Clipboard,
-  Check,
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  Globe,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Globe } from "lucide-react";
 import { IpcClient } from "@/ipc/ipc_client";
 import { useSettings } from "@/hooks/useSettings";
 import { useLoadApp } from "@/hooks/useLoadApp";
@@ -19,16 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import {} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { App } from "@/ipc/ipc_types";
 
 interface VercelConnectorProps {
   appId: number | null;
@@ -43,7 +29,7 @@ interface VercelProject {
 
 interface ConnectedVercelConnectorProps {
   appId: number;
-  app: any;
+  app: App;
   refreshApp: () => void;
 }
 
@@ -60,9 +46,18 @@ function ConnectedVercelConnector({
   app,
   refreshApp,
 }: ConnectedVercelConnectorProps) {
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [deployError, setDeployError] = useState<string | null>(null);
-  const [deploySuccess, setDeploySuccess] = useState<boolean>(false);
+  const [isLoadingDeployments, setIsLoadingDeployments] = useState(false);
+  const [deploymentsError, setDeploymentsError] = useState<string | null>(null);
+  const [deployments, setDeployments] = useState<
+    {
+      uid: string;
+      url: string;
+      state: string;
+      createdAt: number;
+      target: string;
+      readyState: string;
+    }[]
+  >([]);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
 
@@ -79,23 +74,19 @@ function ConnectedVercelConnector({
     }
   };
 
-  const handleDeploy = async () => {
-    setIsDeploying(true);
-    setDeployError(null);
-    setDeploySuccess(false);
+  const handleGetDeployments = async () => {
+    setIsLoadingDeployments(true);
+    setDeploymentsError(null);
 
     try {
-      const result = await IpcClient.getInstance().deployToVercel(appId);
-      if (result.success) {
-        setDeploySuccess(true);
-        refreshApp(); // Refresh to get updated deployment URL
-      } else {
-        setDeployError(result.error || "Failed to deploy to Vercel.");
-      }
+      const result = await IpcClient.getInstance().getVercelDeployments(appId);
+      setDeployments(result);
     } catch (err: any) {
-      setDeployError(err.message || "Failed to deploy to Vercel.");
+      setDeploymentsError(
+        err.message || "Failed to get deployments from Vercel.",
+      );
     } finally {
-      setIsDeploying(false);
+      setIsLoadingDeployments(false);
     }
   };
 
@@ -109,14 +100,13 @@ function ConnectedVercelConnector({
         onClick={(e) => {
           e.preventDefault();
           IpcClient.getInstance().openExternalUrl(
-            `https://vercel.com/${app.vercelTeamId ? `${app.vercelTeamId}/` : ""}${app.vercelProjectName}`,
+            `https://vercel.com/${app.vercelTeamSlug ? `${app.vercelTeamSlug}/` : ""}${app.vercelProjectName}`,
           );
         }}
         className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400"
         target="_blank"
         rel="noopener noreferrer"
       >
-        {app.vercelTeamId ? `${app.vercelTeamId}/` : ""}
         {app.vercelProjectName}
       </a>
       {app.vercelDeploymentUrl && (
@@ -126,9 +116,11 @@ function ConnectedVercelConnector({
             <a
               onClick={(e) => {
                 e.preventDefault();
-                IpcClient.getInstance().openExternalUrl(
-                  app.vercelDeploymentUrl,
-                );
+                if (app.vercelDeploymentUrl) {
+                  IpcClient.getInstance().openExternalUrl(
+                    app.vercelDeploymentUrl,
+                  );
+                }
               }}
               className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400 font-mono"
               target="_blank"
@@ -140,8 +132,8 @@ function ConnectedVercelConnector({
         </div>
       )}
       <div className="mt-2 flex gap-2">
-        <Button onClick={handleDeploy} disabled={isDeploying}>
-          {isDeploying ? (
+        <Button onClick={handleGetDeployments} disabled={isLoadingDeployments}>
+          {isLoadingDeployments ? (
             <>
               <svg
                 className="animate-spin h-5 w-5 mr-2 inline"
@@ -164,10 +156,10 @@ function ConnectedVercelConnector({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              Deploying...
+              Getting Deployments...
             </>
           ) : (
-            "Deploy to Vercel"
+            "Get Deployments"
           )}
         </Button>
         <Button
@@ -178,28 +170,56 @@ function ConnectedVercelConnector({
           {isDisconnecting ? "Disconnecting..." : "Disconnect from project"}
         </Button>
       </div>
-      {deployError && (
+      {deploymentsError && (
         <div className="mt-2">
-          <p className="text-red-600">
-            {deployError}{" "}
-            <a
-              onClick={(e) => {
-                e.preventDefault();
-                IpcClient.getInstance().openExternalUrl(
-                  "https://vercel.com/docs/troubleshooting",
-                );
-              }}
-              className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              See troubleshooting guide
-            </a>
-          </p>
+          <p className="text-red-600">{deploymentsError}</p>
         </div>
       )}
-      {deploySuccess && (
-        <p className="text-green-600 mt-2">Successfully deployed to Vercel!</p>
+      {deployments.length > 0 && (
+        <div className="mt-4">
+          <h4 className="font-medium mb-2">Recent Deployments:</h4>
+          <div className="space-y-2">
+            {deployments.map((deployment) => (
+              <div
+                key={deployment.uid}
+                className="bg-gray-50 dark:bg-gray-800 rounded-md p-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        deployment.readyState === "READY"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                          : deployment.readyState === "BUILDING"
+                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
+                            : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                      }`}
+                    >
+                      {deployment.readyState}
+                    </span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {new Date(deployment.createdAt * 1000).toLocaleString()}
+                    </span>
+                  </div>
+                  <a
+                    onClick={(e) => {
+                      e.preventDefault();
+                      IpcClient.getInstance().openExternalUrl(
+                        `https://${deployment.url}`,
+                      );
+                    }}
+                    className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400 text-sm"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Globe className="h-4 w-4 inline mr-1" />
+                    View
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
       {disconnectError && (
         <p className="text-red-600 mt-2">{disconnectError}</p>
@@ -218,17 +238,11 @@ function UnconnectedVercelConnector({
   // --- Collapsible State ---
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // --- Vercel OAuth State ---
-  const [vercelUserCode, setVercelUserCode] = useState<string | null>(null);
-  const [vercelVerificationUri, setVercelVerificationUri] = useState<
-    string | null
-  >(null);
-  const [vercelError, setVercelError] = useState<string | null>(null);
-  const [isConnectingToVercel, setIsConnectingToVercel] = useState(false);
-  const [vercelStatusMessage, setVercelStatusMessage] = useState<string | null>(
-    null,
-  );
-  const [codeCopied, setCodeCopied] = useState(false);
+  // --- Manual Token Entry State ---
+  const [accessToken, setAccessToken] = useState("");
+  const [isSavingToken, setIsSavingToken] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [tokenSuccess, setTokenSuccess] = useState(false);
 
   // --- Project Setup State ---
   const [projectSetupMode, setProjectSetupMode] = useState<
@@ -258,75 +272,6 @@ function UnconnectedVercelConnector({
 
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (!appId) return; // Don't set up listeners if appId is null initially
-
-    const cleanupFunctions: (() => void)[] = [];
-
-    // Listener for updates (user code, verification uri, status messages)
-    const removeUpdateListener =
-      IpcClient.getInstance().onVercelDeviceFlowUpdate((data) => {
-        console.log("Received vercel:flow-update", data);
-        if (data.userCode) {
-          setVercelUserCode(data.userCode);
-        }
-        if (data.verificationUri) {
-          setVercelVerificationUri(data.verificationUri);
-        }
-        if (data.message) {
-          setVercelStatusMessage(data.message);
-        }
-
-        setVercelError(null); // Clear previous errors on new update
-        if (!data.userCode && !data.verificationUri && data.message) {
-          // Likely just a status message, keep connecting state
-          setIsConnectingToVercel(true);
-        }
-        if (data.userCode && data.verificationUri) {
-          setIsConnectingToVercel(true); // Still connecting until success/error
-        }
-      });
-    cleanupFunctions.push(removeUpdateListener);
-
-    // Listener for success
-    const removeSuccessListener =
-      IpcClient.getInstance().onVercelDeviceFlowSuccess((data) => {
-        console.log("Received vercel:flow-success", data);
-        setVercelStatusMessage("Successfully connected to Vercel!");
-        setVercelUserCode(null); // Clear user-facing info
-        setVercelVerificationUri(null);
-        setVercelError(null);
-        setIsConnectingToVercel(false);
-        refreshSettings();
-        setIsExpanded(true);
-      });
-    cleanupFunctions.push(removeSuccessListener);
-
-    // Listener for errors
-    const removeErrorListener = IpcClient.getInstance().onVercelDeviceFlowError(
-      (data) => {
-        console.log("Received vercel:flow-error", data);
-        setVercelError(data.error || "An unknown error occurred.");
-        setVercelStatusMessage(null);
-        setVercelUserCode(null);
-        setVercelVerificationUri(null);
-        setIsConnectingToVercel(false);
-      },
-    );
-    cleanupFunctions.push(removeErrorListener);
-
-    // Cleanup function to remove all listeners when component unmounts or appId changes
-    return () => {
-      cleanupFunctions.forEach((cleanup) => cleanup());
-      // Reset state when appId changes or component unmounts
-      setVercelUserCode(null);
-      setVercelVerificationUri(null);
-      setVercelError(null);
-      setIsConnectingToVercel(false);
-      setVercelStatusMessage(null);
-    };
-  }, [appId, refreshSettings]); // Re-run effect if appId changes
-
   // Load available projects when Vercel is connected
   useEffect(() => {
     if (settings?.vercelAccessToken && projectSetupMode === "existing") {
@@ -346,16 +291,25 @@ function UnconnectedVercelConnector({
     }
   };
 
-  const handleConnectToVercel = async () => {
-    if (!appId) return;
-    setIsConnectingToVercel(true);
-    setVercelError(null);
-    setVercelUserCode(null);
-    setVercelVerificationUri(null);
-    setVercelStatusMessage("Requesting device code from Vercel...");
+  const handleSaveAccessToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accessToken.trim()) return;
 
-    // Send IPC message to main process to start the Vercel OAuth flow
-    IpcClient.getInstance().startVercelDeviceFlow(appId);
+    setIsSavingToken(true);
+    setTokenError(null);
+    setTokenSuccess(false);
+
+    try {
+      await IpcClient.getInstance().saveVercelAccessToken(accessToken.trim());
+      setTokenSuccess(true);
+      setAccessToken("");
+      refreshSettings();
+      setIsExpanded(true);
+    } catch (err: any) {
+      setTokenError(err.message || "Failed to save access token.");
+    } finally {
+      setIsSavingToken(false);
+    }
   };
 
   const checkProjectAvailability = useCallback(async (name: string) => {
@@ -424,106 +378,112 @@ function UnconnectedVercelConnector({
   if (!settings?.vercelAccessToken) {
     return (
       <div className="mt-1 w-full" data-testid="vercel-unconnected-project">
-        <Button
-          onClick={handleConnectToVercel}
-          className="cursor-pointer w-full py-5 flex justify-center items-center gap-2"
-          size="lg"
-          variant="outline"
-          disabled={isConnectingToVercel || !appId}
-        >
-          Connect to Vercel
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 22.525H0l12-21.05 12 21.05z" />
-          </svg>
-          {isConnectingToVercel && (
-            <svg
-              className="animate-spin h-5 w-5 ml-2"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
+        <div className="w-full border border-gray-200 rounded-md p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 22.525H0l12-21.05 12 21.05z" />
             </svg>
-          )}
-        </Button>
-        {/* Vercel Connection Status/Instructions */}
-        {(vercelUserCode || vercelStatusMessage || vercelError) && (
-          <div className="mt-6 p-4 border rounded-md bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600">
-            <h4 className="font-medium mb-2">Vercel Connection</h4>
-            {vercelError && (
-              <p className="text-red-600 dark:text-red-400 mb-2">
-                {vercelError}
+            <h3 className="font-medium">Connect to Vercel</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+              <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
+                To connect your app to Vercel, you'll need to create an access
+                token:
               </p>
-            )}
-            {vercelUserCode && vercelVerificationUri && (
-              <div className="mb-2">
-                <p>
-                  1. Go to:
+              <ol className="list-decimal list-inside text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                <li>
+                  Go to{" "}
                   <a
-                    href={vercelVerificationUri}
                     onClick={(e) => {
                       e.preventDefault();
                       IpcClient.getInstance().openExternalUrl(
-                        vercelVerificationUri,
+                        "https://vercel.com/account/settings/tokens",
                       );
                     }}
+                    className="cursor-pointer font-medium underline hover:no-underline"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ml-1 text-blue-600 hover:underline dark:text-blue-400"
                   >
-                    {vercelVerificationUri}
+                    https://vercel.com/account/settings/tokens
                   </a>
-                </p>
-                <p>
-                  2. Enter code:
-                  <strong className="ml-1 font-mono text-lg tracking-wider bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded">
-                    {vercelUserCode}
-                  </strong>
-                  <button
-                    className="ml-2 p-1 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none"
-                    onClick={() => {
-                      if (vercelUserCode) {
-                        navigator.clipboard
-                          .writeText(vercelUserCode)
-                          .then(() => {
-                            setCodeCopied(true);
-                            setTimeout(() => setCodeCopied(false), 2000);
-                          })
-                          .catch((err) =>
-                            console.error("Failed to copy code:", err),
-                          );
-                      }
-                    }}
-                    title="Copy to clipboard"
-                  >
-                    {codeCopied ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Clipboard className="h-4 w-4" />
-                    )}
-                  </button>
+                </li>
+                <li>Click "Create Token"</li>
+                <li>Give it a name (e.g. "Dyad")</li>
+                <li>Select the appropriate scope permissions</li>
+                <li>Copy the token and paste it below</li>
+              </ol>
+            </div>
+
+            <form onSubmit={handleSaveAccessToken} className="space-y-3">
+              <div>
+                <Label className="block text-sm font-medium mb-1">
+                  Vercel Access Token
+                </Label>
+                <Input
+                  type="password"
+                  placeholder="Enter your Vercel access token"
+                  value={accessToken}
+                  onChange={(e) => setAccessToken(e.target.value)}
+                  disabled={isSavingToken}
+                  className="w-full"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={!accessToken.trim() || isSavingToken}
+                className="w-full"
+              >
+                {isSavingToken ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4 mr-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Saving Token...
+                  </>
+                ) : (
+                  "Save Access Token"
+                )}
+              </Button>
+            </form>
+
+            {tokenError && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  {tokenError}
                 </p>
               </div>
             )}
-            {vercelStatusMessage && (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {vercelStatusMessage}
-              </p>
+
+            {tokenSuccess && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Successfully connected to Vercel! You can now set up your
+                  project below.
+                </p>
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     );
   }
