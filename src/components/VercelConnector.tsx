@@ -65,7 +65,7 @@ function ConnectedVercelConnector({
     setIsDisconnecting(true);
     setDisconnectError(null);
     try {
-      await IpcClient.getInstance().disconnectVercelProject(appId);
+      await IpcClient.getInstance().disconnectVercelProject({ appId });
       refreshApp();
     } catch (err: any) {
       setDisconnectError(err.message || "Failed to disconnect project.");
@@ -79,7 +79,9 @@ function ConnectedVercelConnector({
     setDeploymentsError(null);
 
     try {
-      const result = await IpcClient.getInstance().getVercelDeployments(appId);
+      const result = await IpcClient.getInstance().getVercelDeployments({
+        appId,
+      });
       setDeployments(result);
     } catch (err: any) {
       setDeploymentsError(
@@ -92,10 +94,12 @@ function ConnectedVercelConnector({
 
   return (
     <div
-      className="mt-4 w-full border border-gray-200 rounded-md p-4"
+      className="mt-4 w-full rounded-md"
       data-testid="vercel-connected-project"
     >
-      <p>Connected to Vercel Project:</p>
+      <p className="text-sm text-gray-600 dark:text-gray-300">
+        Connected to Vercel Project:
+      </p>
       <a
         onClick={(e) => {
           e.preventDefault();
@@ -279,6 +283,15 @@ function UnconnectedVercelConnector({
     }
   }, [settings?.vercelAccessToken, projectSetupMode]);
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const loadAvailableProjects = async () => {
     setIsLoadingProjects(true);
     try {
@@ -300,7 +313,9 @@ function UnconnectedVercelConnector({
     setTokenSuccess(false);
 
     try {
-      await IpcClient.getInstance().saveVercelAccessToken(accessToken.trim());
+      await IpcClient.getInstance().saveVercelAccessToken({
+        token: accessToken.trim(),
+      });
       setTokenSuccess(true);
       setAccessToken("");
       refreshSettings();
@@ -318,8 +333,9 @@ function UnconnectedVercelConnector({
     if (!name) return;
     setIsCheckingProject(true);
     try {
-      const result =
-        await IpcClient.getInstance().checkVercelProjectAvailable(name);
+      const result = await IpcClient.getInstance().isVercelProjectAvailable({
+        name,
+      });
       setProjectAvailable(result.available);
       if (!result.available) {
         setProjectCheckError(result.error || "Project name is not available.");
@@ -355,12 +371,15 @@ function UnconnectedVercelConnector({
 
     try {
       if (projectSetupMode === "create") {
-        await IpcClient.getInstance().createVercelProject(projectName, appId);
-      } else {
-        await IpcClient.getInstance().connectToExistingVercelProject(
-          selectedProject,
+        await IpcClient.getInstance().createVercelProject({
+          name: projectName,
           appId,
-        );
+        });
+      } else {
+        await IpcClient.getInstance().connectToExistingVercelProject({
+          projectId: selectedProject,
+          appId,
+        });
       }
       setCreateProjectSuccess(true);
       setProjectCheckError(null);
@@ -489,10 +508,7 @@ function UnconnectedVercelConnector({
   }
 
   return (
-    <div
-      className="mt-4 w-full border border-gray-200 rounded-md"
-      data-testid="vercel-setup-project"
-    >
+    <div className="mt-4 w-full rounded-md" data-testid="vercel-setup-project">
       {/* Collapsible Header */}
       <button
         type="button"

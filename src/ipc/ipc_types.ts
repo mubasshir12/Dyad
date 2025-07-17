@@ -279,3 +279,40 @@ export interface VercelDeployment {
   target: string;
   readyState: string;
 }
+
+export interface ConnectToExistingVercelProjectParams {
+  projectId: string;
+  appId: number;
+}
+
+export interface IsVercelProjectAvailableResponse {
+  available: boolean;
+  error?: string;
+}
+
+export interface CreateVercelProjectParams {
+  name: string;
+  appId: number;
+}
+
+export interface GetVercelDeploymentsParams {
+  appId: number;
+}
+
+export interface DisconnectVercelProjectParams {
+  appId: number;
+}
+
+export interface IsVercelProjectAvailableParams {
+  name: string;
+}
+
+export interface SaveVercelAccessTokenParams {
+  token: string;
+}
+
+export interface VercelProject {
+  id: string;
+  name: string;
+  framework: string | null;
+}

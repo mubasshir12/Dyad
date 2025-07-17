@@ -11,8 +11,19 @@ import * as fs from "fs";
 import * as path from "path";
 import { CreateProjectFramework } from "@vercel/sdk/models/createprojectop.js";
 import { getDyadAppPath } from "@/paths/paths";
+import {
+  CreateVercelProjectParams,
+  IsVercelProjectAvailableParams,
+  SaveVercelAccessTokenParams,
+  VercelProject,
+} from "../ipc_types";
+import { ConnectToExistingVercelProjectParams } from "../ipc_types";
+import { GetVercelDeploymentsParams } from "../ipc_types";
+import { DisconnectVercelProjectParams } from "../ipc_types";
+import { createLoggedHandler } from "./safe_handle";
 
 const logger = log.scope("vercel_handlers");
+const handle = createLoggedHandler(logger);
 
 // Use test server URLs when in test mode
 const TEST_SERVER_BASE = "http://localhost:3500";
@@ -133,7 +144,7 @@ async function detectFramework(
 
 async function handleSaveVercelToken(
   event: IpcMainInvokeEvent,
-  { token }: { token: string },
+  { token }: SaveVercelAccessTokenParams,
 ): Promise<void> {
   logger.debug("Saving Vercel access token");
 
@@ -164,9 +175,7 @@ async function handleSaveVercelToken(
 }
 
 // --- Vercel List Projects Handler ---
-async function handleListVercelProjects(): Promise<
-  { id: string; name: string; framework: string | null }[]
-> {
+async function handleListVercelProjects(): Promise<VercelProject[]> {
   try {
     const settings = readSettings();
     const accessToken = settings.vercelAccessToken?.value;
@@ -195,7 +204,7 @@ async function handleListVercelProjects(): Promise<
 // --- Vercel Project Availability Handler ---
 async function handleIsProjectAvailable(
   event: IpcMainInvokeEvent,
-  { name }: { name: string },
+  { name }: IsVercelProjectAvailableParams,
 ): Promise<{ available: boolean; error?: string }> {
   try {
     const settings = readSettings();
@@ -234,7 +243,7 @@ async function handleIsProjectAvailable(
 // --- Vercel Create Project Handler ---
 async function handleCreateProject(
   event: IpcMainInvokeEvent,
-  { name, appId }: { name: string; appId: number },
+  { name, appId }: CreateVercelProjectParams,
 ): Promise<void> {
   const settings = readSettings();
   const accessToken = settings.vercelAccessToken?.value;
@@ -344,7 +353,7 @@ async function handleCreateProject(
 // --- Vercel Connect to Existing Project Handler ---
 async function handleConnectToExistingProject(
   event: IpcMainInvokeEvent,
-  { projectId, appId }: { projectId: string; appId: number },
+  { projectId, appId }: ConnectToExistingVercelProjectParams,
 ): Promise<void> {
   try {
     const settings = readSettings();
@@ -393,92 +402,10 @@ async function handleConnectToExistingProject(
   }
 }
 
-// --- Vercel Deploy Handler ---
-async function handleDeployToVercel(
-  event: IpcMainInvokeEvent,
-  { appId }: { appId: number },
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const settings = readSettings();
-    const accessToken = settings.vercelAccessToken?.value;
-    if (!accessToken) {
-      return { success: false, error: "Not authenticated with Vercel." };
-    }
-
-    const app = await db.query.apps.findFirst({ where: eq(apps.id, appId) });
-    if (!app || !app.vercelProjectId) {
-      return {
-        success: false,
-        error: "App is not linked to a Vercel project.",
-      };
-    }
-
-    if (!app.path) {
-      return {
-        success: false,
-        error: "App directory path is not set.",
-      };
-    }
-
-    logger.info(
-      `Deploying to Vercel project: ${app.vercelProjectId} for app ${appId}`,
-    );
-
-    const vercel = createVercelClient(accessToken);
-
-    // Check if app has GitHub repository configured
-    if (!app.githubOrg || !app.githubRepo) {
-      return {
-        success: false,
-        error:
-          "App must be connected to a GitHub repository before deploying to Vercel.",
-      };
-    }
-
-    // Create deployment via Vercel SDK
-    const deploymentData = await vercel.deployments.createDeployment({
-      requestBody: {
-        name: app.vercelProjectName || app.name,
-        project: app.vercelProjectId,
-        target: "production",
-        gitSource: {
-          type: "github",
-          org: app.githubOrg,
-          repo: app.githubRepo,
-          ref: app.githubBranch || "main",
-        },
-      },
-    });
-
-    if (!deploymentData.url) {
-      return {
-        success: false,
-        error: "Failed to create deployment: No deployment URL returned.",
-      };
-    }
-
-    // Update deployment URL in the database
-    const deploymentUrl = `https://${deploymentData.url}`;
-    await db
-      .update(apps)
-      .set({ vercelDeploymentUrl: deploymentUrl })
-      .where(eq(apps.id, appId));
-
-    logger.info(`Successfully deployed to: ${deploymentUrl}`);
-    return { success: true };
-  } catch (err: any) {
-    logger.error("[Vercel Handler] Failed to deploy:", err);
-    return {
-      success: false,
-      error: err.message || "Failed to deploy to Vercel.",
-    };
-  }
-}
-
 // --- Vercel Get Deployments Handler ---
 async function handleGetVercelDeployments(
   event: IpcMainInvokeEvent,
-  { appId }: { appId: number },
+  { appId }: GetVercelDeploymentsParams,
 ): Promise<
   {
     uid: string;
@@ -534,7 +461,7 @@ async function handleGetVercelDeployments(
 
 async function handleDisconnectVercelProject(
   event: IpcMainInvokeEvent,
-  { appId }: { appId: number },
+  { appId }: DisconnectVercelProjectParams,
 ): Promise<void> {
   logger.log(`Disconnecting Vercel project for appId: ${appId}`);
 
@@ -560,17 +487,16 @@ async function handleDisconnectVercelProject(
 
 // --- Registration ---
 export function registerVercelHandlers() {
+  // DO NOT LOG this handler because tokens are sensitive
   ipcMain.handle("vercel:save-token", handleSaveVercelToken);
-  ipcMain.handle("vercel:list-projects", handleListVercelProjects);
-  ipcMain.handle("vercel:is-project-available", handleIsProjectAvailable);
-  ipcMain.handle("vercel:create-project", handleCreateProject);
-  ipcMain.handle(
-    "vercel:connect-existing-project",
-    handleConnectToExistingProject,
-  );
-  ipcMain.handle("vercel:deploy", handleDeployToVercel);
-  ipcMain.handle("vercel:get-deployments", handleGetVercelDeployments);
-  ipcMain.handle("vercel:disconnect", handleDisconnectVercelProject);
+
+  // Logged handlers
+  handle("vercel:list-projects", handleListVercelProjects);
+  handle("vercel:is-project-available", handleIsProjectAvailable);
+  handle("vercel:create-project", handleCreateProject);
+  handle("vercel:connect-existing-project", handleConnectToExistingProject);
+  handle("vercel:get-deployments", handleGetVercelDeployments);
+  handle("vercel:disconnect", handleDisconnectVercelProject);
 }
 
 export async function updateAppVercelProject({

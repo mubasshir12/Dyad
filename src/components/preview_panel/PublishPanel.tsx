@@ -4,6 +4,7 @@ import { useLoadApp } from "@/hooks/useLoadApp";
 import { GitHubConnector } from "@/components/GitHubConnector";
 import { VercelConnector } from "@/components/VercelConnector";
 import { IpcClient } from "@/ipc/ipc_client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const PublishPanel = () => {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
@@ -70,20 +71,17 @@ export const PublishPanel = () => {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-6 space-y-8">
+      <div className="p-4 space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
             Publish App
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Deploy your application to various hosting platforms.
-          </p>
         </div>
 
         {/* GitHub Section */}
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
@@ -92,18 +90,24 @@ export const PublishPanel = () => {
                 />
               </svg>
               GitHub
-            </h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Sync your code to GitHub for version control and collaboration.
+              Sync your code to GitHub for collaboration.
             </p>
-          </div>
-          <GitHubConnector appId={selectedAppId} folderName={app.name} />
-        </div>
+            <GitHubConnector
+              appId={selectedAppId}
+              folderName={app.name}
+              expanded={true}
+            />
+          </CardContent>
+        </Card>
 
         {/* Vercel Section */}
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
               <button
                 onClick={() => {
                   const ipcClient = IpcClient.getInstance();
@@ -120,13 +124,45 @@ export const PublishPanel = () => {
                 </svg>
                 Vercel
               </button>
-            </h2>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Deploy your application to Vercel for instant global distribution.
+              Publish your app by deploying it to Vercel.
             </p>
-          </div>
-          <VercelConnector appId={selectedAppId} folderName={app.name} />
-        </div>
+
+            {!app?.githubOrg || !app?.githubRepo ? (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <svg
+                    className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                  <div>
+                    <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      GitHub Required for Vercel Deployment
+                    </h3>
+                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                      Deploying to Vercel requires connecting to GitHub first.
+                      Please set up your GitHub repository above.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <VercelConnector appId={selectedAppId} folderName={app.name} />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

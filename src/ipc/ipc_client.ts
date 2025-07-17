@@ -40,6 +40,15 @@ import type {
   EditAppFileReturnType,
   GetAppEnvVarsParams,
   SetAppEnvVarsParams,
+  ConnectToExistingVercelProjectParams,
+  IsVercelProjectAvailableResponse,
+  CreateVercelProjectParams,
+  VercelDeployment,
+  GetVercelDeploymentsParams,
+  DisconnectVercelProjectParams,
+  IsVercelProjectAvailableParams,
+  SaveVercelAccessTokenParams,
+  VercelProject,
 } from "./ipc_types";
 import type { AppChatContext, ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -647,72 +656,47 @@ export class IpcClient {
   // --- End GitHub Repo Management ---
 
   // --- Vercel Token Management ---
-  public async saveVercelAccessToken(token: string): Promise<void> {
-    await this.ipcRenderer.invoke("vercel:save-token", { token });
+  public async saveVercelAccessToken(
+    params: SaveVercelAccessTokenParams,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:save-token", params);
   }
   // --- End Vercel Token Management ---
 
   // --- Vercel Project Management ---
-  public async listVercelProjects(): Promise<
-    { id: string; name: string; framework: string | null }[]
-  > {
-    return this.ipcRenderer.invoke("vercel:list-projects");
+  public async listVercelProjects(): Promise<VercelProject[]> {
+    return this.ipcRenderer.invoke("vercel:list-projects", undefined);
   }
 
   public async connectToExistingVercelProject(
-    projectId: string,
-    appId: number,
+    params: ConnectToExistingVercelProjectParams,
   ): Promise<void> {
-    await this.ipcRenderer.invoke("vercel:connect-existing-project", {
-      projectId,
-      appId,
-    });
+    await this.ipcRenderer.invoke("vercel:connect-existing-project", params);
   }
 
-  public async checkVercelProjectAvailable(
-    name: string,
-  ): Promise<{ available: boolean; error?: string }> {
-    return this.ipcRenderer.invoke("vercel:is-project-available", {
-      name,
-    });
+  public async isVercelProjectAvailable(
+    params: IsVercelProjectAvailableParams,
+  ): Promise<IsVercelProjectAvailableResponse> {
+    return this.ipcRenderer.invoke("vercel:is-project-available", params);
   }
 
-  public async createVercelProject(name: string, appId: number): Promise<void> {
-    await this.ipcRenderer.invoke("vercel:create-project", {
-      name,
-      appId,
-    });
-  }
-
-  // Deploy to Vercel
-  public async deployToVercel(
-    appId: number,
-  ): Promise<{ success: boolean; error?: string }> {
-    return this.ipcRenderer.invoke("vercel:deploy", {
-      appId,
-    });
+  public async createVercelProject(
+    params: CreateVercelProjectParams,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:create-project", params);
   }
 
   // Get Vercel Deployments
-  public async getVercelDeployments(appId: number): Promise<
-    {
-      uid: string;
-      url: string;
-      state: string;
-      createdAt: number;
-      target: string;
-      readyState: string;
-    }[]
-  > {
-    return this.ipcRenderer.invoke("vercel:get-deployments", {
-      appId,
-    });
+  public async getVercelDeployments(
+    params: GetVercelDeploymentsParams,
+  ): Promise<VercelDeployment[]> {
+    return this.ipcRenderer.invoke("vercel:get-deployments", params);
   }
 
-  public async disconnectVercelProject(appId: number): Promise<void> {
-    await this.ipcRenderer.invoke("vercel:disconnect", {
-      appId,
-    });
+  public async disconnectVercelProject(
+    params: DisconnectVercelProjectParams,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:disconnect", params);
   }
   // --- End Vercel Project Management ---
 
