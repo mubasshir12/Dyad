@@ -113,7 +113,7 @@ function ConnectedVercelConnector({
                 e.preventDefault();
                 if (app.vercelDeploymentUrl) {
                   IpcClient.getInstance().openExternalUrl(
-                    "https://" + app.vercelDeploymentUrl,
+                    app.vercelDeploymentUrl,
                   );
                 }
               }}

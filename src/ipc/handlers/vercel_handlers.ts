@@ -296,7 +296,7 @@ async function handleCreateProject(
     const projectDomains = await vercel.projects.getProjectDomains({
       idOrName: projectData.id,
     });
-    const projectUrl = projectDomains.domains[0].name;
+    const projectUrl = "https://" + projectDomains.domains[0].name;
 
     // Store project info in the app's DB row
     await updateAppVercelProject({
