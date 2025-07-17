@@ -117,7 +117,7 @@ export function createDyadEngine(
 
     // Create configuration with file handling
     const config = {
-      ...getCommonModelConfig("chat"),
+      ...getCommonModelConfig(),
       defaultObjectGenerationMode:
         "tool" as LanguageModelV1ObjectGenerationMode,
       // Custom fetch implementation that adds files to the request
