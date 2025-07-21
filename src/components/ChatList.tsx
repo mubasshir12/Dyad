@@ -26,6 +26,7 @@ import {
 import { useChats } from "@/hooks/useChats";
 import { RenameChatButton } from "@/components/chat/RenameChatButton";
 import { RenameChatDialog } from "@/components/chat/RenameChatDialog";
+import { DeleteChatDialog } from "@/components/chat/DeleteChatDialog";
 
 export function ChatList({ show }: { show?: boolean }) {
   const navigate = useNavigate();
@@ -40,6 +41,11 @@ export function ChatList({ show }: { show?: boolean }) {
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [renameChatId, setRenameChatId] = useState<number | null>(null);
   const [renameChatTitle, setRenameChatTitle] = useState("");
+
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteChatId, setDeleteChatId] = useState<number | null>(null);
+  const [deleteChatTitle, setDeleteChatTitle] = useState("");
 
   // Update selectedChatId when route changes
   useEffect(() => {
@@ -112,6 +118,21 @@ export function ChatList({ show }: { show?: boolean }) {
       await refreshChats();
     } catch (error) {
       showError(`Failed to delete chat: ${(error as any).toString()}`);
+    }
+  };
+
+  const handleDeleteChatClick = (chatId: number, chatTitle: string) => {
+    setDeleteChatId(chatId);
+    setDeleteChatTitle(chatTitle);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteChatId !== null) {
+      await handleDeleteChat(deleteChatId);
+      setIsDeleteDialogOpen(false);
+      setDeleteChatId(null);
+      setDeleteChatTitle("");
     }
   };
 
@@ -190,15 +211,23 @@ export function ChatList({ show }: { show?: boolean }) {
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent
+                            align="end"
+                            className="space-y-1 p-2"
+                          >
                             <RenameChatButton
                               onRename={() =>
                                 handleRenameChat(chat.id, chat.title || "")
                               }
                             />
                             <DropdownMenuItem
-                              variant="destructive"
-                              onClick={() => handleDeleteChat(chat.id)}
+                              onClick={() =>
+                                handleDeleteChatClick(
+                                  chat.id,
+                                  chat.title || "New Chat",
+                                )
+                              }
+                              className="px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 focus:bg-red-50 dark:focus:bg-red-950/50"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               <span>Delete Chat</span>
@@ -225,6 +254,14 @@ export function ChatList({ show }: { show?: boolean }) {
           onRename={refreshChats}
         />
       )}
+
+      {/* Delete Chat Dialog */}
+      <DeleteChatDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirmDelete={handleConfirmDelete}
+        chatTitle={deleteChatTitle}
+      />
     </>
   );
 }

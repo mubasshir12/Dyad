@@ -7,7 +7,7 @@ interface RenameChatButtonProps {
 
 export function RenameChatButton({ onRename }: RenameChatButtonProps) {
   return (
-    <DropdownMenuItem onClick={onRename}>
+    <DropdownMenuItem onClick={onRename} className="px-3 py-2">
       <Edit3 className="mr-2 h-4 w-4" />
       <span>Rename Chat</span>
     </DropdownMenuItem>
