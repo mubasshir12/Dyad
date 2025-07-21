@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 
 import { formatDistanceToNow } from "date-fns";
-import { PlusCircle, MoreVertical, Trash2 } from "lucide-react";
+import { PlusCircle, MoreVertical, Trash2, Edit3 } from "lucide-react";
 import { useAtom } from "jotai";
 import { selectedChatIdAtom } from "@/atoms/chatAtoms";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
@@ -24,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useChats } from "@/hooks/useChats";
-import { RenameChatButton } from "@/components/chat/RenameChatButton";
 import { RenameChatDialog } from "@/components/chat/RenameChatDialog";
 import { DeleteChatDialog } from "@/components/chat/DeleteChatDialog";
 
@@ -142,6 +141,14 @@ export function ChatList({ show }: { show?: boolean }) {
     setIsRenameDialogOpen(true);
   };
 
+  const handleRenameDialogClose = (open: boolean) => {
+    setIsRenameDialogOpen(open);
+    if (!open) {
+      setRenameChatId(null);
+      setRenameChatTitle("");
+    }
+  };
+
   return (
     <>
       <SidebarGroup className="overflow-y-auto h-[calc(100vh-112px)]">
@@ -215,11 +222,15 @@ export function ChatList({ show }: { show?: boolean }) {
                             align="end"
                             className="space-y-1 p-2"
                           >
-                            <RenameChatButton
-                              onRename={() =>
+                            <DropdownMenuItem
+                              onClick={() =>
                                 handleRenameChat(chat.id, chat.title || "")
                               }
-                            />
+                              className="px-3 py-2"
+                            >
+                              <Edit3 className="mr-2 h-4 w-4" />
+                              <span>Rename Chat</span>
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() =>
                                 handleDeleteChatClick(
@@ -250,7 +261,7 @@ export function ChatList({ show }: { show?: boolean }) {
           chatId={renameChatId}
           currentTitle={renameChatTitle}
           isOpen={isRenameDialogOpen}
-          onOpenChange={setIsRenameDialogOpen}
+          onOpenChange={handleRenameDialogClose}
           onRename={refreshChats}
         />
       )}
