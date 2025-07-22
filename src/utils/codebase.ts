@@ -311,16 +311,18 @@ const OMITTED_FILE_CONTENT = "// File contents excluded from context";
 /**
  * Check if file contents should be read based on extension and inclusion rules
  */
-function shouldReadFileContents(filePath: string, baseDir: string): boolean {
+function shouldReadFileContents({
+  filePath,
+  normalizedRelativePath,
+}: {
+  filePath: string;
+  normalizedRelativePath: string;
+}): boolean {
   const ext = path.extname(filePath).toLowerCase();
   const fileName = path.basename(filePath);
-  const relativePath = path
-    .relative(baseDir, filePath)
-    .split(path.sep)
-    .join("/");
 
   // OMITTED_FILES takes precedence - never read if omitted
-  if (isOmittedFile(relativePath)) {
+  if (isOmittedFile(normalizedRelativePath)) {
     return false;
   }
 
@@ -335,18 +337,16 @@ function shouldReadFileContents(filePath: string, baseDir: string): boolean {
  */
 async function formatFile({
   filePath,
-  baseDir,
   normalizedRelativePath,
   virtualFileSystem,
 }: {
   filePath: string;
-  baseDir: string;
   normalizedRelativePath: string;
   virtualFileSystem?: AsyncVirtualFileSystem;
 }): Promise<string> {
   try {
     // Check if we should read file contents
-    if (!shouldReadFileContents(filePath, baseDir)) {
+    if (!shouldReadFileContents({ filePath, normalizedRelativePath })) {
       return `<dyad-file path="${normalizedRelativePath}">
 ${OMITTED_FILE_CONTENT}
 </dyad-file>
@@ -508,7 +508,6 @@ export async function extractCodebase({
       .join("/");
     const formattedContent = await formatFile({
       filePath: file,
-      baseDir: appPath,
       normalizedRelativePath,
       virtualFileSystem,
     });
@@ -517,7 +516,7 @@ export async function extractCodebase({
 
     // Determine file content based on whether we should read it
     let fileContent: string;
-    if (!shouldReadFileContents(file, appPath)) {
+    if (!shouldReadFileContents({ filePath: file, normalizedRelativePath })) {
       fileContent = OMITTED_FILE_CONTENT;
     } else {
       const readContent = await readFileWithCache(file, virtualFileSystem);
