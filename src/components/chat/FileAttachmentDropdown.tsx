@@ -112,6 +112,7 @@ export function FileAttachmentDropdown({
       {/* Hidden file inputs */}
       <input
         type="file"
+        data-testid="chat-context-file-input"
         ref={chatContextFileInputRef}
         onChange={(e) => handleFileChange(e, "chat-context")}
         className="hidden"
@@ -120,6 +121,7 @@ export function FileAttachmentDropdown({
       />
       <input
         type="file"
+        data-testid="upload-to-codebase-file-input"
         ref={uploadToCodebaseFileInputRef}
         onChange={(e) => handleFileChange(e, "upload-to-codebase")}
         className="hidden"

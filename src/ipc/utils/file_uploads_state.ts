@@ -60,7 +60,6 @@ export class FileUploadsState {
    */
   public clear(): void {
     this.currentChatId = null;
-    this.currentMessageId = null;
     this.fileUploadsMap.clear();
     logger.log("Cleared file uploads state");
   }
