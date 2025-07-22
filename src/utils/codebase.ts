@@ -371,7 +371,7 @@ ${content}
 `;
   } catch (error) {
     logger.error(`Error reading file: ${filePath}`, error);
-    return `<dyad-file path="${path.relative(baseDir, filePath)}">
+    return `<dyad-file path="${normalizedRelativePath}">
 // Error reading file: ${error}
 </dyad-file>
 
