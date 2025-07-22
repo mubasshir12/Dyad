@@ -277,10 +277,6 @@ async function collectFiles(dir: string, baseDir: string): Promise<string[]> {
           return;
         }
 
-        // Check file extension and filename
-        const ext = path.extname(entry.name).toLowerCase();
-        const shouldAlwaysInclude = ALWAYS_INCLUDE_FILES.includes(entry.name);
-
         // Skip files that are too large
         try {
           const stats = await fsAsync.stat(fullPath);
@@ -292,9 +288,8 @@ async function collectFiles(dir: string, baseDir: string): Promise<string[]> {
           return;
         }
 
-        if (ALLOWED_EXTENSIONS.includes(ext) || shouldAlwaysInclude) {
-          files.push(fullPath);
-        }
+        // Include all files in the list
+        files.push(fullPath);
       }
     });
 
@@ -311,7 +306,29 @@ function isOmittedFile(relativePath: string): boolean {
   return OMITTED_FILES.some((pattern) => relativePath.includes(pattern));
 }
 
-const OMITTED_FILE_CONTENT = "// Contents omitted for brevity";
+const OMITTED_FILE_CONTENT = "// File contents excluded from context";
+
+/**
+ * Check if file contents should be read based on extension and inclusion rules
+ */
+function shouldReadFileContents(filePath: string, baseDir: string): boolean {
+  const ext = path.extname(filePath).toLowerCase();
+  const fileName = path.basename(filePath);
+  const relativePath = path
+    .relative(baseDir, filePath)
+    .split(path.sep)
+    .join("/");
+
+  // OMITTED_FILES takes precedence - never read if omitted
+  if (isOmittedFile(relativePath)) {
+    return false;
+  }
+
+  // Check if file should be included based on extension or filename
+  return (
+    ALLOWED_EXTENSIONS.includes(ext) || ALWAYS_INCLUDE_FILES.includes(fileName)
+  );
+}
 
 /**
  * Format a file for inclusion in the codebase extract
@@ -328,7 +345,8 @@ async function formatFile(
       .split(path.sep)
       .join("/");
 
-    if (isOmittedFile(relativePath)) {
+    // Check if we should read file contents
+    if (!shouldReadFileContents(filePath, baseDir)) {
       return `<dyad-file path="${relativePath}">
 ${OMITTED_FILE_CONTENT}
 </dyad-file>
@@ -493,16 +511,20 @@ export async function extractCodebase({
 
     const isForced = autoIncludedFiles.has(path.normalize(file));
 
-    const fileContent = isOmittedFile(relativePath)
-      ? OMITTED_FILE_CONTENT
-      : await readFileWithCache(file, virtualFileSystem);
-    if (fileContent != null) {
-      filesArray.push({
-        path: relativePath,
-        content: fileContent,
-        force: isForced,
-      });
+    // Determine file content based on whether we should read it
+    let fileContent: string;
+    if (!shouldReadFileContents(file, appPath)) {
+      fileContent = OMITTED_FILE_CONTENT;
+    } else {
+      const readContent = await readFileWithCache(file, virtualFileSystem);
+      fileContent = readContent ?? "// Error reading file";
     }
+
+    filesArray.push({
+      path: relativePath,
+      content: fileContent,
+      force: isForced,
+    });
 
     return formattedContent;
   });
