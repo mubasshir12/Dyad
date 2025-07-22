@@ -282,23 +282,25 @@ export class IpcClient {
       // Process each file attachment and convert to base64
       Promise.all(
         attachments.map(async (attachment) => {
-          return new Promise<{ name: string; type: string; data: string }>(
-            (resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                resolve({
-                  name: attachment.file.name,
-                  type: attachment.file.type,
-                  data: reader.result as string,
-                });
-              };
-              reader.onerror = () =>
-                reject(
-                  new Error(`Failed to read file: ${attachment.file.name}`),
-                );
-              reader.readAsDataURL(attachment.file);
-            },
-          );
+          return new Promise<{
+            name: string;
+            type: string;
+            data: string;
+            attachmentType: "upload-to-codebase" | "chat-context";
+          }>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                name: attachment.file.name,
+                type: attachment.file.type,
+                data: reader.result as string,
+                attachmentType: attachment.type,
+              });
+            };
+            reader.onerror = () =>
+              reject(new Error(`Failed to read file: ${attachment.file.name}`));
+            reader.readAsDataURL(attachment.file);
+          });
         }),
       )
         .then((fileDataArray) => {

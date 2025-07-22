@@ -22,6 +22,7 @@ export interface ChatStreamParams {
     name: string;
     type: string;
     data: string; // Base64 encoded file data
+    attachmentType: "upload-to-codebase" | "chat-context"; // FileAttachment type
   }>;
   selectedComponent: ComponentSelection | null;
 }

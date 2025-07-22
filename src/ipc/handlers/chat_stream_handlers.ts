@@ -57,6 +57,7 @@ import {
   getDyadRenameTags,
 } from "../utils/dyad_tag_parser";
 import { fileExists } from "../utils/file_utils";
+import { FileUploadsState } from "../utils/file_uploads_state";
 
 type AsyncIterableStream<T> = AsyncIterable<T> & ReadableStream<T>;
 
@@ -161,6 +162,9 @@ async function processStreamChunks({
 export function registerChatStreamHandlers() {
   ipcMain.handle("chat:stream", async (event, req: ChatStreamParams) => {
     try {
+      const fileUploadsState = FileUploadsState.getInstance();
+      fileUploadsState.initialize({ chatId: req.chatId });
+
       // Create an AbortController for this stream
       const abortController = new AbortController();
       activeStreams.set(req.chatId, abortController);
@@ -221,7 +225,7 @@ export function registerChatStreamHandlers() {
       if (req.attachments && req.attachments.length > 0) {
         attachmentInfo = "\n\nAttachments:\n";
 
-        for (const attachment of req.attachments) {
+        for (const [index, attachment] of req.attachments.entries()) {
           // Generate a unique filename
           const hash = crypto
             .createHash("md5")
@@ -236,15 +240,30 @@ export function registerChatStreamHandlers() {
 
           await writeFile(filePath, Buffer.from(base64Data, "base64"));
           attachmentPaths.push(filePath);
-          attachmentInfo += `- ${attachment.name} (${attachment.type})\n`;
-          // If it's a text-based file, try to include the content
-          if (await isTextFile(filePath)) {
-            try {
-              attachmentInfo += `<dyad-text-attachment filename="${attachment.name}" type="${attachment.type}" path="${filePath}">
-              </dyad-text-attachment>
-              \n\n`;
-            } catch (err) {
-              logger.error(`Error reading file content: ${err}`);
+
+          if (attachment.attachmentType === "upload-to-codebase") {
+            // For upload-to-codebase, create a unique file ID and store the mapping
+            const fileId = `DYAD_ATTACHMENT_${index}`;
+
+            fileUploadsState.addFileUpload(fileId, {
+              filePath,
+              originalName: attachment.name,
+            });
+
+            // Add instruction for AI to use dyad-write tag
+            attachmentInfo += `\n\nFile to upload to codebase: ${attachment.name} (file id: ${fileId})\n`;
+          } else {
+            // For chat-context, use the existing logic
+            attachmentInfo += `- ${attachment.name} (${attachment.type})\n`;
+            // If it's a text-based file, try to include the content
+            if (await isTextFile(filePath)) {
+              try {
+                attachmentInfo += `<dyad-text-attachment filename="${attachment.name}" type="${attachment.type}" path="${filePath}">
+                </dyad-text-attachment>
+                \n\n`;
+              } catch (err) {
+                logger.error(`Error reading file content: ${err}`);
+              }
             }
           }
         }
@@ -454,7 +473,24 @@ ${componentSnippet}
             attachment.type.startsWith("image/"),
           );
 
-        if (hasImageAttachments) {
+        const hasUploadedAttachments =
+          req.attachments &&
+          req.attachments.some(
+            (attachment) => attachment.attachmentType === "upload-to-codebase",
+          );
+        if (hasUploadedAttachments) {
+          systemPrompt += `
+  
+  # File Upload Capabilities
+  This conversation includes one or more file attachments.
+  
+MAKE SURE YOU USE THE FOLLOWING FORMAT TO UPLOAD THIS FILE TO THE CODEBASE:
+<dyad-write path="path/to/destination/file-name.ext" description="Upload file to codebase">
+FILE_ID
+</dyad-write>
+
+  `;
+        } else if (hasImageAttachments) {
           systemPrompt += `
 
 # Image Analysis Capabilities
@@ -857,8 +893,14 @@ ${problemReport.problems
           const status = await processFullResponseActions(
             fullResponse,
             req.chatId,
-            { chatSummary, messageId: placeholderAssistantMessage.id }, // Use placeholder ID
+            {
+              chatSummary,
+              messageId: placeholderAssistantMessage.id,
+            }, // Use placeholder ID
           );
+
+          // Clean up file uploads state
+          fileUploadsState.clear();
 
           const chat = await db.query.chats.findFirst({
             where: eq(chats.id, req.chatId),
@@ -929,6 +971,8 @@ ${problemReport.problems
       );
       // Clean up the abort controller
       activeStreams.delete(req.chatId);
+      // Clean up file uploads state on error
+      FileUploadsState.getInstance().clear();
       return "error";
     }
   });

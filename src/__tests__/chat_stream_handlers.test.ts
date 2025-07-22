@@ -672,6 +672,7 @@ describe("processFullResponse", () => {
       {
         chatSummary: undefined,
         messageId: 1,
+        fileUploadsMap: undefined,
       },
     );
     expect(result).toEqual({
@@ -693,6 +694,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     expect(fs.mkdirSync).toHaveBeenCalledWith(
@@ -723,6 +725,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     expect(result).toHaveProperty("error");
@@ -749,6 +752,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     // Check that directories were created for each file path
@@ -815,6 +819,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     expect(fs.mkdirSync).toHaveBeenCalledWith(
@@ -848,6 +853,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     expect(fs.mkdirSync).toHaveBeenCalled();
@@ -870,6 +876,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     expect(fs.unlinkSync).toHaveBeenCalledWith(
@@ -893,6 +900,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     expect(fs.unlinkSync).not.toHaveBeenCalled();
@@ -922,6 +930,7 @@ describe("processFullResponse", () => {
     const result = await processFullResponseActions(response, 1, {
       chatSummary: undefined,
       messageId: 1,
+      fileUploadsMap: undefined,
     });
 
     // Check write operation happened
