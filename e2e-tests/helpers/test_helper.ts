@@ -422,7 +422,7 @@ export class PageObject {
   // Preview panel
   ////////////////////////////////
 
-  async selectPreviewMode(mode: "code" | "problems" | "preview") {
+  async selectPreviewMode(mode: "code" | "problems" | "preview" | "configure") {
     await this.page.getByTestId(`${mode}-mode-button`).click();
   }
 
@@ -436,7 +436,9 @@ export class PageObject {
   }
 
   async snapshotProblemsPane() {
-    await expect(this.page.getByTestId("problems-pane")).toMatchAriaSnapshot();
+    await expect(this.page.getByTestId("problems-pane")).toMatchAriaSnapshot({
+      timeout: Timeout.MEDIUM,
+    });
   }
 
   async clickRebuild() {
@@ -480,6 +482,10 @@ export class PageObject {
 
   locateLoadingAppPreview() {
     return this.page.getByText("Loading app preview...");
+  }
+
+  locateStartingAppPreview() {
+    return this.page.getByText("Starting up your app...");
   }
 
   getPreviewIframeElement() {

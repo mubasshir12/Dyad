@@ -81,6 +81,10 @@ export interface App {
   githubBranch: string | null;
   supabaseProjectId: string | null;
   supabaseProjectName: string | null;
+  vercelProjectId: string | null;
+  vercelProjectName: string | null;
+  vercelTeamSlug: string | null;
+  vercelDeploymentUrl: string | null;
 }
 
 export interface Version {
@@ -251,4 +255,69 @@ export interface AppUpgrade {
 
 export interface EditAppFileReturnType {
   warning?: string;
+}
+
+export interface EnvVar {
+  key: string;
+  value: string;
+}
+
+export interface SetAppEnvVarsParams {
+  appId: number;
+  envVars: EnvVar[];
+}
+
+export interface GetAppEnvVarsParams {
+  appId: number;
+}
+
+export interface VercelDeployment {
+  uid: string;
+  url: string;
+  state: string;
+  createdAt: number;
+  target: string;
+  readyState: string;
+}
+
+export interface ConnectToExistingVercelProjectParams {
+  projectId: string;
+  appId: number;
+}
+
+export interface IsVercelProjectAvailableResponse {
+  available: boolean;
+  error?: string;
+}
+
+export interface CreateVercelProjectParams {
+  name: string;
+  appId: number;
+}
+
+export interface GetVercelDeploymentsParams {
+  appId: number;
+}
+
+export interface DisconnectVercelProjectParams {
+  appId: number;
+}
+
+export interface IsVercelProjectAvailableParams {
+  name: string;
+}
+
+export interface SaveVercelAccessTokenParams {
+  token: string;
+}
+
+export interface VercelProject {
+  id: string;
+  name: string;
+  framework: string | null;
+}
+
+export interface UpdateChatParams {
+  chatId: number;
+  title: string;
 }

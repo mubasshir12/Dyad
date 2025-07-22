@@ -5,6 +5,7 @@ import { registerSettingsHandlers } from "./handlers/settings_handlers";
 import { registerShellHandlers } from "./handlers/shell_handler";
 import { registerDependencyHandlers } from "./handlers/dependency_handlers";
 import { registerGithubHandlers } from "./handlers/github_handlers";
+import { registerVercelHandlers } from "./handlers/vercel_handlers";
 import { registerNodeHandlers } from "./handlers/node_handlers";
 import { registerProposalHandlers } from "./handlers/proposal_handlers";
 import { registerDebugHandlers } from "./handlers/debug_handlers";
@@ -23,6 +24,7 @@ import { registerContextPathsHandlers } from "./handlers/context_paths_handlers"
 import { registerAppUpgradeHandlers } from "./handlers/app_upgrade_handlers";
 import { registerCapacitorHandlers } from "./handlers/capacitor_handlers";
 import { registerProblemsHandlers } from "./handlers/problems_handlers";
+import { registerAppEnvVarsHandlers } from "./handlers/app_env_vars_handlers";
 
 export function registerIpcHandlers() {
   // Register all IPC handlers by category
@@ -33,6 +35,7 @@ export function registerIpcHandlers() {
   registerShellHandlers();
   registerDependencyHandlers();
   registerGithubHandlers();
+  registerVercelHandlers();
   registerNodeHandlers();
   registerProblemsHandlers();
   registerProposalHandlers();
@@ -51,4 +54,5 @@ export function registerIpcHandlers() {
   registerContextPathsHandlers();
   registerAppUpgradeHandlers();
   registerCapacitorHandlers();
+  registerAppEnvVarsHandlers();
 }

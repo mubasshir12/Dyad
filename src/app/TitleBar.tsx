@@ -1,7 +1,7 @@
 import { useAtom } from "jotai";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useLoadApps } from "@/hooks/useLoadApps";
-import { useRouter } from "@tanstack/react-router";
+import { useRouter, useLocation } from "@tanstack/react-router";
 import { useSettings } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 // @ts-ignore
@@ -20,11 +20,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { PreviewHeader } from "@/components/preview_panel/PreviewHeader";
 
 export const TitleBar = () => {
   const [selectedAppId] = useAtom(selectedAppIdAtom);
   const { apps } = useLoadApps();
   const { navigate } = useRouter();
+  const location = useLocation();
   const { settings, refreshSettings } = useSettings();
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
   const [showWindowControls, setShowWindowControls] = useState(false);
@@ -76,13 +78,14 @@ export const TitleBar = () => {
   return (
     <>
       <div className="@container z-11 w-full h-11 bg-(--sidebar) absolute top-0 left-0 app-region-drag flex items-center">
-        <div className="pl-20"></div>
-        <img src={logo} alt="Dyad Logo" className="w-6 h-6 mr-2" />
+        <div className={`${showWindowControls ? "pl-2" : "pl-18"}`}></div>
+
+        <img src={logo} alt="Dyad Logo" className="w-6 h-6 mr-0.5" />
         <Button
           data-testid="title-bar-app-name-button"
           variant="outline"
           size="sm"
-          className={`hidden @md:block no-app-region-drag text-sm font-medium ${
+          className={`hidden @2xl:block no-app-region-drag text-xs max-w-38 truncate font-medium ${
             selectedApp ? "cursor-pointer" : ""
           }`}
           onClick={handleAppClick}
@@ -90,6 +93,14 @@ export const TitleBar = () => {
           {displayText}
         </Button>
         {isDyadPro && <DyadProButton isDyadProEnabled={isDyadProEnabled} />}
+
+        {/* Preview Header */}
+        {location.pathname === "/chat" && (
+          <div className="flex-1 flex justify-end">
+            <PreviewHeader />
+          </div>
+        )}
+
         {showWindowControls && <WindowsControls />}
       </div>
 
@@ -120,7 +131,7 @@ function WindowsControls() {
   return (
     <div className="ml-auto flex no-app-region-drag">
       <button
-        className="w-12 h-11 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         onClick={minimizeWindow}
         aria-label="Minimize"
       >
@@ -139,7 +150,7 @@ function WindowsControls() {
         </svg>
       </button>
       <button
-        className="w-12 h-11 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        className="w-10 h-10 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         onClick={maximizeWindow}
         aria-label="Maximize"
       >
@@ -160,7 +171,7 @@ function WindowsControls() {
         </svg>
       </button>
       <button
-        className="w-12 h-11 flex items-center justify-center hover:bg-red-500 transition-colors"
+        className="w-10 h-10 flex items-center justify-center hover:bg-red-500 transition-colors"
         onClick={closeWindow}
         aria-label="Close"
       >
@@ -200,13 +211,15 @@ export function DyadProButton({
       }}
       variant="outline"
       className={cn(
-        "ml-4 no-app-region-drag h-7 bg-indigo-600 text-white dark:bg-indigo-600 dark:text-white",
+        "hidden @2xl:block ml-1 no-app-region-drag h-7 bg-indigo-600 text-white dark:bg-indigo-600 dark:text-white text-xs px-2 pt-1 pb-1",
         !isDyadProEnabled && "bg-zinc-600 dark:bg-zinc-600",
       )}
       size="sm"
     >
-      {isDyadProEnabled ? "Dyad Pro" : "Dyad Pro (disabled)"}
-      {userBudget && <AICreditStatus userBudget={userBudget} />}
+      {isDyadProEnabled ? "Pro" : "Pro (off)"}
+      {userBudget && isDyadProEnabled && (
+        <AICreditStatus userBudget={userBudget} />
+      )}
     </Button>
   );
 }
@@ -218,7 +231,7 @@ export function AICreditStatus({ userBudget }: { userBudget: UserBudgetInfo }) {
   return (
     <Tooltip>
       <TooltipTrigger>
-        <div className="text-xs mt-0.5">{remaining} credits left</div>
+        <div className="text-xs pl-1 mt-0.5">{remaining} credits</div>
       </TooltipTrigger>
       <TooltipContent>
         <div>

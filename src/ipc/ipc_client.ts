@@ -38,6 +38,18 @@ import type {
   AppUpgrade,
   ProblemReport,
   EditAppFileReturnType,
+  GetAppEnvVarsParams,
+  SetAppEnvVarsParams,
+  ConnectToExistingVercelProjectParams,
+  IsVercelProjectAvailableResponse,
+  CreateVercelProjectParams,
+  VercelDeployment,
+  GetVercelDeploymentsParams,
+  DisconnectVercelProjectParams,
+  IsVercelProjectAvailableParams,
+  SaveVercelAccessTokenParams,
+  VercelProject,
+  UpdateChatParams,
 } from "./ipc_types";
 import type { AppChatContext, ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -181,6 +193,16 @@ export class IpcClient {
 
   public async getApp(appId: number): Promise<App> {
     return this.ipcRenderer.invoke("get-app", appId);
+  }
+
+  public async getAppEnvVars(
+    params: GetAppEnvVarsParams,
+  ): Promise<{ key: string; value: string }[]> {
+    return this.ipcRenderer.invoke("get-app-env-vars", params);
+  }
+
+  public async setAppEnvVars(params: SetAppEnvVarsParams): Promise<void> {
+    return this.ipcRenderer.invoke("set-app-env-vars", params);
   }
 
   public async getChat(chatId: number): Promise<Chat> {
@@ -328,6 +350,10 @@ export class IpcClient {
   // Create a new chat for an app
   public async createChat(appId: number): Promise<number> {
     return this.ipcRenderer.invoke("create-chat", appId);
+  }
+
+  public async updateChat(params: UpdateChatParams): Promise<void> {
+    return this.ipcRenderer.invoke("update-chat", params);
   }
 
   public async deleteChat(chatId: number): Promise<void> {
@@ -633,6 +659,51 @@ export class IpcClient {
     });
   }
   // --- End GitHub Repo Management ---
+
+  // --- Vercel Token Management ---
+  public async saveVercelAccessToken(
+    params: SaveVercelAccessTokenParams,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:save-token", params);
+  }
+  // --- End Vercel Token Management ---
+
+  // --- Vercel Project Management ---
+  public async listVercelProjects(): Promise<VercelProject[]> {
+    return this.ipcRenderer.invoke("vercel:list-projects", undefined);
+  }
+
+  public async connectToExistingVercelProject(
+    params: ConnectToExistingVercelProjectParams,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:connect-existing-project", params);
+  }
+
+  public async isVercelProjectAvailable(
+    params: IsVercelProjectAvailableParams,
+  ): Promise<IsVercelProjectAvailableResponse> {
+    return this.ipcRenderer.invoke("vercel:is-project-available", params);
+  }
+
+  public async createVercelProject(
+    params: CreateVercelProjectParams,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:create-project", params);
+  }
+
+  // Get Vercel Deployments
+  public async getVercelDeployments(
+    params: GetVercelDeploymentsParams,
+  ): Promise<VercelDeployment[]> {
+    return this.ipcRenderer.invoke("vercel:get-deployments", params);
+  }
+
+  public async disconnectVercelProject(
+    params: DisconnectVercelProjectParams,
+  ): Promise<void> {
+    await this.ipcRenderer.invoke("vercel:disconnect", params);
+  }
+  // --- End Vercel Project Management ---
 
   // Get the main app version
   public async getAppVersion(): Promise<string> {
