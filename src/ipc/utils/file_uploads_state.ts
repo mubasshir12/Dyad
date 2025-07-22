@@ -27,7 +27,7 @@ export class FileUploadsState {
   public initialize({ chatId }: { chatId: number }): void {
     this.currentChatId = chatId;
     this.fileUploadsMap.clear();
-    logger.log(`Initialized file uploads state for chat ${chatId}`);
+    logger.debug(`Initialized file uploads state for chat ${chatId}`);
   }
 
   /**
@@ -61,6 +61,6 @@ export class FileUploadsState {
   public clear(): void {
     this.currentChatId = null;
     this.fileUploadsMap.clear();
-    logger.log("Cleared file uploads state");
+    logger.debug("Cleared file uploads state");
   }
 }

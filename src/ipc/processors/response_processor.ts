@@ -299,26 +299,26 @@ export async function processFullResponseActions(
       let content: string | Buffer = tag.content;
       const fullFilePath = safeJoin(appPath, filePath);
 
-      // Check if content contains file IDs and replace with actual file content
+      // Check if content (stripped of whitespace) exactly matches a file ID and replace with actual file content
       if (fileUploadsMap) {
-        for (const [fileId, fileInfo] of fileUploadsMap.entries()) {
-          if (content.includes(fileId)) {
-            try {
-              const fileContent = await readFile(fileInfo.filePath);
-              content = fileContent;
-              logger.log(
-                `Replaced file ID ${fileId} with content from ${fileInfo.originalName}`,
-              );
-            } catch (error) {
-              logger.error(
-                `Failed to read uploaded file ${fileInfo.originalName}:`,
-                error,
-              );
-              errors.push({
-                message: `Failed to read uploaded file: ${fileInfo.originalName}`,
-                error: error,
-              });
-            }
+        const trimmedContent = tag.content.trim();
+        const fileInfo = fileUploadsMap.get(trimmedContent);
+        if (fileInfo) {
+          try {
+            const fileContent = await readFile(fileInfo.filePath);
+            content = fileContent;
+            logger.log(
+              `Replaced file ID ${trimmedContent} with content from ${fileInfo.originalName}`,
+            );
+          } catch (error) {
+            logger.error(
+              `Failed to read uploaded file ${fileInfo.originalName}:`,
+              error,
+            );
+            errors.push({
+              message: `Failed to read uploaded file: ${fileInfo.originalName}`,
+              error: error,
+            });
           }
         }
       }

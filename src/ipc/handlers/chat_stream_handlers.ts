@@ -478,22 +478,30 @@ ${componentSnippet}
           req.attachments.some(
             (attachment) => attachment.attachmentType === "upload-to-codebase",
           );
+        // If there's mixed attachments (e.g. some upload to codebase attachments and some upload images as chat context attachemnts)
+        // we will just include the file upload system prompt, otherwise the AI gets confused and doesn't reliably
+        // print out the dyad-write tags.
+        // Usually, AI models will want to use the image as reference to generate code (e.g. UI mockups) anyways, so
+        // it's not that critical to include the image analysis instructions.
         if (hasUploadedAttachments) {
           systemPrompt += `
   
-  # File Upload Capabilities
-  This conversation includes one or more file attachments.
-  
-MAKE SURE YOU USE THE FOLLOWING FORMAT TO UPLOAD THIS FILE TO THE CODEBASE:
-<dyad-write path="path/to/destination/file-name.ext" description="Upload file to codebase">
-FILE_ID
+When files are attached to this conversation, upload them to the codebase using this exact format:
+
+<dyad-write path="path/to/destination/filename.ext" description="Upload file to codebase">
+DYAD_ATTACHMENT_X
+</dyad-write>
+
+Example for file with id of DYAD_ATTACHMENT_0:
+<dyad-write path="src/components/Button.jsx" description="Upload file to codebase">
+DYAD_ATTACHMENT_0
 </dyad-write>
 
   `;
         } else if (hasImageAttachments) {
           systemPrompt += `
 
-# Image Analysis Capabilities
+# Image Analysis Instructions
 This conversation includes one or more image attachments. When the user uploads images:
 1. If the user explicitly asks for analysis, description, or information about the image, please analyze the image content.
 2. Describe what you see in the image if asked.
@@ -898,9 +906,6 @@ ${problemReport.problems
               messageId: placeholderAssistantMessage.id,
             }, // Use placeholder ID
           );
-
-          // Clean up file uploads state
-          fileUploadsState.clear();
 
           const chat = await db.query.chats.findFirst({
             where: eq(chats.id, req.chatId),

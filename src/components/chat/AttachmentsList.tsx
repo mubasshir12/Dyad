@@ -47,6 +47,9 @@ export function AttachmentsList({
                     onLoad={(e) =>
                       URL.revokeObjectURL((e.target as HTMLImageElement).src)
                     }
+                    onError={(e) =>
+                      URL.revokeObjectURL((e.target as HTMLImageElement).src)
+                    }
                   />
                 </div>
               </div>
