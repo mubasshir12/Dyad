@@ -38,7 +38,7 @@ test("attach image - chat", async ({ po }) => {
   await po.snapshotMessages({ replaceDumpPath: true });
 });
 
-test.only("attach image - chat - upload to codebase", async ({ po }) => {
+test("attach image - chat - upload to codebase", async ({ po }) => {
   await po.setUp({ autoApprove: true });
   await po.sendPrompt("basic");
 
