@@ -123,7 +123,10 @@ export default function HomePage() {
       streamMessage({
         prompt: inputValue,
         chatId: result.chatId,
-        attachments,
+        attachments: attachments.map((file) => ({
+          file,
+          type: "chat-context" as const,
+        })),
       });
       await new Promise((resolve) =>
         setTimeout(resolve, settings?.isTestMode ? 0 : 2000),

@@ -162,7 +162,10 @@ export function ChatInput({ chatId }: { chatId?: number }) {
     await streamMessage({
       prompt: currentInput,
       chatId,
-      attachments,
+      attachments: attachments.map((file) => ({
+        file,
+        type: "chat-context" as const,
+      })),
       redo: false,
       selectedComponent,
     });

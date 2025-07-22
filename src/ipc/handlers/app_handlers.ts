@@ -8,6 +8,8 @@ import type {
   RenameBranchParams,
   CopyAppParams,
   EditAppFileReturnType,
+  UploadFileToCodebaseParams,
+  UploadFileToCodebaseResult,
 } from "../ipc_types";
 import fs from "node:fs";
 import path from "node:path";
@@ -47,6 +49,7 @@ import { safeSend } from "../utils/safe_sender";
 import { normalizePath } from "../../../shared/normalizePath";
 import { isServerFunction } from "@/supabase_admin/supabase_utils";
 import { getVercelTeamSlug } from "../utils/vercel_utils";
+import { safeJoin } from "../utils/path_utils";
 
 async function copyDir(
   source: string,
@@ -968,4 +971,64 @@ export function registerAppHandlers() {
       }
     });
   });
+
+  handle(
+    "upload-file-to-codebase",
+    async (
+      _,
+      { appId, filePath, fileData, fileName }: UploadFileToCodebaseParams,
+    ): Promise<UploadFileToCodebaseResult> => {
+      const app = await db.query.apps.findFirst({
+        where: eq(apps.id, appId),
+      });
+
+      if (!app) {
+        throw new Error("App not found");
+      }
+
+      const appPath = getDyadAppPath(app.path);
+      const fullPath = safeJoin(appPath, filePath, fileName);
+
+      // Ensure directory exists
+      const dirPath = path.dirname(fullPath);
+      await fsPromises.mkdir(dirPath, { recursive: true });
+
+      try {
+        // Extract the base64 data (remove the data:mime/type;base64, prefix if present)
+        const base64Data = fileData.includes(";base64,")
+          ? fileData.split(";base64,").pop() || ""
+          : fileData;
+
+        // Write file content
+        await fsPromises.writeFile(fullPath, Buffer.from(base64Data, "base64"));
+        logger.log(`Successfully uploaded file: ${fullPath}`);
+
+        // Check if git repository exists and commit the change
+        if (fs.existsSync(path.join(appPath, ".git"))) {
+          const relativeFilePath = path.relative(appPath, fullPath);
+          await git.add({
+            fs,
+            dir: appPath,
+            filepath: relativeFilePath,
+          });
+
+          await gitCommit({
+            path: appPath,
+            message: `Add ${fileName}`,
+          });
+        }
+
+        return {
+          success: true,
+          filePath: path.relative(appPath, fullPath),
+        };
+      } catch (error: any) {
+        logger.error(
+          `Error uploading file ${fileName} to app ${appId}:`,
+          error,
+        );
+        throw new Error(`Failed to upload file: ${error.message}`);
+      }
+    },
+  );
 }

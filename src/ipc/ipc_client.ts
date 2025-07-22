@@ -50,6 +50,7 @@ import type {
   SaveVercelAccessTokenParams,
   VercelProject,
   UpdateChatParams,
+  FileAttachment,
 } from "./ipc_types";
 import type { AppChatContext, ProposalResult } from "@/lib/schemas";
 import { showError } from "@/lib/toast";
@@ -258,7 +259,7 @@ export class IpcClient {
       selectedComponent: ComponentSelection | null;
       chatId: number;
       redo?: boolean;
-      attachments?: File[];
+      attachments?: FileAttachment[];
       onUpdate: (messages: Message[]) => void;
       onEnd: (response: ChatResponseEnd) => void;
       onError: (error: string) => void;
@@ -278,22 +279,24 @@ export class IpcClient {
 
     // Handle file attachments if provided
     if (attachments && attachments.length > 0) {
-      // Process each file and convert to base64
+      // Process each file attachment and convert to base64
       Promise.all(
-        attachments.map(async (file) => {
+        attachments.map(async (attachment) => {
           return new Promise<{ name: string; type: string; data: string }>(
             (resolve, reject) => {
               const reader = new FileReader();
               reader.onload = () => {
                 resolve({
-                  name: file.name,
-                  type: file.type,
+                  name: attachment.file.name,
+                  type: attachment.file.type,
                   data: reader.result as string,
                 });
               };
               reader.onerror = () =>
-                reject(new Error(`Failed to read file: ${file.name}`));
-              reader.readAsDataURL(file);
+                reject(
+                  new Error(`Failed to read file: ${attachment.file.name}`),
+                );
+              reader.readAsDataURL(attachment.file);
             },
           );
         }),
