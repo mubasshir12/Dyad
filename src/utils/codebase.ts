@@ -333,21 +333,21 @@ function shouldReadFileContents(filePath: string, baseDir: string): boolean {
 /**
  * Format a file for inclusion in the codebase extract
  */
-async function formatFile(
-  filePath: string,
-  baseDir: string,
-  virtualFileSystem?: AsyncVirtualFileSystem,
-): Promise<string> {
+async function formatFile({
+  filePath,
+  baseDir,
+  normalizedRelativePath,
+  virtualFileSystem,
+}: {
+  filePath: string;
+  baseDir: string;
+  normalizedRelativePath: string;
+  virtualFileSystem?: AsyncVirtualFileSystem;
+}): Promise<string> {
   try {
-    const relativePath = path
-      .relative(baseDir, filePath)
-      // Why? Normalize Windows-style paths which causes lots of weird issues (e.g. Git commit)
-      .split(path.sep)
-      .join("/");
-
     // Check if we should read file contents
     if (!shouldReadFileContents(filePath, baseDir)) {
-      return `<dyad-file path="${relativePath}">
+      return `<dyad-file path="${normalizedRelativePath}">
 ${OMITTED_FILE_CONTENT}
 </dyad-file>
 
@@ -357,14 +357,14 @@ ${OMITTED_FILE_CONTENT}
     const content = await readFileWithCache(filePath, virtualFileSystem);
 
     if (content == null) {
-      return `<dyad-file path="${relativePath}">
+      return `<dyad-file path="${normalizedRelativePath}">
 // Error reading file
 </dyad-file>
 
 `;
     }
 
-    return `<dyad-file path="${relativePath}">
+    return `<dyad-file path="${normalizedRelativePath}">
 ${content}
 </dyad-file>
 
@@ -500,14 +500,18 @@ export async function extractCodebase({
   // Format files and collect individual file contents
   const filesArray: CodebaseFile[] = [];
   const formatPromises = sortedFiles.map(async (file) => {
-    const formattedContent = await formatFile(file, appPath, virtualFileSystem);
-
     // Get raw content for the files array
-    const relativePath = path
+    const normalizedRelativePath = path
       .relative(appPath, file)
       // Why? Normalize Windows-style paths which causes lots of weird issues (e.g. Git commit)
       .split(path.sep)
       .join("/");
+    const formattedContent = await formatFile({
+      filePath: file,
+      baseDir: appPath,
+      normalizedRelativePath,
+      virtualFileSystem,
+    });
 
     const isForced = autoIncludedFiles.has(path.normalize(file));
 
@@ -521,7 +525,7 @@ export async function extractCodebase({
     }
 
     filesArray.push({
-      path: relativePath,
+      path: normalizedRelativePath,
       content: fileContent,
       force: isForced,
     });
