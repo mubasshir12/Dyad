@@ -38,11 +38,6 @@
     "dyad_options": {
       "files": [
         {
-          "path": ".env",
-          "content": "// File contents excluded from context",
-          "force": false
-        },
-        {
           "path": ".env.foobar",
           "content": "// File contents excluded from context",
           "force": false
