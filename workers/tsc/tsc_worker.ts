@@ -189,7 +189,7 @@ async function runSingleProject(
     }
 
     // Extract the problematic line with context
-    const sourceLines = diagnostic.file.getFullText().split("\n");
+    const sourceLines = diagnostic.file.getFullText().split(/\r?\n/);
     const lineBefore = line > 0 ? sourceLines[line - 1] : "";
     const problematicLine = sourceLines[line] || "";
     const lineAfter =
