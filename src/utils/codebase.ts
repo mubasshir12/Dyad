@@ -55,7 +55,7 @@ const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "build", ".next"];
 const EXCLUDED_FILES = ["pnpm-lock.yaml", "package-lock.json"];
 
 // Files to always include, regardless of extension
-const ALWAYS_INCLUDE_FILES = ["package.json"];
+const ALWAYS_INCLUDE_FILES = ["package.json", ".gitignore"];
 
 // File patterns to omit (contents will be replaced with a placeholder)
 //
