@@ -12,7 +12,7 @@ const fs = require("fs");
 const path = require("path");
 
 /* ──────────────────────────── worker code ─────────────────────────────── */
-
+const LISTEN_HOST = "localhost";
 const LISTEN_PORT = workerData.port;
 let rememberedOrigin = null; // e.g. "http://localhost:5173"
 
