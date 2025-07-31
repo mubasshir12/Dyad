@@ -58,7 +58,7 @@ interface UnconnectedGitHubConnectorProps {
   folderName: string;
   settings: any;
   refreshSettings: () => void;
-  refreshApp: () => void;
+  handleRepoSetupComplete: () => void;
   expanded?: boolean;
 }
 
@@ -126,7 +126,6 @@ function ConnectedGitHubConnector({
   // Auto-sync when triggerAutoSync prop is true
   useEffect(() => {
     if (triggerAutoSync && !autoSyncTriggeredRef.current) {
-      console.log("HANDLING AUTOSYNC TO GITHUB");
       autoSyncTriggeredRef.current = true;
       handleSyncToGithub(false).finally(() => {
         onAutoSyncComplete?.();
@@ -293,7 +292,7 @@ function UnconnectedGitHubConnector({
   folderName,
   settings,
   refreshSettings,
-  refreshApp,
+  handleRepoSetupComplete,
   expanded,
 }: UnconnectedGitHubConnectorProps) {
   // --- Collapsible State ---
@@ -544,7 +543,7 @@ function UnconnectedGitHubConnector({
 
       setCreateRepoSuccess(true);
       setRepoCheckError(null);
-      refreshApp();
+      handleRepoSetupComplete();
     } catch (err: any) {
       setCreateRepoError(
         err.message ||
@@ -936,7 +935,7 @@ export function GitHubConnector({
         folderName={folderName}
         settings={settings}
         refreshSettings={refreshSettings}
-        refreshApp={handleRepoSetupComplete}
+        handleRepoSetupComplete={handleRepoSetupComplete}
         expanded={expanded}
       />
     );
