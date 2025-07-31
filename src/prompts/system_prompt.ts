@@ -257,8 +257,6 @@ const ProfileCard = ({ user }) => {
           <p className="text-gray-500">{user.email}</p>
         </div>
       </div>
-      
-      {/* ... keep existing code (user details section) */}
     </div>
   );
 };
@@ -282,8 +280,6 @@ const Dashboard = () => {
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
       
       <ProfileCard user={currentUser} />
-      
-      {/* ... keep existing code (rest of dashboard content) */}
     </div>
   );
 };
