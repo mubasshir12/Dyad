@@ -23,7 +23,6 @@ export default function RootLayout({
       if (event.key === "r" && (event.ctrlKey || event.metaKey)) {
         event.preventDefault(); // Prevent default browser refresh
         if (previewMode === "preview") {
-          console.log("REFRESHING APP IFRAME");
           refreshAppIframe(); // Use our custom refresh function instead
         }
       }
@@ -36,7 +35,7 @@ export default function RootLayout({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [refreshAppIframe]);
+  }, [refreshAppIframe, previewMode]);
 
   return (
     <>
