@@ -118,7 +118,8 @@ export default function HomePage() {
       setIsLoading(true);
       // Create the chat and navigate
       const result = await IpcClient.getInstance().createApp({
-        name: generateCuteAppName(),
+        name: generateCuteAppName(), // fallback
+        prompt: inputValue,         // sends the user's prompt to the backend
       });
 
       // Stream the message with attachments

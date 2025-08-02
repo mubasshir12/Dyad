@@ -47,6 +47,11 @@ import { safeSend } from "../utils/safe_sender";
 import { normalizePath } from "../../../shared/normalizePath";
 import { isServerFunction } from "@/supabase_admin/supabase_utils";
 import { getVercelTeamSlug } from "../utils/vercel_utils";
+import { generateSlug } from "random-word-slugs";
+import { findLanguageModel } from "../utils/findLanguageModel";
+import { getModelClient } from "../utils/get_model_client";
+import { GENERATE_NAME_SYSTEM_PROMPT } from "../../prompts/generate_name_system_prompt";
+
 
 async function copyDir(
   source: string,
@@ -68,6 +73,33 @@ async function copyDir(
 }
 
 const logger = log.scope("app_handlers");
+
+async function generateNameFromPrompt(prompt: string): Promise<string> {
+  try {
+    const model = findLanguageModel();
+    if (!model) {
+      throw new Error("Could not find a valid model for naming.");
+    }
+    const client = getModelClient(model.provider, model.name);
+    const { response } = await client.getChatCompletion({
+      messages: [
+        { role: "system", content: GENERATE_NAME_SYSTEM_PROMPT },
+        { role: "user", content: prompt },
+      ],
+      stream: false,
+    });
+    const cleanName = response.trim().replace(/['"`]/g, "");
+    if (/^[a-z0-9]+(-[a-z0-9]+)*$/.test(cleanName)) {
+      logger.info(`Generated project name: ${cleanName}`);
+      return cleanName;
+    }
+    throw new Error("LLM returned an invalid name format.");
+  } catch (error) {
+    logger.error("Failed to generate project name from prompt, falling back to random.", error);
+    return generateSlug(2, { format: "kebab" });
+  }
+}
+
 const handle = createLoggedHandler(logger);
 
 let proxyWorker: Worker | null = null;
@@ -199,63 +231,51 @@ export function registerAppHandlers() {
 
   handle(
     "create-app",
-    async (
+    // 1. Give the function a name, like "createAppLogic"
+    async function createAppLogic(
       _,
       params: CreateAppParams,
-    ): Promise<{ app: any; chatId: number }> => {
-      const appPath = params.name;
+    ): Promise<{ app: any; chatId: number }> {
+      // use the name from params if it exists , otherwise generate a new one
+      const nameToUse = params.name || (await generateNameFromPrompt(params.prompt));
+
+      const appPath = nameToUse;
       const fullAppPath = getDyadAppPath(appPath);
+
       if (fs.existsSync(fullAppPath)) {
-        throw new Error(`App already exists at: ${fullAppPath}`);
+        // if the path already exists then create a new suffixed name and retry
+        const suffixedName = `${nameToUse}-${generateSlug(1)}`;
+        logger.warn(`App path ${fullAppPath} already exists. Using suffixed name: ${suffixedName}`);
+        
+        // call the function by its new name to retry
+        return createAppLogic(_, { ...params, name: suffixedName, prompt: params.prompt });
       }
-      // Create a new app
+
       const [app] = await db
         .insert(apps)
         .values({
-          name: params.name,
-          // Use the name as the path for now
+          name: nameToUse, // use the final name
           path: appPath,
         })
         .returning();
 
-      // Create an initial chat for this app
       const [chat] = await db
         .insert(chats)
-        .values({
-          appId: app.id,
-        })
+        .values({ appId: app.id })
         .returning();
 
-      await createFromTemplate({
-        fullAppPath,
-      });
+      await createFromTemplate({ fullAppPath });
 
-      // Initialize git repo and create first commit
-      await git.init({
-        fs: fs,
-        dir: fullAppPath,
-        defaultBranch: "main",
-      });
-
-      // Stage all files
-      await git.add({
-        fs: fs,
-        dir: fullAppPath,
-        filepath: ".",
-      });
-
-      // Create initial commit
+      await git.init({ fs: fs, dir: fullAppPath, defaultBranch: "main" });
+      await git.add({ fs: fs, dir: fullAppPath, filepath: "." });
       const commitHash = await gitCommit({
         path: fullAppPath,
         message: "Init Dyad app",
       });
 
-      // Update chat with initial commit hash
       await db
         .update(chats)
-        .set({
-          initialCommitHash: commitHash,
-        })
+        .set({ initialCommitHash: commitHash })
         .where(eq(chats.id, chat.id));
 
       return { app, chatId: chat.id };
