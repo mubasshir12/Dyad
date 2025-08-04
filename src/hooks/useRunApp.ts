@@ -19,7 +19,7 @@ export function useRunApp() {
   const [loading, setLoading] = useAtom(useRunAppLoadingAtom);
   const [app, setApp] = useAtom(currentAppAtom);
   const setAppOutput = useSetAtom(appOutputAtom);
-  const [appUrlObj, setAppUrlObj] = useAtom(appUrlAtom);
+  const [, setAppUrlObj] = useAtom(appUrlAtom);
   const setPreviewPanelKey = useSetAtom(previewPanelKeyAtom);
   const appId = useAtomValue(selectedAppIdAtom);
   const setPreviewErrorMessage = useSetAtom(previewErrorMessageAtom);
@@ -81,9 +81,13 @@ export function useRunApp() {
         console.debug("Running app", appId);
 
         // Clear the URL and add restart message
-        if (appUrlObj?.appId !== appId) {
-          setAppUrlObj({ appUrl: null, appId: null, originalUrl: null });
-        }
+        setAppUrlObj((prevAppUrlObj) => {
+          if (prevAppUrlObj?.appId !== appId) {
+            return { appUrl: null, appId: null, originalUrl: null };
+          }
+          return prevAppUrlObj; // No change needed
+        });
+
         setAppOutput((prev) => [
           ...prev,
           {
@@ -106,7 +110,7 @@ export function useRunApp() {
         setLoading(false);
       }
     },
-    [processAppOutput, appUrlObj],
+    [processAppOutput],
   );
 
   const stopApp = useCallback(async (appId: number) => {
