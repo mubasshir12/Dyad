@@ -172,9 +172,6 @@ export const NeonConfigure = () => {
             ))}
           </div>
         </div>
-
-        {/* Disconnect Button */}
-        <div className="pt-4 border-t"></div>
       </CardContent>
     </Card>
   );

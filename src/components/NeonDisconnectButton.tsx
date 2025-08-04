@@ -7,14 +7,13 @@ interface NeonDisconnectButtonProps {
 }
 
 export function NeonDisconnectButton({ className }: NeonDisconnectButtonProps) {
-  const { updateSettings, refreshSettings, settings } = useSettings();
+  const { updateSettings, settings } = useSettings();
 
   const handleDisconnect = async () => {
     try {
       await updateSettings({
         neon: undefined,
       });
-      await refreshSettings();
       toast.success("Disconnected from Neon successfully");
     } catch (error) {
       console.error("Failed to disconnect from Neon:", error);

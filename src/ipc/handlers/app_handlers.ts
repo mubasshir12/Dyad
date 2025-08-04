@@ -8,6 +8,7 @@ import type {
   RenameBranchParams,
   CopyAppParams,
   EditAppFileReturnType,
+  RespondToAppInputParams,
 } from "../ipc_types";
 import fs from "node:fs";
 import path from "node:path";
@@ -81,26 +82,30 @@ async function executeApp({
   appPath,
   appId,
   event, // Keep event for local-node case
+  isNeon,
 }: {
   appPath: string;
   appId: number;
   event: Electron.IpcMainInvokeEvent;
+  isNeon: boolean;
 }): Promise<void> {
   if (proxyWorker) {
     proxyWorker.terminate();
     proxyWorker = null;
   }
-  await executeAppLocalNode({ appPath, appId, event });
+  await executeAppLocalNode({ appPath, appId, event, isNeon });
 }
 
 async function executeAppLocalNode({
   appPath,
   appId,
   event,
+  isNeon,
 }: {
   appPath: string;
   appId: number;
   event: Electron.IpcMainInvokeEvent;
+  isNeon: boolean;
 }): Promise<void> {
   const spawnedProcess = spawn(
     "(pnpm install && pnpm run dev --port 32100) || (npm install --legacy-peer-deps && npm run dev -- --port 32100)",
@@ -140,16 +145,22 @@ async function executeAppLocalNode({
       `App ${appId} (PID: ${spawnedProcess.pid}) stdout: ${message}`,
     );
 
-    // Check if this is an interactive prompt requiring user input
-    const inputRequestPattern = /\s*›\s*\([yY]\/[nN]\)\s*$/;
-    const isInputRequest = inputRequestPattern.test(message);
-    if (message.includes("created or renamed from another")) {
+    // This is a hacky heuristic to pick up when drizzle is asking for user
+    // to select from one of a few choices. We automatically pick the first
+    // option because it's usually a good default choice. We guard this with
+    // isNeon because: 1) only Neon apps (for the official Dyad templates) should
+    // get this template and 2) it's safer to do this with Neon apps because
+    // their databases have point in time restore built-in.
+    if (isNeon && message.includes("created or renamed from another")) {
       spawnedProcess.stdin.write(`\r\n`);
       logger.info(
         `App ${appId} (PID: ${spawnedProcess.pid}) wrote enter to stdin to automatically respond to drizzle push input`,
       );
     }
 
+    // Check if this is an interactive prompt requiring user input
+    const inputRequestPattern = /\s*›\s*\([yY]\/[nN]\)\s*$/;
+    const isInputRequest = inputRequestPattern.test(message);
     if (isInputRequest) {
       // Send special input-requested event for interactive prompts
       safeSend(event.sender, "app:output", {
@@ -495,7 +506,12 @@ export function registerAppHandlers() {
         try {
           // Kill any orphaned process on port 32100 (in case previous run left it)
           await killProcessOnPort(32100);
-          await executeApp({ appPath, appId, event });
+          await executeApp({
+            appPath,
+            appId,
+            event,
+            isNeon: app.neonProjectId,
+          });
 
           return;
         } catch (error: any) {
@@ -1017,7 +1033,10 @@ export function registerAppHandlers() {
 
   handle(
     "respond-to-app-input",
-    async (_, { appId, response }: { appId: number; response: string }) => {
+    async (_, { appId, response }: RespondToAppInputParams) => {
+      if (response !== "y" && response !== "n") {
+        throw new Error(`Invalid response: ${response}`);
+      }
       const appInfo = runningApps.get(appId);
 
       if (!appInfo) {

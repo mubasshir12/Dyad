@@ -62,30 +62,6 @@ export function registerNeonHandlers() {
         const project = response.data.project;
         const developmentBranch = response.data.branch;
 
-        // // Create a development branch with retry on locked errors
-        // const branchResponse = await retryOnLocked(
-        //   () =>
-        //     neonClient.createProjectBranch(project.id, {
-        //       endpoints: [{ type: EndpointType.ReadWrite }],
-        //       branch: {
-        //         init_source: "schema-only",
-        //         name: "development",
-        //       },
-        //     }),
-        //   `Create development branch for project ${project.id}`,
-        // );
-
-        // if (
-        //   !branchResponse.data.branch ||
-        //   !branchResponse.data.connection_uris
-        // ) {
-        //   throw new Error(
-        //     "Failed to create development branch: No branch data returned.",
-        //   );
-        // }
-
-        // const developmentBranch = branchResponse.data.branch;
-
         const previewBranchResponse = await retryOnLocked(
           () =>
             neonClient.createProjectBranch(project.id, {

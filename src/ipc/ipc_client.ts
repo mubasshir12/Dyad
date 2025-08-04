@@ -57,6 +57,7 @@ import type {
   GetNeonProjectResponse,
   RevertVersionResponse,
   RevertVersionParams,
+  RespondToAppInputParams,
 } from "./ipc_types";
 import type { Template } from "../shared/templates";
 import type { AppChatContext, ProposalResult } from "@/lib/schemas";
@@ -419,14 +420,10 @@ export class IpcClient {
 
   // Respond to an app input request (y/n prompts)
   public async respondToAppInput(
-    appId: number,
-    response: string,
+    params: RespondToAppInputParams,
   ): Promise<void> {
     try {
-      await this.ipcRenderer.invoke("respond-to-app-input", {
-        appId,
-        response,
-      });
+      await this.ipcRenderer.invoke("respond-to-app-input", params);
     } catch (error) {
       showError(error);
       throw error;

@@ -54,7 +54,10 @@ export function useRunApp() {
         showInputRequest(output.message, async (response) => {
           try {
             const ipcClient = IpcClient.getInstance();
-            await ipcClient.respondToAppInput(output.appId, response);
+            await ipcClient.respondToAppInput({
+              appId: output.appId,
+              response,
+            });
           } catch (error) {
             console.error("Failed to respond to app input:", error);
           }
