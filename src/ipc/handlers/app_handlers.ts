@@ -510,7 +510,7 @@ export function registerAppHandlers() {
             appPath,
             appId,
             event,
-            isNeon: app.neonProjectId,
+            isNeon: !!app.neonProjectId,
           });
 
           return;
@@ -641,7 +641,12 @@ export function registerAppHandlers() {
             `Executing app ${appId} in path ${app.path} after restart request`,
           ); // Adjusted log
 
-          await executeApp({ appPath, appId, event }); // This will handle starting either mode
+          await executeApp({
+            appPath,
+            appId,
+            event,
+            isNeon: !!app.neonProjectId,
+          }); // This will handle starting either mode
 
           return;
         } catch (error) {
