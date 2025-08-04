@@ -61,8 +61,7 @@ export function EditCustomModelDialog({
     mutationFn: async () => {
       if (!model) throw new Error("No model to edit");
 
-      const params = {
-        oldApiName: model.apiName,
+      const newParams = {
         apiName,
         displayName,
         providerId,
@@ -73,19 +72,25 @@ export function EditCustomModelDialog({
         contextWindow: contextWindow ? parseInt(contextWindow, 10) : undefined,
       };
 
-      if (!params.apiName) throw new Error("Model API name is required");
-      if (!params.displayName)
+      if (!newParams.apiName) throw new Error("Model API name is required");
+      if (!newParams.displayName)
         throw new Error("Model display name is required");
-      if (maxOutputTokens && isNaN(params.maxOutputTokens ?? NaN))
+      if (maxOutputTokens && isNaN(newParams.maxOutputTokens ?? NaN))
         throw new Error("Max Output Tokens must be a valid number");
-      if (contextWindow && isNaN(params.contextWindow ?? NaN))
+      if (contextWindow && isNaN(newParams.contextWindow ?? NaN))
         throw new Error("Context Window must be a valid number");
 
-      await ipcClient.updateCustomLanguageModel(params);
+      // First delete the old model
+      await ipcClient.deleteCustomModel({
+        providerId,
+        modelApiName: model.apiName,
+      });
+
+      // Then create the new model
+      await ipcClient.createCustomLanguageModel(newParams);
     },
     onSuccess: () => {
       showSuccess("Custom model updated successfully!");
-      resetForm();
       onSuccess();
       onClose();
     },
@@ -109,7 +114,6 @@ export function EditCustomModelDialog({
 
   const handleClose = () => {
     if (!mutation.isPending) {
-      resetForm();
       onClose();
     }
   };
