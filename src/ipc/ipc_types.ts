@@ -40,9 +40,11 @@ export interface ChatProblemsEvent {
   problems: ProblemReport;
 }
 
-export interface CreateAppParams {
+export type CreateAppParams = {
   name: string;
-}
+  prompt: string; // create app funtion will now accept the prompt
+  template?: string;
+};
 
 export interface CreateAppResult {
   app: {
