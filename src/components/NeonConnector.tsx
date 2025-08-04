@@ -22,7 +22,7 @@ export function NeonConnector() {
       }
     };
     handleDeepLink();
-  }, [lastDeepLink, refreshSettings]);
+  }, [lastDeepLink]);
 
   if (settings?.neon?.accessToken) {
     return (

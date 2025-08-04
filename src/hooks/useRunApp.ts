@@ -71,7 +71,7 @@ export function useRunApp() {
       // Process proxy server output
       processProxyServerOutput(output);
     },
-    [setAppOutput, processProxyServerOutput],
+    [setAppOutput],
   );
   const runApp = useCallback(
     async (appId: number) => {
