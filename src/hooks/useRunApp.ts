@@ -40,7 +40,7 @@ export function useRunApp() {
         const originalUrl = originalUrlMatch && originalUrlMatch[1];
         setAppUrlObj({
           appUrl: proxyUrl,
-          appId: appId!,
+          appId: output.appId,
           originalUrl: originalUrl!,
         });
       }
@@ -68,7 +68,7 @@ export function useRunApp() {
       // Process proxy server output
       processProxyServerOutput(output);
     },
-    [setAppOutput],
+    [setAppOutput, processProxyServerOutput],
   );
   const runApp = useCallback(
     async (appId: number) => {
@@ -103,7 +103,7 @@ export function useRunApp() {
         setLoading(false);
       }
     },
-    [processAppOutput],
+    [processAppOutput, appUrlObj],
   );
 
   const stopApp = useCallback(async (appId: number) => {

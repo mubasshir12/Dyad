@@ -54,6 +54,28 @@ export const messages = sqliteTable("messages", {
     .default(sql`(unixepoch())`),
 });
 
+export const versions = sqliteTable(
+  "versions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    appId: integer("app_id")
+      .notNull()
+      .references(() => apps.id, { onDelete: "cascade" }),
+    commitHash: text("commit_hash").notNull(),
+    neonDbTimestamp: text("neon_db_timestamp"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    // Unique constraint to prevent duplicate versions
+    unique("versions_app_commit_unique").on(table.appId, table.commitHash),
+  ],
+);
+
 // Define relations
 export const appsRelations = relations(apps, ({ many }) => ({
   chats: many(chats),
@@ -127,28 +149,6 @@ export const languageModelsRelations = relations(
       references: [language_model_providers.id],
     }),
   }),
-);
-
-export const versions = sqliteTable(
-  "versions",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    appId: integer("app_id")
-      .notNull()
-      .references(() => apps.id, { onDelete: "cascade" }),
-    commitHash: text("commit_hash").notNull(),
-    neonDbTimestamp: text("neon_db_timestamp"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => [
-    // Unique constraint to prevent duplicate versions
-    unique("versions_app_commit_unique").on(table.appId, table.commitHash),
-  ],
 );
 
 export const versionsRelations = relations(versions, ({ one }) => ({

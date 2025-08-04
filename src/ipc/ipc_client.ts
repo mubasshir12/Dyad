@@ -88,7 +88,6 @@ export interface GitHubDeviceFlowErrorData {
 
 export interface DeepLinkData {
   type: string;
-  url?: string;
 }
 
 interface DeleteCustomModelParams {

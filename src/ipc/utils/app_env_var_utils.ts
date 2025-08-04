@@ -26,11 +26,18 @@ export async function updatePostgresUrlEnvVar({
 }) {
   // Given the connection uri, update the env var for POSTGRES_URL
   const envVars = parseEnvFile(await readEnvFile({ appPath }));
-  for (const envVar of envVars) {
-    if (envVar.key === "POSTGRES_URL") {
-      envVar.value = connectionUri;
-    }
+
+  // Find existing POSTGRES_URL or add it if it doesn't exist
+  const existingVar = envVars.find((envVar) => envVar.key === "POSTGRES_URL");
+  if (existingVar) {
+    existingVar.value = connectionUri;
+  } else {
+    envVars.push({
+      key: "POSTGRES_URL",
+      value: connectionUri,
+    });
   }
+
   const envFileContents = serializeEnvFile(envVars);
   await fs.promises.writeFile(getEnvFilePath({ appPath }), envFileContents);
 }

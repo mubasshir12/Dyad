@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAtomValue } from "jotai";
-import { useState } from "react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-import {} from "@/components/ui/alert-dialog";
 import { Database, GitBranch } from "lucide-react";
 import { selectedAppIdAtom } from "@/atoms/appAtoms";
 import { useLoadApp } from "@/hooks/useLoadApp";
@@ -34,7 +33,6 @@ const formatDate = (dateString: string) => {
 export const NeonConfigure = () => {
   const selectedAppId = useAtomValue(selectedAppIdAtom);
   const { app } = useLoadApp(selectedAppId);
-  const [] = useState<string | null>(null);
 
   // Query to get Neon project information
   const {

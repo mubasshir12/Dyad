@@ -224,7 +224,6 @@ function handleDeepLinkReturn(url: string) {
     // Send message to renderer to trigger re-render
     mainWindow?.webContents.send("deep-link-received", {
       type: parsed.hostname,
-      url,
     });
     return;
   }
@@ -243,7 +242,6 @@ function handleDeepLinkReturn(url: string) {
     // Send message to renderer to trigger re-render
     mainWindow?.webContents.send("deep-link-received", {
       type: parsed.hostname,
-      url,
     });
     return;
   }
@@ -260,7 +258,6 @@ function handleDeepLinkReturn(url: string) {
     // Send message to renderer to trigger re-render
     mainWindow?.webContents.send("deep-link-received", {
       type: parsed.hostname,
-      url,
     });
     return;
   }

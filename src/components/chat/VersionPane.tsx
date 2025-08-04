@@ -121,7 +121,7 @@ export function VersionPane({ isVisible, onClose }: VersionPaneProps) {
           <div className="p-4 ">No versions available</div>
         ) : (
           <div className="divide-y divide-border">
-            {versions.map((version: Version) => (
+            {versions.map((version: Version, index: number) => (
               <div
                 key={version.oid}
                 className={cn(
@@ -141,12 +141,9 @@ export function VersionPane({ isVisible, onClose }: VersionPaneProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-xs">
-                      Version{" "}
-                      {versions.length -
-                        versions.findIndex((v) => v.oid === version.oid)}{" "}
-                      ({version.oid.slice(0, 7)})
+                      Version {versions.length - index} (
+                      {version.oid.slice(0, 7)})
                     </span>
-                    {/* Star button for favorites */}
                     {/* example format: '2025-07-25T21:52:01Z' */}
                     {version.dbTimestamp &&
                       (() => {
