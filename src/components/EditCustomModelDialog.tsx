@@ -99,14 +99,6 @@ export function EditCustomModelDialog({
     },
   });
 
-  const resetForm = () => {
-    setApiName("");
-    setDisplayName("");
-    setDescription("");
-    setMaxOutputTokens("");
-    setContextWindow("");
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     mutation.mutate();
