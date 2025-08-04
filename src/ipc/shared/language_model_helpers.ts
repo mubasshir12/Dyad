@@ -120,7 +120,7 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
   openrouter: [
     {
       name: "qwen/qwen3-coder",
-      displayName: "Qwen 3 Coder",
+      displayName: "Qwen3 Coder",
       description: "Qwen's best coding model",
       maxOutputTokens: 32_000,
       contextWindow: 262_000,
