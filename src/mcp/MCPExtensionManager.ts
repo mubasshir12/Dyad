@@ -59,20 +59,22 @@ export class MCPExtensionManager {
   }
 
   async saveExtensions(): Promise<void> {
-    this.saveLock = this.saveLock.catch(() => undefined).then(async () => {
-      try {
-        const data = JSON.stringify(this.extensions, null, 2);
-        const dir = path.dirname(this.configPath);
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
+    this.saveLock = this.saveLock
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          const data = JSON.stringify(this.extensions, null, 2);
+          const dir = path.dirname(this.configPath);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          await fsPromises.writeFile(this.configPath, data, "utf8");
+          logger.info(`${this.extensions.length} Extensions gespeichert`);
+        } catch (error) {
+          logger.error("Fehler beim Speichern der Extensions:", error);
+          throw new Error(`Fehler beim Speichern der Extensions: ${error}`);
         }
-        await fsPromises.writeFile(this.configPath, data, "utf8");
-        logger.info(`${this.extensions.length} Extensions gespeichert`);
-      } catch (error) {
-        logger.error("Fehler beim Speichern der Extensions:", error);
-        throw new Error(`Fehler beim Speichern der Extensions: ${error}`);
-      }
-    });
+      });
 
     return this.saveLock;
   }
