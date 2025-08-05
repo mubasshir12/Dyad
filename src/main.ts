@@ -49,6 +49,8 @@ if (process.defaultApp) {
   app.setAsDefaultProtocolClient("dyad");
 }
 
+let extensionManager: MCPExtensionManager | null = null;
+
 export async function onReady() {
   try {
     const backupManager = new BackupManager({
@@ -59,17 +61,17 @@ export async function onReady() {
   } catch (e) {
     logger.error("Error initializing backup manager", e);
   }
-  
+
   // Initialize MCP Extension Manager
   try {
-    const extensionManager = new MCPExtensionManager();
+    extensionManager = new MCPExtensionManager();
     await extensionManager.initialize();
     setExtensionManager(extensionManager);
     logger.info("MCP Extension Manager initialized successfully");
   } catch (e) {
     logger.error("Error initializing MCP Extension Manager", e);
   }
-  
+
   initializeDatabase();
   const settings = readSettings();
   await onFirstRunMaybe(settings);
@@ -283,6 +285,17 @@ function handleDeepLinkReturn(url: string) {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+  }
+});
+
+app.on("before-quit", async () => {
+  if (extensionManager) {
+    try {
+      await extensionManager.saveExtensions();
+      logger.info("Extensions saved before quit");
+    } catch (error) {
+      logger.error("Error saving extensions before quit:", error);
+    }
   }
 });
 

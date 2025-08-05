@@ -1,5 +1,8 @@
 import log from "electron-log";
 import { v4 as uuidv4 } from "uuid";
+import * as fs from "fs";
+import * as path from "path";
+import { getUserDataPath } from "../paths/paths";
 
 const logger = log.scope("mcp-extension-manager");
 
@@ -27,8 +30,8 @@ export class MCPExtensionManager {
   private configPath: string;
 
   constructor(configPath?: string) {
-    this.configPath = configPath || "./mcp-extensions.json";
-    this.loadExtensions();
+    this.configPath =
+      configPath || path.join(getUserDataPath(), "mcp-extensions.json");
   }
 
   async initialize(): Promise<void> {
@@ -39,22 +42,32 @@ export class MCPExtensionManager {
 
   private async loadExtensions(): Promise<void> {
     try {
-      // Hier würde normalerweise das Laden aus einer Datei oder Datenbank erfolgen
-      // Für jetzt verwenden wir eine leere Liste
-      this.extensions = [];
-      logger.info("Extensions geladen");
+      if (fs.existsSync(this.configPath)) {
+        const data = fs.readFileSync(this.configPath, "utf8");
+        this.extensions = JSON.parse(data);
+        logger.info(`${this.extensions.length} Extensions geladen`);
+      } else {
+        this.extensions = [];
+        logger.info("Keine Extensions-Datei gefunden, starte mit leerer Liste");
+      }
     } catch (error) {
       logger.error("Fehler beim Laden der Extensions:", error);
       this.extensions = [];
     }
   }
 
-  private async saveExtensions(): Promise<void> {
+  async saveExtensions(): Promise<void> {
     try {
-      // Hier würde normalerweise das Speichern in eine Datei oder Datenbank erfolgen
-      logger.info("Extensions gespeichert");
+      const data = JSON.stringify(this.extensions, null, 2);
+      const dir = path.dirname(this.configPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.configPath, data, "utf8");
+      logger.info(`${this.extensions.length} Extensions gespeichert`);
     } catch (error) {
       logger.error("Fehler beim Speichern der Extensions:", error);
+      throw new Error(`Fehler beim Speichern der Extensions: ${error}`);
     }
   }
 
@@ -62,7 +75,9 @@ export class MCPExtensionManager {
     return this.extensions;
   }
 
-  async addExtension(extension: Omit<MCPExtension, "id" | "installed">): Promise<MCPExtension> {
+  async addExtension(
+    extension: Omit<MCPExtension, "id" | "installed">,
+  ): Promise<MCPExtension> {
     const newExtension: MCPExtension = {
       ...extension,
       id: uuidv4(),
@@ -71,26 +86,29 @@ export class MCPExtensionManager {
 
     this.extensions.push(newExtension);
     await this.saveExtensions();
-    
+
     logger.info(`Extension ${newExtension.name} hinzugefügt`);
     return newExtension;
   }
 
-  async updateExtension(extensionId: string, updates: Partial<MCPExtension>): Promise<MCPExtension> {
-    const index = this.extensions.findIndex(ext => ext.id === extensionId);
+  async updateExtension(
+    extensionId: string,
+    updates: Partial<MCPExtension>,
+  ): Promise<MCPExtension> {
+    const index = this.extensions.findIndex((ext) => ext.id === extensionId);
     if (index === -1) {
       throw new Error(`Extension mit ID ${extensionId} nicht gefunden`);
     }
 
     this.extensions[index] = { ...this.extensions[index], ...updates };
     await this.saveExtensions();
-    
+
     logger.info(`Extension ${this.extensions[index].name} aktualisiert`);
     return this.extensions[index];
   }
 
   async deleteExtension(extensionId: string): Promise<void> {
-    const index = this.extensions.findIndex(ext => ext.id === extensionId);
+    const index = this.extensions.findIndex((ext) => ext.id === extensionId);
     if (index === -1) {
       throw new Error(`Extension mit ID ${extensionId} nicht gefunden`);
     }
@@ -98,18 +116,24 @@ export class MCPExtensionManager {
     const extensionName = this.extensions[index].name;
     this.extensions.splice(index, 1);
     await this.saveExtensions();
-    
+
     logger.info(`Extension ${extensionName} gelöscht`);
   }
 
-  async toggleExtension(extensionId: string, enabled: boolean): Promise<MCPExtension> {
+  async toggleExtension(
+    extensionId: string,
+    enabled: boolean,
+  ): Promise<MCPExtension> {
     return await this.updateExtension(extensionId, { enabled });
   }
 
-  async installNpmPackage(packageName: string, config?: Partial<MCPExtension>): Promise<MCPExtension> {
+  async installNpmPackage(
+    packageName: string,
+    config?: Partial<MCPExtension>,
+  ): Promise<MCPExtension> {
     // Hier würde normalerweise die NPM-Installation erfolgen
     logger.info(`Installiere NPM-Paket: ${packageName}`);
-    
+
     const extension: MCPExtension = {
       id: uuidv4(),
       name: packageName,
@@ -122,19 +146,20 @@ export class MCPExtensionManager {
 
     this.extensions.push(extension);
     await this.saveExtensions();
-    
+
     return extension;
   }
 
   async searchExtensions(query: string): Promise<MCPExtension[]> {
     const lowercaseQuery = query.toLowerCase();
-    return this.extensions.filter(extension =>
-      extension.name.toLowerCase().includes(lowercaseQuery) ||
-      extension.description.toLowerCase().includes(lowercaseQuery)
+    return this.extensions.filter(
+      (extension) =>
+        extension.name.toLowerCase().includes(lowercaseQuery) ||
+        extension.description.toLowerCase().includes(lowercaseQuery),
     );
   }
 
   getExtension(extensionId: string): MCPExtension | undefined {
-    return this.extensions.find(ext => ext.id === extensionId);
+    return this.extensions.find((ext) => ext.id === extensionId);
   }
-} 
+}

@@ -23,6 +23,7 @@ import { AutoFixProblemsSwitch } from "@/components/AutoFixProblemsSwitch";
 import { AutoUpdateSwitch } from "@/components/AutoUpdateSwitch";
 import { ReleaseChannelSelector } from "@/components/ReleaseChannelSelector";
 import { NeonIntegration } from "@/components/NeonIntegration";
+import { MCPExtensionsIntegration } from "@/components/MCPExtensionsIntegration";
 
 export default function SettingsPage() {
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -115,6 +116,7 @@ export default function SettingsPage() {
               <VercelIntegration />
               <SupabaseIntegration />
               <NeonIntegration />
+              <MCPExtensionsIntegration />
             </div>
           </div>
 

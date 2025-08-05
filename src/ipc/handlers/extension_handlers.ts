@@ -11,12 +11,16 @@ let extensionManager: MCPExtensionManager | null = null;
 
 export function setExtensionManager(manager: MCPExtensionManager) {
   extensionManager = manager;
+  logger.info("Extension Manager gesetzt");
 }
 
 export function registerExtensionHandlers() {
   ipcMain.handle("list-extensions", async () => {
     if (!extensionManager) {
-      throw new Error("Extension Manager nicht initialisiert");
+      logger.warn(
+        "Extension Manager nicht initialisiert, gebe leere Liste zurück",
+      );
+      return [];
     }
     return await extensionManager.getExtensions();
   });
@@ -25,7 +29,9 @@ export function registerExtensionHandlers() {
     "add-extension",
     async (event, extension: Omit<MCPExtension, "id" | "installed">) => {
       if (!extensionManager) {
-        throw new Error("Extension Manager nicht initialisiert");
+        throw new Error(
+          "Extension Manager nicht initialisiert. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+        );
       }
       return await extensionManager.addExtension(extension);
     },
@@ -41,7 +47,9 @@ export function registerExtensionHandlers() {
       }: { extensionId: string; updates: Partial<MCPExtension> },
     ) => {
       if (!extensionManager) {
-        throw new Error("Extension Manager nicht initialisiert");
+        throw new Error(
+          "Extension Manager nicht initialisiert. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+        );
       }
       return await extensionManager.updateExtension(extensionId, updates);
     },
@@ -49,7 +57,9 @@ export function registerExtensionHandlers() {
 
   ipcMain.handle("delete-extension", async (event, extensionId: string) => {
     if (!extensionManager) {
-      throw new Error("Extension Manager nicht initialisiert");
+      throw new Error(
+        "Extension Manager nicht initialisiert. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+      );
     }
     await extensionManager.deleteExtension(extensionId);
   });
@@ -61,7 +71,9 @@ export function registerExtensionHandlers() {
       { extensionId, enabled }: { extensionId: string; enabled: boolean },
     ) => {
       if (!extensionManager) {
-        throw new Error("Extension Manager nicht initialisiert");
+        throw new Error(
+          "Extension Manager nicht initialisiert. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+        );
       }
       return await extensionManager.toggleExtension(extensionId, enabled);
     },
@@ -77,7 +89,9 @@ export function registerExtensionHandlers() {
       }: { packageName: string; config?: Partial<MCPExtension> },
     ) => {
       if (!extensionManager) {
-        throw new Error("Extension Manager nicht initialisiert");
+        throw new Error(
+          "Extension Manager nicht initialisiert. Bitte warten Sie einen Moment und versuchen Sie es erneut.",
+        );
       }
       return await extensionManager.installNpmPackage(packageName, config);
     },
@@ -85,7 +99,10 @@ export function registerExtensionHandlers() {
 
   ipcMain.handle("search-extensions", async (event, query: string) => {
     if (!extensionManager) {
-      throw new Error("Extension Manager nicht initialisiert");
+      logger.warn(
+        "Extension Manager nicht initialisiert, gebe leere Liste zurück",
+      );
+      return [];
     }
     return await extensionManager.searchExtensions(query);
   });
