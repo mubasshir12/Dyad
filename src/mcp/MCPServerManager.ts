@@ -40,9 +40,9 @@ export class MCPServerManager extends EventEmitter {
   }
 
   async initialize(): Promise<void> {
-    logger.info("Initialisiere MCP Server Manager...");
+    logger.info("Initialise MCP Server Manager...");
     await this.connectToEnabledExtensions();
-    logger.info("MCP Server Manager erfolgreich initialisiert");
+    logger.info("MCP Server Manager successfully initialised");
   }
 
   private async connectToEnabledExtensions(): Promise<void> {
@@ -55,29 +55,24 @@ export class MCPServerManager extends EventEmitter {
       try {
         await this.connectToExtension(extension);
       } catch (error) {
-        logger.error(
-          `Fehler beim Verbinden zu Extension ${extension.name}:`,
-          error,
-        );
+        logger.error(`Error connecting to Extension ${extension.name}:`, error);
       }
     }
   }
 
   async connectToExtension(extension: MCPExtension): Promise<void> {
     if (this.connections.has(extension.id)) {
-      logger.warn(
-        `Verbindung zu Extension ${extension.name} bereits vorhanden`,
-      );
+      logger.warn(`Connection to Extension ${extension.name} already exists`);
       return;
     }
 
     if (!extension.command) {
-      logger.warn(`Extension ${extension.name} hat keinen Befehl definiert`);
+      logger.warn(`Extension ${extension.name} has no command defined`);
       return;
     }
 
     try {
-      logger.info(`Verbinde zu MCP Server: ${extension.name}`);
+      logger.info(`Connect to MCP Server: ${extension.name}`);
 
       const envVars = { ...process.env, ...extension.env };
       const childProcess = spawn(extension.command, extension.args || [], {
@@ -103,23 +98,22 @@ export class MCPServerManager extends EventEmitter {
       });
 
       childProcess.on("close", (code: number | null) => {
-        logger.info(`MCP Server ${extension.name} beendet mit Code: ${code}`);
+        logger.info(
+          `MCP Server ${extension.name} terminated with code: ${code}`,
+        );
         this.connections.delete(extension.id);
         this.emit("serverDisconnected", extension.id);
       });
 
       childProcess.on("error", (error: Error) => {
-        logger.error(`Fehler beim MCP Server ${extension.name}:`, error);
+        logger.error(`Error in MCP Server ${extension.name}:`, error);
         this.connections.delete(extension.id);
         this.emit("serverError", extension.id, error);
       });
 
       await this.initializeServer(connection);
     } catch (error) {
-      logger.error(
-        `Fehler beim Starten des MCP Servers ${extension.name}:`,
-        error,
-      );
+      logger.error(`Error starting MCP Server ${extension.name}:`, error);
       throw error;
     }
   }
@@ -141,7 +135,7 @@ export class MCPServerManager extends EventEmitter {
             resolve();
           }
         } catch (error) {
-          logger.error("Fehler beim Parsen der Server-Nachricht:", error);
+          logger.error("Error parsing server message:", error);
         }
       };
 
@@ -171,22 +165,22 @@ export class MCPServerManager extends EventEmitter {
         extensionId: connection.extensionId,
       });
 
-      logger.info(`Tools für Extension ${connection.extensionId} entdeckt`);
+      logger.info(`Tools for Extension ${connection.extensionId} discovered`);
     } catch (error) {
-      logger.error("Fehler beim Tool-Discovery:", error);
+      logger.error("Error in tool discovery:", error);
     }
   }
 
   private handleServerMessage(extensionId: string, data: string): void {
     try {
       const message = JSON.parse(data);
-      logger.debug(`MCP Server Nachricht von ${extensionId}:`, message);
+      logger.debug(`MCP Server message from ${extensionId}:`, message);
 
       if (message.method === "tools/list") {
         this.handleToolsList(extensionId, message);
       }
     } catch (error) {
-      logger.error("Fehler beim Verarbeiten der Server-Nachricht:", error);
+      logger.error("Error processing server message:", error);
     }
   }
 
@@ -203,7 +197,7 @@ export class MCPServerManager extends EventEmitter {
       }));
 
       logger.info(
-        `${connection.tools.length} Tools von Extension ${extensionId} geladen`,
+        `${connection.tools.length} Tools from Extension ${extensionId} loaded`,
       );
       this.emit("toolsUpdated", extensionId, connection.tools);
     }
@@ -213,7 +207,7 @@ export class MCPServerManager extends EventEmitter {
     const connection = this.connections.get(extensionId);
     if (!connection) return;
 
-    logger.info(`Trenne Verbindung zu Extension ${extensionId}`);
+    logger.info(`Disconnect from Extension ${extensionId}`);
     connection.process.kill();
     this.connections.delete(extensionId);
   }
@@ -225,18 +219,16 @@ export class MCPServerManager extends EventEmitter {
   ): Promise<any> {
     const connection = this.connections.get(extensionId);
     if (!connection) {
-      throw new Error(`Keine Verbindung zu Extension ${extensionId}`);
+      throw new Error(`No connection to Extension ${extensionId}`);
     }
 
     if (!connection.isConnected) {
-      throw new Error(`Server ${extensionId} ist nicht verbunden`);
+      throw new Error(`Server ${extensionId} is not connected`);
     }
 
     const tool = connection.tools.find((t) => t.name === toolName);
     if (!tool) {
-      throw new Error(
-        `Tool ${toolName} nicht gefunden in Extension ${extensionId}`,
-      );
+      throw new Error(`Tool ${toolName} not found in Extension ${extensionId}`);
     }
 
     const request = {
@@ -266,7 +258,7 @@ export class MCPServerManager extends EventEmitter {
             }
           }
         } catch (error) {
-          logger.error("Fehler beim Parsen der Tool-Antwort:", error);
+          logger.error("Error parsing tool response:", error);
         }
       };
 
@@ -297,20 +289,20 @@ export class MCPServerManager extends EventEmitter {
   }
 
   async shutdown(): Promise<void> {
-    logger.info("Beende MCP Server Manager...");
+    logger.info("Shutdown MCP Server Manager...");
 
     for (const [extensionId, _connection] of this.connections) {
       try {
         await this.disconnectFromExtension(extensionId);
       } catch (error) {
         logger.error(
-          `Fehler beim Beenden der Verbindung zu ${extensionId}:`,
+          `Error shutting down connection to ${extensionId}:`,
           error,
         );
       }
     }
 
     this.connections.clear();
-    logger.info("MCP Server Manager beendet");
+    logger.info("MCP Server Manager shutdown");
   }
 }
