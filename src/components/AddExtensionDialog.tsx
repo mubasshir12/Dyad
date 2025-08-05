@@ -115,7 +115,7 @@ export function AddExtensionDialog({
     const config: Partial<MCPExtension> = {
       name: npmForm.name || npmForm.packageName,
       description:
-        npmForm.description || `MCP-Server für ${npmForm.packageName}`,
+        npmForm.description || `MCP-Server for ${npmForm.packageName}`,
       category: npmForm.category || "Custom",
       env,
     };
@@ -193,14 +193,14 @@ export function AddExtensionDialog({
                       description: e.target.value,
                     })
                   }
-                  placeholder="Beschreibe was diese Extension macht..."
+                  placeholder="Describe what this extension does..."
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="command">Befehl *</Label>
+                  <Label htmlFor="command">Command *</Label>
                   <Input
                     id="command"
                     value={customForm.command}
@@ -212,7 +212,7 @@ export function AddExtensionDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="args">Argumente</Label>
+                  <Label htmlFor="args">Arguments</Label>
                   <Input
                     id="args"
                     value={customForm.args}
@@ -226,7 +226,7 @@ export function AddExtensionDialog({
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="timeout">Timeout (s)</Label>
+                  <Label htmlFor="timeout">Timeout (seconds)</Label>
                   <Input
                     id="timeout"
                     type="number"
@@ -238,7 +238,7 @@ export function AddExtensionDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Kategorie</Label>
+                  <Label htmlFor="category">Category</Label>
                   <Input
                     id="category"
                     value={customForm.category}
@@ -249,7 +249,7 @@ export function AddExtensionDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="version">Version</Label>
+                  <Label htmlFor="version">Version *</Label>
                   <Input
                     id="version"
                     value={customForm.version}
@@ -262,14 +262,14 @@ export function AddExtensionDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="author">Autor</Label>
+                <Label htmlFor="author">Author</Label>
                 <Input
                   id="author"
                   value={customForm.author}
                   onChange={(e) =>
                     setCustomForm({ ...customForm, author: e.target.value })
                   }
-                  placeholder="Dein Name"
+                  placeholder="Your Name"
                 />
               </div>
 
@@ -282,7 +282,7 @@ export function AddExtensionDialog({
                   Abbrechen
                 </Button>
                 <Button type="submit" disabled={isAdding}>
-                  {isAdding ? "Füge hinzu..." : "Extension hinzufügen"}
+                  {isAdding ? "Add..." : "Add Extension"}
                 </Button>
               </div>
             </form>
@@ -305,18 +305,18 @@ export function AddExtensionDialog({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="npmName">Anzeigename</Label>
+                  <Label htmlFor="npmName">Display Name</Label>
                   <Input
                     id="npmName"
                     value={npmForm.name}
                     onChange={(e) =>
                       setNpmForm({ ...npmForm, name: e.target.value })
                     }
-                    placeholder="Filesystem Server"
+                    placeholder="Filesystem Server (npm package)"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="npmCategory">Kategorie</Label>
+                  <Label htmlFor="npmCategory">Category</Label>
                   <Input
                     id="npmCategory"
                     value={npmForm.category}
@@ -329,20 +329,20 @@ export function AddExtensionDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="npmDescription">Beschreibung</Label>
+                <Label htmlFor="npmDescription">Description</Label>
                 <Textarea
                   id="npmDescription"
                   value={npmForm.description}
                   onChange={(e) =>
                     setNpmForm({ ...npmForm, description: e.target.value })
                   }
-                  placeholder="Beschreibe was diese Extension macht..."
+                  placeholder="Describe what this extension does..."
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="npmEnv">
-                  Umgebungsvariablen (KEY=VALUE, eine pro Zeile)
+                  Environment variables (KEY=VALUE, one per line)
                 </Label>
                 <Textarea
                   id="npmEnv"
@@ -364,7 +364,7 @@ export function AddExtensionDialog({
                   Abbrechen
                 </Button>
                 <Button type="submit" disabled={isInstalling}>
-                  {isInstalling ? "Installiere..." : "NPM-Paket installieren"}
+                  {isInstalling ? "Install..." : "Install NPM Package"}
                 </Button>
               </div>
             </form>
