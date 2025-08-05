@@ -18,6 +18,8 @@ import { BackupManager } from "./backup_manager";
 import { getDatabasePath, initializeDatabase } from "./db";
 import { UserSettings } from "./lib/schemas";
 import { handleNeonOAuthReturn } from "./neon_admin/neon_return_handler";
+import { MCPExtensionManager } from "./mcp/MCPExtensionManager";
+import { setExtensionManager } from "./ipc/handlers/extension_handlers";
 
 log.errorHandler.startCatching();
 log.eventLogger.startLogging();
@@ -57,6 +59,17 @@ export async function onReady() {
   } catch (e) {
     logger.error("Error initializing backup manager", e);
   }
+  
+  // Initialize MCP Extension Manager
+  try {
+    const extensionManager = new MCPExtensionManager();
+    await extensionManager.initialize();
+    setExtensionManager(extensionManager);
+    logger.info("MCP Extension Manager initialized successfully");
+  } catch (e) {
+    logger.error("Error initializing MCP Extension Manager", e);
+  }
+  
   initializeDatabase();
   const settings = readSettings();
   await onFirstRunMaybe(settings);
