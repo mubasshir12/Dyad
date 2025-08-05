@@ -19,6 +19,12 @@ const ExtensionsPage = () => {
     toggleExtension,
     updateExtension,
     installNpmPackage,
+    isAdding,
+    isInstalling,
+    isUpdating,
+    isEnabling,
+    isDisabling,
+    isRemoving,
   } = useExtensions();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,9 +67,9 @@ const ExtensionsPage = () => {
     }
   };
 
-  const handleToggleExtension = async (extension: MCPExtension) => {
+  const handleToggleExtension = async (extensionId: string, enabled: boolean) => {
     try {
-      await toggleExtension({ extensionId: extension.id, enabled: !extension.enabled });
+      await toggleExtension({ extensionId, enabled });
     } catch (error) {
       console.error("Fehler beim Umschalten der Extension:", error);
     }
@@ -175,12 +181,9 @@ const ExtensionsPage = () => {
             <ExtensionCard
               key={extension.id}
               extension={extension}
-              onToggle={() => handleToggleExtension(extension)}
-              onRemove={() => handleRemoveExtension(extension.id)}
-              onEdit={() => handleEditExtension(extension)}
-              isEnabling={isEnabling}
-              isDisabling={isDisabling}
-              isRemoving={isRemoving}
+              onToggle={(extensionId, enabled) => handleToggleExtension(extensionId, enabled)}
+              onDelete={(extensionId) => handleRemoveExtension(extensionId)}
+              onUpdate={(extensionId, updates) => handleUpdateExtension(extensionId, updates)}
             />
           ))}
         </div>

@@ -74,5 +74,11 @@ export function useExtensions() {
     deleteExtension: deleteExtensionMutation.mutateAsync,
     toggleExtension: toggleExtensionMutation.mutateAsync,
     installNpmPackage: installNpmPackageMutation.mutateAsync,
+    isAdding: addExtensionMutation.isPending,
+    isInstalling: installNpmPackageMutation.isPending,
+    isUpdating: updateExtensionMutation.isPending,
+    isEnabling: toggleExtensionMutation.isPending,
+    isDisabling: toggleExtensionMutation.isPending,
+    isRemoving: deleteExtensionMutation.isPending,
   };
 } 
