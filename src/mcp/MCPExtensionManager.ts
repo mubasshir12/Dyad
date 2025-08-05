@@ -59,7 +59,7 @@ export class MCPExtensionManager {
   }
 
   async saveExtensions(): Promise<void> {
-    this.saveLock = this.saveLock.then(async () => {
+    this.saveLock = this.saveLock.catch(() => undefined).then(async () => {
       try {
         const data = JSON.stringify(this.extensions, null, 2);
         const dir = path.dirname(this.configPath);
