@@ -1,3 +1,4 @@
+import { ipcMain } from "electron";
 import log from "electron-log";
 import {
   MCPExtensionManager,
