@@ -116,6 +116,9 @@ export default App;
     );
   }
 
+  // Wait for file system changes to be detected and UI to update
+  await po.page.waitForTimeout(2000);
+
   await po.clickRecheckProblems();
   await po.snapshotProblemsPane();
 });
@@ -153,6 +156,9 @@ test("problems - manual edit (next.js)", async ({ po }) => {
       `const App = () => <div>Minimal imported app</div>;\nexport default App;\n`,
     );
   }
+
+  // Wait for file system changes to be detected and UI to update
+  await po.page.waitForTimeout(2000);
 
   await po.clickRecheckProblems();
   await po.snapshotProblemsPane();
