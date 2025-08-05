@@ -29,7 +29,13 @@ export function useExtensions() {
   });
 
   const updateExtensionMutation = useMutation({
-    mutationFn: async ({ extensionId, updates }: { extensionId: string; updates: Partial<MCPExtension> }) => {
+    mutationFn: async ({
+      extensionId,
+      updates,
+    }: {
+      extensionId: string;
+      updates: Partial<MCPExtension>;
+    }) => {
       return await ipcClient.updateExtension({ extensionId, updates });
     },
     onSuccess: () => {
@@ -47,7 +53,13 @@ export function useExtensions() {
   });
 
   const toggleExtensionMutation = useMutation({
-    mutationFn: async ({ extensionId, enabled }: { extensionId: string; enabled: boolean }) => {
+    mutationFn: async ({
+      extensionId,
+      enabled,
+    }: {
+      extensionId: string;
+      enabled: boolean;
+    }) => {
       return await ipcClient.toggleExtension({ extensionId, enabled });
     },
     onSuccess: () => {
@@ -56,7 +68,13 @@ export function useExtensions() {
   });
 
   const installNpmPackageMutation = useMutation({
-    mutationFn: async ({ packageName, config }: { packageName: string; config?: Partial<MCPExtension> }) => {
+    mutationFn: async ({
+      packageName,
+      config,
+    }: {
+      packageName: string;
+      config?: Partial<MCPExtension>;
+    }) => {
       return await ipcClient.installNpmPackage({ packageName, config });
     },
     onSuccess: () => {
@@ -81,4 +99,4 @@ export function useExtensions() {
     isDisabling: toggleExtensionMutation.isPending,
     isRemoving: deleteExtensionMutation.isPending,
   };
-} 
+}

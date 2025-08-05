@@ -1,6 +1,7 @@
 import log from "electron-log";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
+import * as fsPromises from "fs/promises";
 import * as path from "path";
 import { getUserDataPath } from "../paths/paths";
 
@@ -63,7 +64,7 @@ export class MCPExtensionManager {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(this.configPath, data, "utf8");
+      await fsPromises.writeFile(this.configPath, data, "utf8");
       logger.info(`${this.extensions.length} Extensions gespeichert`);
     } catch (error) {
       logger.error("Fehler beim Speichern der Extensions:", error);
@@ -100,7 +101,8 @@ export class MCPExtensionManager {
       throw new Error(`Extension mit ID ${extensionId} nicht gefunden`);
     }
 
-    this.extensions[index] = { ...this.extensions[index], ...updates };
+    const { id: _, ...mutableUpdates } = updates;
+    this.extensions[index] = { ...this.extensions[index], ...mutableUpdates };
     await this.saveExtensions();
 
     logger.info(`Extension ${this.extensions[index].name} aktualisiert`);
