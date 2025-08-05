@@ -35,20 +35,20 @@ export function MCPExtensionsIntegration() {
     try {
       await addExtension(extension);
       setIsAddDialogOpen(false);
-      showSuccess("Extension erfolgreich hinzugefügt");
+      showSuccess("Extension added successfully");
     } catch (error) {
-      console.error("Fehler beim Hinzufügen der Extension:", error);
-      showError("Fehler beim Hinzufügen der Extension");
+      console.error("Error adding extension:", error);
+      showError("Error adding extension");
     }
   };
 
   const handleRemoveExtension = async (extensionId: string) => {
     try {
       await deleteExtension(extensionId);
-      showSuccess("Extension erfolgreich entfernt");
+      showSuccess("Extension removed successfully");
     } catch (error) {
-      console.error("Fehler beim Entfernen der Extension:", error);
-      showError("Fehler beim Entfernen der Extension");
+      console.error("Error removing extension:", error);
+      showError("Error removing extension");
     }
   };
 
@@ -58,10 +58,10 @@ export function MCPExtensionsIntegration() {
   ) => {
     try {
       await toggleExtension({ extensionId, enabled });
-      showSuccess(`Extension ${enabled ? "aktiviert" : "deaktiviert"}`);
+      showSuccess(`Extension ${enabled ? "enabled" : "disabled"}`);
     } catch (error) {
-      console.error("Fehler beim Umschalten der Extension:", error);
-      showError("Fehler beim Umschalten der Extension");
+      console.error("Error toggling extension:", error);
+      showError("Error toggling extension");
     }
   };
 
@@ -76,10 +76,10 @@ export function MCPExtensionsIntegration() {
     try {
       await updateExtension({ extensionId, updates });
       setEditingExtension(null);
-      showSuccess("Extension erfolgreich aktualisiert");
+      showSuccess("Extension updated successfully");
     } catch (error) {
-      console.error("Fehler beim Aktualisieren der Extension:", error);
-      showError("Fehler beim Aktualisieren der Extension");
+      console.error("Error updating extension:", error);
+      showError("Error updating extension");
     }
   };
 
@@ -90,10 +90,10 @@ export function MCPExtensionsIntegration() {
     try {
       await installNpmPackage({ packageName, config });
       setIsAddDialogOpen(false);
-      showSuccess("NPM-Paket erfolgreich installiert");
+      showSuccess("NPM package installed successfully");
     } catch (error) {
-      console.error("Fehler beim Installieren des NPM-Pakets:", error);
-      showError("Fehler beim Installieren des NPM-Pakets");
+      console.error("Error installing NPM package:", error);
+      showError("Error installing NPM package");
     }
   };
 
@@ -102,7 +102,7 @@ export function MCPExtensionsIntegration() {
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-gray-500">Lade Extensions...</p>
+          <p className="text-sm text-gray-500">Loading extensions...</p>
         </div>
       </div>
     );
@@ -116,7 +116,7 @@ export function MCPExtensionsIntegration() {
             MCP Extensions
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Model Context Protocol Extensions erweitern Dyads Fähigkeiten
+            Model Context Protocol Extensions extend Dyad's capabilities
           </p>
         </div>
         <Button
@@ -125,7 +125,7 @@ export function MCPExtensionsIntegration() {
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
-          Extension hinzufügen
+          Add Extension
         </Button>
       </div>
 
@@ -133,7 +133,7 @@ export function MCPExtensionsIntegration() {
         <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
           <Package className="h-8 w-8 text-gray-400 mx-auto mb-2" />
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Keine Extensions verfügbar
+            No extensions available
           </p>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
@@ -141,7 +141,7 @@ export function MCPExtensionsIntegration() {
             variant="outline"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Erste Extension hinzufügen
+            Add first extension
           </Button>
         </div>
       ) : (
@@ -159,7 +159,7 @@ export function MCPExtensionsIntegration() {
                   </h4>
                   {extension.enabled && (
                     <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
-                      Aktiv
+                      Active
                     </span>
                   )}
                 </div>
@@ -183,7 +183,7 @@ export function MCPExtensionsIntegration() {
                   variant={extension.enabled ? "default" : "outline"}
                   disabled={isEnabling || isDisabling}
                 >
-                  {extension.enabled ? "Deaktivieren" : "Aktivieren"}
+                  {extension.enabled ? "Disable" : "Enable"}
                 </Button>
                 <Button
                   onClick={() => handleEditExtension(extension)}
