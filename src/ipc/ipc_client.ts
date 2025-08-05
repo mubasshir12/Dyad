@@ -1079,7 +1079,10 @@ export class IpcClient {
     return this.ipcRenderer.invoke("add-extension", extension);
   }
 
-  public async updateExtension(params: { extensionId: string; updates: any }): Promise<any> {
+  public async updateExtension(params: {
+    extensionId: string;
+    updates: any;
+  }): Promise<any> {
     return this.ipcRenderer.invoke("update-extension", params);
   }
 
@@ -1087,11 +1090,17 @@ export class IpcClient {
     return this.ipcRenderer.invoke("delete-extension", extensionId);
   }
 
-  public async toggleExtension(params: { extensionId: string; enabled: boolean }): Promise<any> {
+  public async toggleExtension(params: {
+    extensionId: string;
+    enabled: boolean;
+  }): Promise<any> {
     return this.ipcRenderer.invoke("toggle-extension", params);
   }
 
-  public async installNpmPackage(params: { packageName: string; config?: any }): Promise<any> {
+  public async installNpmPackage(params: {
+    packageName: string;
+    config?: any;
+  }): Promise<any> {
     return this.ipcRenderer.invoke("install-npm-package", params);
   }
 }

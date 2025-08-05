@@ -12,7 +12,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "clean": "cmd.exe /C if exist out rmdir /S /Q out && if exist scaffold\\node_modules rmdir /S /Q scaffold\\node_modules",
+    "clean": "rimraf out scaffold/node_modules",
     "start": "electron-forge start",
     "dev:engine": "DYAD_ENGINE_URL=http://localhost:8080/v1 npm start",
     "staging:engine": "DYAD_ENGINE_URL=https://staging---dyad-llm-engine-kq7pivehnq-uc.a.run.app/v1 npm start",

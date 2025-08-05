@@ -1,6 +1,7 @@
 import log from "electron-log";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
+import * as fsPromises from "fs/promises";
 import * as path from "path";
 import { getUserDataPath } from "../paths/paths";
 
@@ -28,6 +29,7 @@ export interface MCPExtension {
 export class MCPExtensionManager {
   private extensions: MCPExtension[] = [];
   private configPath: string;
+  private saveLock: Promise<void> = Promise.resolve();
 
   constructor(configPath?: string) {
     this.configPath =
@@ -57,18 +59,24 @@ export class MCPExtensionManager {
   }
 
   async saveExtensions(): Promise<void> {
-    try {
-      const data = JSON.stringify(this.extensions, null, 2);
-      const dir = path.dirname(this.configPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      fs.writeFileSync(this.configPath, data, "utf8");
-      logger.info(`${this.extensions.length} Extensions gespeichert`);
-    } catch (error) {
-      logger.error("Fehler beim Speichern der Extensions:", error);
-      throw new Error(`Fehler beim Speichern der Extensions: ${error}`);
-    }
+    this.saveLock = this.saveLock
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          const data = JSON.stringify(this.extensions, null, 2);
+          const dir = path.dirname(this.configPath);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          await fsPromises.writeFile(this.configPath, data, "utf8");
+          logger.info(`${this.extensions.length} Extensions gespeichert`);
+        } catch (error) {
+          logger.error("Fehler beim Speichern der Extensions:", error);
+          throw new Error(`Fehler beim Speichern der Extensions: ${error}`);
+        }
+      });
+
+    return this.saveLock;
   }
 
   async getExtensions(): Promise<MCPExtension[]> {
@@ -100,7 +108,8 @@ export class MCPExtensionManager {
       throw new Error(`Extension mit ID ${extensionId} nicht gefunden`);
     }
 
-    this.extensions[index] = { ...this.extensions[index], ...updates };
+    const { id: _, ...mutableUpdates } = updates;
+    this.extensions[index] = { ...this.extensions[index], ...mutableUpdates };
     await this.saveExtensions();
 
     logger.info(`Extension ${this.extensions[index].name} aktualisiert`);

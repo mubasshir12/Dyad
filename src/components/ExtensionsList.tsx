@@ -1,14 +1,13 @@
 import React from "react";
 import { useExtensions } from "@/hooks/useExtensions";
-import { ExtensionCard } from "./ExtensionCard";
-import { MCPExtension } from "@/mcp/MCPExtensionManager";
+import { showError } from "@/lib/toast";
 
 interface ExtensionsListProps {
   show: boolean;
 }
 
 export const ExtensionsList: React.FC<ExtensionsListProps> = ({ show }) => {
-  const { extensions, toggleExtension, deleteExtension, updateExtension } = useExtensions();
+  const { extensions, toggleExtension } = useExtensions();
 
   if (!show) {
     return null;
@@ -18,23 +17,10 @@ export const ExtensionsList: React.FC<ExtensionsListProps> = ({ show }) => {
     try {
       await toggleExtension({ extensionId, enabled });
     } catch (error) {
-      console.error("Fehler beim Umschalten der Extension:", error);
-    }
-  };
-
-  const handleDelete = async (extensionId: string) => {
-    try {
-      await deleteExtension(extensionId);
-    } catch (error) {
-      console.error("Fehler beim Löschen der Extension:", error);
-    }
-  };
-
-  const handleUpdate = async (extensionId: string, updates: Partial<MCPExtension>) => {
-    try {
-      await updateExtension({ extensionId, updates });
-    } catch (error) {
-      console.error("Fehler beim Aktualisieren der Extension:", error);
+      console.error("Error toggling extension:", error);
+      showError(
+        `Fehler beim Umschalten der Extension: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`,
+      );
     }
   };
 
@@ -44,7 +30,7 @@ export const ExtensionsList: React.FC<ExtensionsListProps> = ({ show }) => {
       <div className="space-y-3">
         {extensions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Keine Extensions installiert
+            No extensions installed
           </p>
         ) : (
           extensions.map((extension) => (
@@ -55,7 +41,9 @@ export const ExtensionsList: React.FC<ExtensionsListProps> = ({ show }) => {
                   <input
                     type="checkbox"
                     checked={extension.enabled}
-                    onChange={(e) => handleToggle(extension.id, e.target.checked)}
+                    onChange={(e) =>
+                      handleToggle(extension.id, e.target.checked)
+                    }
                     className="w-4 h-4"
                   />
                 </div>
@@ -64,12 +52,14 @@ export const ExtensionsList: React.FC<ExtensionsListProps> = ({ show }) => {
                 {extension.description}
               </p>
               <div className="flex items-center gap-2">
-                <span className={`text-xs px-2 py-1 rounded ${
-                  extension.installed 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-gray-100 text-gray-800"
-                }`}>
-                  {extension.installed ? "Installiert" : "Nicht installiert"}
+                <span
+                  className={`text-xs px-2 py-1 rounded ${
+                    extension.installed
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {extension.installed ? "Installed" : "Not installed"}
                 </span>
                 {extension.category && (
                   <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
@@ -83,4 +73,4 @@ export const ExtensionsList: React.FC<ExtensionsListProps> = ({ show }) => {
       </div>
     </div>
   );
-}; 
+};

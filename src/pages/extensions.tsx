@@ -22,9 +22,9 @@ const ExtensionsPage = () => {
     isAdding,
     isInstalling,
     isUpdating,
-    isEnabling,
-    isDisabling,
-    isRemoving,
+    isEnabling: _isEnabling,
+    isDisabling: _isDisabling,
+    isRemoving: _isRemoving,
   } = useExtensions();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,7 +67,10 @@ const ExtensionsPage = () => {
     }
   };
 
-  const handleToggleExtension = async (extensionId: string, enabled: boolean) => {
+  const handleToggleExtension = async (
+    extensionId: string,
+    enabled: boolean,
+  ) => {
     try {
       await toggleExtension({ extensionId, enabled });
     } catch (error) {
@@ -181,9 +184,11 @@ const ExtensionsPage = () => {
             <ExtensionCard
               key={extension.id}
               extension={extension}
-              onToggle={(extensionId, enabled) => handleToggleExtension(extensionId, enabled)}
-              onDelete={(extensionId) => handleRemoveExtension(extensionId)}
-              onUpdate={(extensionId, updates) => handleUpdateExtension(extensionId, updates)}
+              onToggle={() =>
+                handleToggleExtension(extension.id, !extension.enabled)
+              }
+              onRemove={() => handleRemoveExtension(extension.id)}
+              onEdit={() => handleEditExtension(extension)}
             />
           ))}
         </div>

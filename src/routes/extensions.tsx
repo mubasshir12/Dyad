@@ -6,4 +6,4 @@ export const extensionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/extensions",
   component: ExtensionsPage,
-}); 
+});

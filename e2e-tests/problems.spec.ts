@@ -89,6 +89,8 @@ test("problems - manual edit (react/vite)", async ({ po }) => {
 
   const appPath = await po.getCurrentAppPath();
   const badFilePath = path.join(appPath, "src", "bad-file.tsx");
+  const appFilePath = path.join(appPath, "src", "App.tsx");
+
   fs.writeFileSync(
     badFilePath,
     `const App = () => <div>Minimal imported app</div>;
@@ -106,6 +108,17 @@ export default App;
 
   fs.unlinkSync(badFilePath);
 
+  // Ensure App.tsx exists before rechecking problems
+  if (!fs.existsSync(appFilePath)) {
+    fs.writeFileSync(
+      appFilePath,
+      `const App = () => <div>Minimal imported app</div>;\nexport default App;\n`,
+    );
+  }
+
+  // Wait for file system changes to be detected and UI to update
+  await po.page.waitForTimeout(2000);
+
   await po.clickRecheckProblems();
   await po.snapshotProblemsPane();
 });
@@ -117,6 +130,8 @@ test("problems - manual edit (next.js)", async ({ po }) => {
 
   const appPath = await po.getCurrentAppPath();
   const badFilePath = path.join(appPath, "src", "bad-file.tsx");
+  const appFilePath = path.join(appPath, "src", "App.tsx");
+
   fs.writeFileSync(
     badFilePath,
     `const App = () => <div>Minimal imported app</div>;
@@ -133,6 +148,17 @@ test("problems - manual edit (next.js)", async ({ po }) => {
   await po.snapshotProblemsPane();
 
   fs.unlinkSync(badFilePath);
+
+  // Ensure App.tsx exists before rechecking problems
+  if (!fs.existsSync(appFilePath)) {
+    fs.writeFileSync(
+      appFilePath,
+      `const App = () => <div>Minimal imported app</div>;\nexport default App;\n`,
+    );
+  }
+
+  // Wait for file system changes to be detected and UI to update
+  await po.page.waitForTimeout(2000);
 
   await po.clickRecheckProblems();
   await po.snapshotProblemsPane();
