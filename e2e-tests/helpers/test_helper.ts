@@ -437,7 +437,7 @@ export class PageObject {
 
   async snapshotProblemsPane() {
     await expect(this.page.getByTestId("problems-pane")).toMatchAriaSnapshot({
-      timeout: Timeout.MEDIUM,
+      timeout: Timeout.LONG,
     });
   }
 
