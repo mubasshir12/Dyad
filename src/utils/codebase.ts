@@ -484,6 +484,7 @@ export async function extractCodebase({
       const matches = await glob(pattern, {
         nodir: true,
         absolute: true,
+        ignore: "**/node_modules/**",
       });
       matches.forEach((file) => {
         const normalizedFile = path.normalize(file);
@@ -503,6 +504,7 @@ export async function extractCodebase({
       const matches = await glob(pattern, {
         nodir: true,
         absolute: true,
+        ignore: "**/node_modules/**",
       });
       matches.forEach((file) => {
         const normalizedFile = path.normalize(file);
