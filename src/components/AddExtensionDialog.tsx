@@ -136,16 +136,16 @@ export function AddExtensionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Extension hinzufügen</DialogTitle>
+          <DialogTitle>Add Extension</DialogTitle>
           <DialogDescription>
-            Füge eine neue MCP-Extension hinzu oder installiere ein NPM-Paket
+            Add a new MCP Extension or install an NPM package
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="custom">Custom Extension</TabsTrigger>
-            <TabsTrigger value="npm">NPM-Paket installieren</TabsTrigger>
+            <TabsTrigger value="npm">Install NPM Package</TabsTrigger>
           </TabsList>
 
           <TabsContent value="custom" className="space-y-4">
@@ -159,12 +159,12 @@ export function AddExtensionDialog({
                     onChange={(e) =>
                       setCustomForm({ ...customForm, name: e.target.value })
                     }
-                    placeholder="Meine Extension"
+                    placeholder="My Extension"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="type">Typ *</Label>
+                  <Label htmlFor="type">Type *</Label>
                   <Select
                     value={customForm.type}
                     onValueChange={(value: "STDIO" | "HTTP") =>
@@ -183,7 +183,7 @@ export function AddExtensionDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Beschreibung *</Label>
+                <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   value={customForm.description}
@@ -279,7 +279,7 @@ export function AddExtensionDialog({
                   variant="outline"
                   onClick={() => onOpenChange(false)}
                 >
-                  Abbrechen
+                  Cancel
                 </Button>
                 <Button type="submit" disabled={isAdding}>
                   {isAdding ? "Add..." : "Add Extension"}
@@ -361,7 +361,7 @@ export function AddExtensionDialog({
                   variant="outline"
                   onClick={() => onOpenChange(false)}
                 >
-                  Abbrechen
+                  Cancel
                 </Button>
                 <Button type="submit" disabled={isInstalling}>
                   {isInstalling ? "Install..." : "Install NPM Package"}
