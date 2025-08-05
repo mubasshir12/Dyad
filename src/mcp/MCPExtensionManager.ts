@@ -15,6 +15,11 @@ export interface MCPExtension {
   isOfficial?: boolean;
   config?: Record<string, any>;
   packageName?: string;
+  type?: "STDIO" | "HTTP";
+  command?: string;
+  args?: string[];
+  timeout?: number;
+  env?: Record<string, string>;
 }
 
 export class MCPExtensionManager {
