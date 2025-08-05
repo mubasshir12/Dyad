@@ -1,4 +1,4 @@
-import { Home, Inbox, Settings, HelpCircle, Store } from "lucide-react";
+import { Home, Inbox, Settings, HelpCircle, Store, Package } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useSidebar } from "@/components/ui/sidebar"; // import useSidebar hook
 import { useEffect, useState, useRef } from "react";
@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/sidebar";
 import { ChatList } from "./ChatList";
 import { AppList } from "./AppList";
-import { HelpDialog } from "./HelpDialog"; // Import the new dialog
+import { HelpDialog } from "./HelpDialog"; 
 import { SettingsList } from "./SettingsList";
+import { ExtensionsList } from "./ExtensionsList";
 
 // Menu items.
 const items = [
@@ -35,6 +36,11 @@ const items = [
     icon: Inbox,
   },
   {
+    title: "Extensions",
+    to: "/extensions",
+    icon: Package,
+  },
+  {
     title: "Settings",
     to: "/settings",
     icon: Settings,
@@ -46,16 +52,17 @@ const items = [
   },
 ];
 
-// Hover state types
+
 type HoverState =
   | "start-hover:app"
   | "start-hover:chat"
+  | "start-hover:extensions"
   | "start-hover:settings"
   | "clear-hover"
   | "no-hover";
 
 export function AppSidebar() {
-  const { state, toggleSidebar } = useSidebar(); // retrieve current sidebar state
+  const { state, toggleSidebar } = useSidebar(); 
   const [hoverState, setHoverState] = useState<HoverState>("no-hover");
   const expandedByHover = useRef(false);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false); // State for dialog
@@ -83,6 +90,7 @@ export function AppSidebar() {
     routerState.location.pathname === "/" ||
     routerState.location.pathname.startsWith("/app-details");
   const isChatRoute = routerState.location.pathname === "/chat";
+  const isExtensionsRoute = routerState.location.pathname === "/extensions";
   const isSettingsRoute = routerState.location.pathname.startsWith("/settings");
 
   let selectedItem: string | null = null;
@@ -90,6 +98,8 @@ export function AppSidebar() {
     selectedItem = "Apps";
   } else if (hoverState === "start-hover:chat") {
     selectedItem = "Chat";
+  } else if (hoverState === "start-hover:extensions") {
+    selectedItem = "Extensions";
   } else if (hoverState === "start-hover:settings") {
     selectedItem = "Settings";
   } else if (state === "expanded") {
@@ -97,6 +107,8 @@ export function AppSidebar() {
       selectedItem = "Apps";
     } else if (isChatRoute) {
       selectedItem = "Chat";
+    } else if (isExtensionsRoute) {
+      selectedItem = "Extensions";
     } else if (isSettingsRoute) {
       selectedItem = "Settings";
     }
@@ -126,6 +138,7 @@ export function AppSidebar() {
           <div className="w-[240px]">
             <AppList show={selectedItem === "Apps"} />
             <ChatList show={selectedItem === "Chat"} />
+            <ExtensionsList show={selectedItem === "Extensions"} />
             <SettingsList show={selectedItem === "Settings"} />
           </div>
         </div>
@@ -193,6 +206,8 @@ function AppIcons({
                         onHoverChange("start-hover:app");
                       } else if (item.title === "Chat") {
                         onHoverChange("start-hover:chat");
+                      } else if (item.title === "Extensions") {
+                        onHoverChange("start-hover:extensions");
                       } else if (item.title === "Settings") {
                         onHoverChange("start-hover:settings");
                       }
