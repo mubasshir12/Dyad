@@ -41,7 +41,7 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
@@ -77,7 +77,9 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
               <Input
                 id="description"
                 value={formData.description}
-                onChange={(e) => handleInputChange("description", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("description", e.target.value)
+                }
                 className="col-span-3"
                 required
               />
@@ -133,4 +135,4 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};
