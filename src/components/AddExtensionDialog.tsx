@@ -350,7 +350,7 @@ export function AddExtensionDialog({
                   onChange={(e) =>
                     setNpmForm({ ...npmForm, env: e.target.value })
                   }
-                  placeholder="MCP_FILESYSTEM_ROOT=./workspace&#10;POSTGRES_CONNECTION_STRING=postgresql://localhost:5432/test"
+                  placeholder="MCP_FILESYSTEM_ROOT=./workspace\nPOSTGRES_CONNECTION_STRING=postgresql://localhost:5432/test"
                   rows={3}
                 />
               </div>
