@@ -7,7 +7,6 @@ import { ExtensionCard } from "@/components/ExtensionCard";
 import { AddExtensionDialog } from "@/components/AddExtensionDialog";
 import { UpdateExtensionDialog } from "@/components/UpdateExtensionDialog";
 import { Input } from "@/components/ui/input";
-
 import { MCPExtension } from "@/mcp/MCPExtensionManager";
 
 const ExtensionsPage = () => {
@@ -16,17 +15,10 @@ const ExtensionsPage = () => {
     extensions,
     isLoading,
     addExtension,
-    removeExtension,
-    enableExtension,
-    disableExtension,
+    deleteExtension,
+    toggleExtension,
     updateExtension,
     installNpmPackage,
-    isAdding,
-    isRemoving,
-    isEnabling,
-    isDisabling,
-    isUpdating,
-    isInstalling,
   } = useExtensions();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,7 +55,7 @@ const ExtensionsPage = () => {
 
   const handleRemoveExtension = async (extensionId: string) => {
     try {
-      await removeExtension(extensionId);
+      await deleteExtension(extensionId);
     } catch (error) {
       console.error("Fehler beim Entfernen der Extension:", error);
     }
@@ -71,11 +63,7 @@ const ExtensionsPage = () => {
 
   const handleToggleExtension = async (extension: MCPExtension) => {
     try {
-      if (extension.enabled) {
-        await disableExtension(extension.id);
-      } else {
-        await enableExtension(extension.id);
-      }
+      await toggleExtension({ extensionId: extension.id, enabled: !extension.enabled });
     } catch (error) {
       console.error("Fehler beim Umschalten der Extension:", error);
     }
