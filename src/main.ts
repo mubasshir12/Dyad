@@ -78,7 +78,7 @@ export async function onReady() {
   createWindow();
 
   logger.info("Auto-update enabled=", settings.enableAutoUpdate);
-  if (settings.enableAutoUpdate) {
+  if (settings.enableAutoUpdate && app.isPackaged && !process.env.CI) {
     // Technically we could just pass the releaseChannel directly to the host,
     // but this is more explicit and falls back to stable if there's an unknown
     // release channel.
