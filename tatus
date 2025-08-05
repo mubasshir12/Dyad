@@ -1,0 +1,16 @@
+[33m6a3eff3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mextension-settings-integration[m[33m, [m[1;31morigin/extension-settings-integration[m[33m)[m Fix E2E tests: add wait time after file operations to allow UI updates
+[33m420b5f1[m Fix code style issues in MCPExtensionManager.ts with Prettier
+[33m9b518e4[m Fix Promise chain error recovery in MCPExtensionManager and remove unused variables
+[33m05384cd[m Update src/mcp/MCPExtensionManager.ts
+[33m04254de[m Fix CI issues: disable auto-updater in CI, add lock mechanism for extensions, improve E2E tests
+[33m87c2528[m Rule violated: IPC Client and Handler Standards
+[33m85cd4ee[m Füge Überprüfung und Erstellung der App.tsx-Datei in den E2E-Tests hinzu, um sicherzustellen, dass sie vor der Überprüfung von Problemen existiert. Erhöhe den Timeout für den Snapshot des Problems-Panels.
+[33m68a3a5a[m Fix code style issues in tabs.tsx
+[33m1c090d6[m Fix code style issues with Prettier
+[33m6d89a51[m fix: update package-lock.json and package.json
+[33m2f64c83[m Entferne die MCPServerManager-Klasse und alle zugehörigen Funktionen aus dem Projekt. Diese Klasse war für die Verwaltung von MCP-Servern zuständig, einschließlich der Initialisierung, des Ladens von Serverkonfigurationen und des Startens/Stoppen von Servern. Die Entfernung erfolgt im Rahmen der Neustrukturierung des Codes.
+[33maa7fdcc[m Merge branch 'extension-settings-integration' of https://github.com/Icarus-B4/dyad-v2 into extension-settings-integration
+[33m764a085[m Verbessere die Lesbarkeit des Codes in useExtensions.ts durch Umformatierung der Typdefinitionen in den Mutation-Funktionen. Aktualisiere die MCPExtensionManager-Klasse, um fsPromises für asynchrone Dateioperationen zu verwenden und verbessere die Aktualisierung von Erweiterungen, indem unnötige ID-Felder entfernt werden.
+[33me08f175[m Update src/components/AddExtensionDialog.tsx
+[33m1c05042[m Übersetzung der Benutzeroberfläche ins Englische: Alle Texte in den Komponenten AddExtensionDialog, ExtensionsList, MCPExtensionsIntegration, UpdateExtensionDialog, und extension_handlers wurden ins Englische geändert, um die Benutzerfreundlichkeit zu verbessern.
+[33mb33559f[m � Extension-Integration in Settings mit vollständiger Persistierung
