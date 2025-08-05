@@ -1,5 +1,6 @@
 import React from "react";
 import { useExtensions } from "@/hooks/useExtensions";
+import { showError } from "@/lib/toast";
 
 interface ExtensionsListProps {
   show: boolean;
@@ -17,6 +18,9 @@ export const ExtensionsList: React.FC<ExtensionsListProps> = ({ show }) => {
       await toggleExtension({ extensionId, enabled });
     } catch (error) {
       console.error("Error toggling extension:", error);
+      showError(
+        `Fehler beim Umschalten der Extension: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`,
+      );
     }
   };
 
