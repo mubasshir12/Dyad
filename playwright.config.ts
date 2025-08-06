@@ -29,6 +29,7 @@ const config: PlaywrightTestConfig = {
   webServer: {
     command: `cd testing/fake-llm-server && npm run build && npm start`,
     url: "http://localhost:3500/health",
+    reuseExistingServer: !process.env.CI,
   },
 };
 
