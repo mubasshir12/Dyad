@@ -76,6 +76,17 @@ let proxyWorker: Worker | null = null;
 // to find node/pnpm.
 fixPath();
 
+function assertNodeVersionForInstall() {
+  const currentNodeVersion = process.version;
+  const majorVersion = parseInt(currentNodeVersion.slice(1).split('.')[0], 10);
+
+  if (majorVersion < 16) {
+    throw new Error(
+      `This project's dependencies require Node.js v16 or higher, but you are using ${currentNodeVersion}. Please upgrade your Node.js and try again.`
+    );
+  }
+}
+
 async function executeApp({
   appPath,
   appId,
@@ -101,6 +112,9 @@ async function executeAppLocalNode({
   appId: number;
   event: Electron.IpcMainInvokeEvent;
 }): Promise<void> {
+  //call the helper function to check the Node.js version
+  assertNodeVersionForInstall();
+  
   const process = spawn(
     "(pnpm install && pnpm run dev --port 32100) || (npm install --legacy-peer-deps && npm run dev -- --port 32100)",
     [],
