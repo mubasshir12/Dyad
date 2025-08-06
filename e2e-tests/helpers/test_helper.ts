@@ -1029,8 +1029,18 @@ export const test = base.extend<{
           appInfo.main,
           "--enable-logging",
           `--user-data-dir=${userDataDir}`,
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-software-rasterizer",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-renderer-backgrounding",
+          "--disable-features=TranslateUI",
+          "--disable-background-timer-throttling",
+          "--disable-ipc-flooding-protection",
         ],
         executablePath: appInfo.executable,
+        timeout: 180_000,
         // Strong suspicion this is causing issues on Windows with tests hanging due to error:
         // ffmpeg failed to write: Error [ERR_STREAM_WRITE_AFTER_END]: write after end
         // recordVideo: {
