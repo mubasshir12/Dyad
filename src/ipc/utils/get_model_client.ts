@@ -219,6 +219,20 @@ function getRegularModelClient(
         backupModelClients: [],
       };
     }
+    case "llmgateway": {
+      const provider = createOpenAICompatible({
+        name: "llmgateway",
+        baseURL: "https://api.llmgateway.io/v1",
+        apiKey,
+      });
+      return {
+        modelClient: {
+          model: provider(model.name),
+          builtinProviderId: providerId,
+        },
+        backupModelClients: [],
+      };
+    }
     case "ollama": {
       // Ollama typically runs locally and doesn't require an API key in the same way
       const provider = createOllama({

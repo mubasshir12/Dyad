@@ -149,6 +149,29 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       contextWindow: 128_000,
     },
   ],
+  llmgateway: [
+    {
+      name: "gpt-4.1",
+      displayName: "GPT-4.1",
+      description: "OpenAI GPT-4.1 via LLMGateway",
+      maxOutputTokens: 32_768,
+      contextWindow: 1_047_576,
+    },
+    {
+      name: "claude-sonnet-4-20250514",
+      displayName: "Claude 4 Sonnet",
+      description: "Anthropic Claude 4 Sonnet via LLMGateway",
+      maxOutputTokens: 16_000,
+      contextWindow: 200_000,
+    },
+    {
+      name: "kimi-k2",
+      displayName: "Kimi K2",
+      description: "Kimi K2 via LLMGateway",
+      maxOutputTokens: 32_000,
+      contextWindow: 131_000,
+    },
+  ],
   auto: [
     {
       name: "auto",
@@ -169,6 +192,7 @@ export const PROVIDER_TO_ENV_VAR: Record<string, string> = {
   anthropic: "ANTHROPIC_API_KEY",
   google: "GEMINI_API_KEY",
   openrouter: "OPENROUTER_API_KEY",
+  llmgateway: "LLMGATEWAY_API_KEY",
 };
 
 export const CLOUD_PROVIDERS: Record<
@@ -203,6 +227,12 @@ export const CLOUD_PROVIDERS: Record<
     hasFreeTier: true,
     websiteUrl: "https://openrouter.ai/settings/keys",
     gatewayPrefix: "openrouter/",
+  },
+  llmgateway: {
+    displayName: "LLMGateway",
+    hasFreeTier: false,
+    websiteUrl: "https://api.llmgateway.io",
+    gatewayPrefix: "llmgateway/",
   },
   auto: {
     displayName: "Dyad",

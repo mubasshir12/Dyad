@@ -267,7 +267,7 @@ export function SetupBanner() {
                         Setup other AI providers
                       </h4>
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        OpenAI, Anthropic, OpenRouter and more
+                        OpenAI, Anthropic, OpenRouter, LLMGateway and more
                       </p>
                     </div>
                   </div>
