@@ -1,5 +1,5 @@
 import fs from "fs";
-import { test } from "./helpers/test_helper";
+import { test, Timeout } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
 test("delete app", async ({ po }) => {
   await po.setUp();
@@ -22,5 +22,7 @@ test("delete app", async ({ po }) => {
   // Make sure the app is deleted
   await po.isCurrentAppNameNone();
   expect(fs.existsSync(appPath)).toBe(false);
-  expect(po.getAppListItem({ appName })).not.toBeVisible();
+  await expect(po.getAppListItem({ appName })).toBeHidden({
+    timeout: Timeout.MEDIUM,
+  });
 });
