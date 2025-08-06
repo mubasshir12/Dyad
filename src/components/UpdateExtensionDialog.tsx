@@ -51,9 +51,9 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Extension bearbeiten</DialogTitle>
+          <DialogTitle>Edit Extension</DialogTitle>
           <DialogDescription>
-            Bearbeite die Einstellungen für {extension.name}
+            Edit the settings for {extension.name}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -72,7 +72,7 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="description" className="text-right">
-                Beschreibung
+                Description
               </Label>
               <Input
                 id="description"
@@ -86,7 +86,7 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="category" className="text-right">
-                Kategorie
+                Category
               </Label>
               <Input
                 id="category"
@@ -97,7 +97,7 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="version" className="text-right">
-                Version
+                Version *
               </Label>
               <Input
                 id="version"
@@ -108,7 +108,7 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="author" className="text-right">
-                Autor
+                Author
               </Label>
               <Input
                 id="author"
@@ -125,10 +125,10 @@ export const UpdateExtensionDialog: React.FC<UpdateExtensionDialogProps> = ({
               onClick={() => onOpenChange(false)}
               disabled={isUpdating}
             >
-              Abbrechen
+              Cancel
             </Button>
             <Button type="submit" disabled={isUpdating}>
-              {isUpdating ? "Wird aktualisiert..." : "Aktualisieren"}
+              {isUpdating ? "Updating..." : "Update"}
             </Button>
           </DialogFooter>
         </form>
