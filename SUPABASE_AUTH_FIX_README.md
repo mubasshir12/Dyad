@@ -23,6 +23,8 @@ Die Analyse hat gezeigt, dass **keine Supabase-JWT-Token in der Konfiguration** 
    npm start
    ```
 
+---
+
 2. **Zu den Einstellungen navigieren**
 
    - Klicke auf das ⚙️ Settings-Symbol
