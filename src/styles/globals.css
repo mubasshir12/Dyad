@@ -122,6 +122,146 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Liquid Glass Theme Variables */
+.liquid-glass {
+  --lg-blur: 10px;
+  --lg-bg: rgba(0, 0, 0, 0.08);
+  --lg-border: rgba(0, 0, 0, 0.18);
+  --lg-highlight: rgba(0, 0, 0, 0.35);
+  --lg-shadow: rgba(0, 0, 0, 0.35);
+  --lg-text: rgba(255, 255, 255, 0.85);
+  --lg-text-secondary: rgba(17, 17, 17, 0.65);
+}
+
+@layer utilities {
+  .liquid-glass .lg-surface {
+    background: var(--lg-bg) !important;
+    backdrop-filter: blur(var(--lg-blur)) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(140%) !important;
+    border: 0px solid var(--lg-border) !important;
+    box-shadow: 0 8px 24px var(--lg-shadow) inset 0 0 0 1px var(--lg-bg) !important;
+  }
+
+  .liquid-glass .lg-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.18),
+      rgba(255, 255, 255, 0.08)
+    ) !important;
+    border: 0px solid var(--lg-border) !important;
+    backdrop-filter: blur(calc(var(--lg-blur) * 0.85)) !important;
+    -webkit-backdrop-filter: blur(calc(var(--lg-blur) * 0.85)) !important;
+    box-shadow:
+      0 1px 0 var(--lg-highlight) inset,
+      0 8px 24px var(--lg-shadow) !important;
+  }
+
+  .liquid-glass .lg-button::after {
+    content: "";
+    position: absolute;
+    inset: -40% -40%;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at var(--lg-mx, 50%) var(--lg-my, 50%),
+      rgba(0, 0, 0, 0.45),
+      rgba(255, 255, 255, 0.08) 25%,
+      transparent 60%
+    );
+    mix-blend-mode: screen;
+    opacity: 0;
+    transition: opacity 250ms ease;
+  }
+  .liquid-glass .lg-button:hover::after {
+    opacity: 1;
+  }
+
+  .liquid-glass .lg-input {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.12),
+      rgba(255, 255, 255, 0.06)
+    ) !important;
+    border: 0px solid var(--lg-border) !important;
+    backdrop-filter: blur(calc(var(--lg-blur) * 0.7)) !important;
+    -webkit-backdrop-filter: blur(calc(var(--lg-blur) * 0.7)) !important;
+  }
+
+  .liquid-glass .lg-toggle {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 0px solid var(--lg-border) !important;
+    backdrop-filter: blur(calc(var(--lg-blur) * 0.7)) !important;
+    -webkit-backdrop-filter: blur(calc(var(--lg-blur) * 0.7)) !important;
+  }
+}
+
+@layer base {
+  .liquid-glass body {
+    background: transparent !important;
+  }
+  .liquid-glass body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        1200px 800px at 10% 10%,
+        rgba(0, 0, 0, 0.22),
+        rgba(255, 255, 255, 0) 60%
+      ),
+      radial-gradient(
+        1000px 700px at 90% 20%,
+        rgba(66, 133, 244, 0.22),
+        rgba(66, 133, 244, 0) 60%
+      ),
+      radial-gradient(
+        900px 600px at 50% 100%,
+        rgba(232, 67, 147, 0.22),
+        rgba(232, 67, 147, 0) 60%
+      ),
+      linear-gradient(120deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06));
+    filter: saturate(180%) contrast(115%);
+    animation: lg-shift 18s ease-in-out infinite alternate;
+  }
+  .liquid-glass body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.015) 0,
+        rgba(0, 0, 0, 0.015) 2px,
+        transparent 2px,
+        transparent 4px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.01) 0,
+        rgba(255, 255, 255, 0.01) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    mix-blend-mode: overlay;
+  }
+}
+
+@keyframes lg-shift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(0, -20px, 0) scale(1.02);
+  }
+}
+
 .prose {
   --tw-prose-pre-bg: var(--background);
 }

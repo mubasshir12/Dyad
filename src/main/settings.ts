@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   enableAutoFixProblems: false,
   enableAutoUpdate: true,
   enableTransparentWindow: false,
+  enableLiquidGlassTheme: false,
   releaseChannel: "stable",
   selectedTemplateId: DEFAULT_TEMPLATE_ID,
 };

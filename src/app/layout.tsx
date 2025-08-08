@@ -1,6 +1,7 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "../contexts/ThemeContext";
+import { useSettings } from "@/hooks/useSettings";
 import { DeepLinkProvider } from "../contexts/DeepLinkContext";
 import { Toaster } from "sonner";
 import { TitleBar } from "./TitleBar";
@@ -16,6 +17,7 @@ export default function RootLayout({
 }) {
   const { refreshAppIframe } = useRunApp();
   const previewMode = useAtomValue(previewModeAtom);
+  const { settings } = useSettings();
   // Global keyboard listener for refresh events
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -37,6 +39,12 @@ export default function RootLayout({
     };
   }, [refreshAppIframe, previewMode]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings?.enableLiquidGlassTheme) root.classList.add("liquid-glass");
+    else root.classList.remove("liquid-glass");
+  }, [settings?.enableLiquidGlassTheme]);
+
   return (
     <>
       <ThemeProvider>
@@ -44,7 +52,7 @@ export default function RootLayout({
           <SidebarProvider>
             <TitleBar />
             <AppSidebar />
-            <div className="flex h-screenish w-full overflow-x-hidden mt-12 mb-4 mr-4 border-t border-l border-border rounded-lg bg-background">
+            <div className="flex h-screenish w-full overflow-x-hidden mt-12 mb-4 mr-4 border-t border-l border-border rounded-lg bg-background lg-surface">
               {children}
             </div>
             <Toaster richColors />
