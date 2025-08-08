@@ -75,21 +75,13 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
-      - name: Setup pnpm cache for scaffold
+      - name: Setup pnpm cache (scaffold + nextjs)
         uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ matrix.os.name }}-pnpm-scaffold-${{ hashFiles('scaffold/pnpm-lock.yaml') }}
+          key: ${{ matrix.os.name }}-pnpm-${{ hashFiles('scaffold/pnpm-lock.yaml', 'nextjs-template/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ matrix.os.name }}-pnpm-scaffold-
-
-      - name: Setup pnpm cache for nextjs-template
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ matrix.os.name }}-pnpm-nextjs-${{ hashFiles('nextjs-template/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ matrix.os.name }}-pnpm-nextjs-
+            ${{ matrix.os.name }}-pnpm-
 
       # Not strictly needed but makes the e2e tests faster (and less flaky)
       - name: Install scaffold dependencies (with retry)
