@@ -1,4 +1,4 @@
-import { test } from "./helpers/test_helper";
+import { test, Timeout } from "./helpers/test_helper";
 import { expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
@@ -120,6 +120,9 @@ export default App;
   await po.page.waitForTimeout(2000);
 
   await po.clickRecheckProblems();
+  await expect(po.page.getByTestId("problem-summary")).toHaveCount(0, {
+    timeout: Timeout.LONG,
+  });
   await po.snapshotProblemsPane();
 });
 

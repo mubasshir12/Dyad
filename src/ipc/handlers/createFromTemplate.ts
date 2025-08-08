@@ -7,6 +7,7 @@ import { copyDirectoryRecursive } from "../utils/file_utils";
 import { readSettings } from "@/main/settings";
 import { getTemplateOrThrow } from "../utils/template_utils";
 import log from "electron-log";
+import { execSync } from "node:child_process";
 
 const logger = log.scope("createFromTemplate");
 
@@ -23,6 +24,7 @@ export async function createFromTemplate({
       path.join(__dirname, "..", "..", "scaffold"),
       fullAppPath,
     );
+    await installDependencies(fullAppPath);
     return;
   }
 
@@ -32,6 +34,7 @@ export async function createFromTemplate({
   }
   const repoCachePath = await cloneRepo(template.githubUrl);
   await copyRepoToApp(repoCachePath, fullAppPath);
+  await installDependencies(fullAppPath);
 }
 
 async function cloneRepo(repoUrl: string): Promise<string> {
@@ -181,5 +184,28 @@ async function copyRepoToApp(repoCachePath: string, appPath: string) {
       err,
     );
     throw err; // Re-throw the error after logging
+  }
+}
+
+function installDependencies(appPath: string) {
+  logger.info(`Installing dependencies in ${appPath}`);
+  try {
+    execSync("pnpm install", {
+      cwd: appPath,
+      stdio: "pipe",
+      encoding: "utf8",
+    });
+    logger.info("pnpm install succeeded");
+  } catch (error) {
+    logger.warn(
+      `pnpm install failed in ${appPath}, falling back to npm install --legacy-peer-deps`,
+      error,
+    );
+    execSync("npm install --legacy-peer-deps", {
+      cwd: appPath,
+      stdio: "pipe",
+      encoding: "utf8",
+    });
+    logger.info("npm install fallback succeeded");
   }
 }
