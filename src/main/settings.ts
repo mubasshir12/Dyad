@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   selectedChatMode: "build",
   enableAutoFixProblems: false,
   enableAutoUpdate: true,
+  enableTransparentWindow: false,
   releaseChannel: "stable",
   selectedTemplateId: DEFAULT_TEMPLATE_ID,
 };

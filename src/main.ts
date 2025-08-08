@@ -145,6 +145,7 @@ declare global {
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
+  const currentSettings = readSettings();
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: process.env.NODE_ENV === "development" ? 1280 : 960,
@@ -172,6 +173,9 @@ const createWindow = () => {
       path.join(__dirname, "../renderer/main_window/index.html"),
     );
   }
+  try {
+    mainWindow.setOpacity(currentSettings.enableTransparentWindow ? 0.95 : 1);
+  } catch {}
   if (process.env.NODE_ENV === "development") {
     // Open the DevTools.
     mainWindow.webContents.openDevTools();

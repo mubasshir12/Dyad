@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { AutoFixProblemsSwitch } from "@/components/AutoFixProblemsSwitch";
 import { AutoUpdateSwitch } from "@/components/AutoUpdateSwitch";
 import { ReleaseChannelSelector } from "@/components/ReleaseChannelSelector";
+import { TransparentWindowSwitch } from "@/components/TransparentWindowSwitch";
 import { NeonIntegration } from "@/components/NeonIntegration";
 import { MCPExtensionsIntegration } from "@/components/MCPExtensionsIntegration";
 
@@ -251,6 +252,14 @@ export function GeneralSettings({ appVersion }: { appVersion: string | null }) {
         <div className="text-sm text-gray-500 dark:text-gray-400">
           This will automatically update the app when new versions are
           available.
+        </div>
+      </div>
+
+      <div className="space-y-1 mt-4">
+        <TransparentWindowSwitch />
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Aktiviert transparente Fenster. Auf macOS/Windows kann ein Neustart
+          erforderlich sein.
         </div>
       </div>
 
