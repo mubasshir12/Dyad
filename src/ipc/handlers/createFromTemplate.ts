@@ -164,7 +164,7 @@ async function copyRepoToApp(repoCachePath: string, appPath: string) {
   logger.info(`Copying from ${repoCachePath} to ${appPath}`);
   try {
     await fs.copy(repoCachePath, appPath, {
-      filter: (src, _dest) => {
+      filter: (src: string, _dest: string) => {
         const excludedDirs = ["node_modules", ".git"];
         const relativeSrc = path.relative(repoCachePath, src);
         if (excludedDirs.includes(path.basename(relativeSrc))) {
