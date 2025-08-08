@@ -38,6 +38,22 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       maxOutputTokens: 32_768,
       contextWindow: 1_047_576,
     },
+    // GPT-5 family (requires max_completion_tokens)
+    {
+      name: "gpt-5",
+      displayName: "GPT 5",
+      description: "OpenAI's latest flagship model",
+      // Use a conservative default; actual effective cap is provider-managed
+      maxOutputTokens: 32_000,
+      contextWindow: 400_000,
+    },
+    {
+      name: "gpt-5-mini",
+      displayName: "GPT 5 Mini",
+      description: "OpenAI's lightweight GPT-5 variant",
+      maxOutputTokens: 32_000,
+      contextWindow: 400_000,
+    },
     // https://platform.openai.com/docs/models/o3-mini
     {
       name: "o3-mini",

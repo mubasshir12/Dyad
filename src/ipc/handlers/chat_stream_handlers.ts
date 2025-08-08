@@ -38,7 +38,11 @@ import * as path from "path";
 import * as os from "os";
 import * as crypto from "crypto";
 import { readFile, writeFile, unlink } from "fs/promises";
-import { getMaxTokens } from "../utils/token_utils";
+import {
+  getMaxTokens,
+  requiresMaxCompletionTokens,
+  requiresDefaultTemperature,
+} from "../utils/token_utils";
 import { MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/settings_constants";
 import { validateChatContext } from "../utils/context_paths_utils";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
@@ -592,18 +596,50 @@ This conversation includes one or more image attachments. When the user uploads 
             logger.log("sending AI request");
           }
           return streamText({
-            maxTokens: await getMaxTokens(settings.selectedModel),
-            temperature: 0,
+            // Use top-level maxTokens for most providers; for OpenAI GPT-5/o-series,
+            // use providerOptions.openai.maxCompletionTokens instead.
+            ...(requiresMaxCompletionTokens(settings.selectedModel)
+              ? {}
+              : { maxTokens: await getMaxTokens(settings.selectedModel) }),
+            ...(requiresDefaultTemperature(settings.selectedModel)
+              ? { temperature: 1 }
+              : { temperature: 0 }),
             maxRetries: 2,
             model: modelClient.model,
             providerOptions: {
+              // OpenAI specific toggle for GPT-5/o-series
+              ...(requiresMaxCompletionTokens(settings.selectedModel)
+                ? {
+                    openai: {
+                      maxCompletionTokens: await getMaxTokens(
+                        settings.selectedModel,
+                      ),
+                    },
+                  }
+                : {}),
               "dyad-engine": {
                 dyadRequestId,
+                ...(requiresMaxCompletionTokens(settings.selectedModel)
+                  ? {
+                      maxCompletionTokens: await getMaxTokens(
+                        settings.selectedModel,
+                      ),
+                    }
+                  : {}),
               },
-              "dyad-gateway": getExtraProviderOptions(
-                modelClient.builtinProviderId,
-                settings,
-              ),
+              "dyad-gateway": {
+                ...getExtraProviderOptions(
+                  modelClient.builtinProviderId,
+                  settings,
+                ),
+                ...(requiresMaxCompletionTokens(settings.selectedModel)
+                  ? {
+                      maxCompletionTokens: await getMaxTokens(
+                        settings.selectedModel,
+                      ),
+                    }
+                  : {}),
+              },
               google: {
                 thinkingConfig: {
                   includeThoughts: true,
