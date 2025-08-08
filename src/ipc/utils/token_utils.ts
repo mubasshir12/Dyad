@@ -45,8 +45,9 @@ export function requiresMaxCompletionTokens(
     name.startsWith("o1") ||
     name.startsWith("o3") ||
     name.startsWith("o4") ||
-    name.startsWith("gpt-5")
+    (name.startsWith("gpt-5") && !name.includes("nano"))
   );
+}
 }
 
 /**
