@@ -465,7 +465,12 @@ export class PageObject {
       if ((await checkingBtn.count()) > 0) {
         await expect(checkingBtn).toBeHidden({ timeout: Timeout.LONG });
       }
-    } catch {}
+    } catch (error) {
+      console.warn(
+        "snapshotProblemsPane: waiting for 'Checking...' failed",
+        error,
+      );
+    }
     await expect(this.page.getByTestId("problems-pane")).toMatchAriaSnapshot({
       timeout: Timeout.LONG,
     });
@@ -638,7 +643,9 @@ export class PageObject {
         timeout: Timeout.MEDIUM,
       });
       return;
-    } catch {}
+    } catch (error) {
+      console.warn("waitForChatCompletion: Retry button not visible", error);
+    }
     await expect(async () => {
       const content = await this.page
         .getByTestId("messages-list")
