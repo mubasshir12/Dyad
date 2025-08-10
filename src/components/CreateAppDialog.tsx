@@ -36,6 +36,8 @@ export function CreateAppDialog({
   const setSelectedAppId = useSetAtom(selectedAppIdAtom);
   const [appName, setAppName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [installCommand, setInstallCommand] = useState("pnpm install");
+  const [startCommand, setStartCommand] = useState("pnpm dev");
   const { createApp } = useCreateApp();
   const { data: nameCheckResult } = useCheckName(appName);
   const router = useRouter();
@@ -52,7 +54,11 @@ export function CreateAppDialog({
 
     setIsSubmitting(true);
     try {
-      const result = await createApp({ name: appName.trim() });
+      const result = await createApp({
+        name: appName.trim(),
+        installCommand: installCommand.trim(),
+        startCommand: startCommand.trim(),
+      });
       if (template && NEON_TEMPLATE_IDS.has(template.id)) {
         await neonTemplateHook({
           appId: result.app.id,
@@ -78,7 +84,10 @@ export function CreateAppDialog({
 
   const isNameValid = appName.trim().length > 0;
   const nameExists = nameCheckResult?.exists;
-  const canSubmit = isNameValid && !nameExists && !isSubmitting;
+  const hasInstall = installCommand.trim().length > 0;
+  const hasStart = startCommand.trim().length > 0;
+  const canSubmit =
+    isNameValid && hasInstall && hasStart && !nameExists && !isSubmitting;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,6 +116,26 @@ export function CreateAppDialog({
                   An app with this name already exists
                 </p>
               )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="installCommand">Install Command</Label>
+              <Input
+                id="installCommand"
+                value={installCommand}
+                onChange={(e) => setInstallCommand(e.target.value)}
+                placeholder="pnpm install"
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="startCommand">Start Command</Label>
+              <Input
+                id="startCommand"
+                value={startCommand}
+                onChange={(e) => setStartCommand(e.target.value)}
+                placeholder="pnpm dev"
+                disabled={isSubmitting}
+              />
             </div>
           </div>
 
