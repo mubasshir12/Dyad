@@ -227,6 +227,8 @@ export interface ApproveProposalResult {
 export interface ImportAppParams {
   path: string;
   appName: string;
+  installCommand?: string;
+  startCommand?: string;
 }
 
 export interface CopyAppParams {
