@@ -31,8 +31,8 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       // Technically it's 128k but OpenAI errors if you set max_tokens instead of max_completion_tokens
       maxOutputTokens: undefined,
       contextWindow: 400_000,
-      // Requires temperature to not be defined
-      temperature: undefined,
+      // Requires temperature to be default value (1)
+      temperature: 1,
     },
     // https://platform.openai.com/docs/models/gpt-5-mini
     {
@@ -42,8 +42,8 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       // Technically it's 128k but OpenAI errors if you set max_tokens instead of max_completion_tokens
       maxOutputTokens: undefined,
       contextWindow: 400_000,
-      // Requires temperature to not be defined
-      temperature: undefined,
+      // Requires temperature to be default value (1)
+      temperature: 1,
     },
     // https://platform.openai.com/docs/models/gpt-5-nano
     {
@@ -53,8 +53,8 @@ export const MODEL_OPTIONS: Record<string, ModelOption[]> = {
       // Technically it's 128k but OpenAI errors if you set max_tokens instead of max_completion_tokens
       maxOutputTokens: undefined,
       contextWindow: 400_000,
-      // Requires temperature to not be defined
-      temperature: undefined,
+      // Requires temperature to be default value (1)
+      temperature: 1,
     },
     // https://platform.openai.com/docs/models/gpt-4.1
     {
