@@ -72,7 +72,7 @@ export async function writeMigrationFile(
   const migrationsDir = path.join(appPath, "supabase", "migrations");
   await fsExtra.ensureDir(migrationsDir);
 
-  const files = await fsExtra.readdir(migrationsDir);
+  const files: string[] = await fsExtra.readdir(migrationsDir);
   const migrationNumbers = files
     .map((file) => {
       const match = file.match(/^(\d{4})_/);
@@ -80,7 +80,7 @@ export async function writeMigrationFile(
     })
     .filter((num) => num !== -1);
 
-  const nextMigrationNumber =
+  const nextMigrationNumber: number =
     migrationNumbers.length > 0 ? Math.max(...migrationNumbers) + 1 : 0;
   const paddedNumber = String(nextMigrationNumber).padStart(4, "0");
 

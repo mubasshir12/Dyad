@@ -168,6 +168,8 @@ export const UserSettingsSchema = z.object({
   enableAutoFixProblems: z.boolean().optional(),
   enableNativeGit: z.boolean().optional(),
   enableAutoUpdate: z.boolean(),
+  enableTransparentWindow: z.boolean().optional(),
+  enableLiquidGlassTheme: z.boolean().optional(),
   releaseChannel: ReleaseChannelSchema,
 
   ////////////////////////////////

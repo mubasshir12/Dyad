@@ -18,6 +18,8 @@ import { BackupManager } from "./backup_manager";
 import { getDatabasePath, initializeDatabase } from "./db";
 import { UserSettings } from "./lib/schemas";
 import { handleNeonOAuthReturn } from "./neon_admin/neon_return_handler";
+import { MCPExtensionManager } from "./mcp/MCPExtensionManager";
+import { setExtensionManager } from "./ipc/handlers/extension_handlers";
 
 log.errorHandler.startCatching();
 log.eventLogger.startLogging();
@@ -47,6 +49,8 @@ if (process.defaultApp) {
   app.setAsDefaultProtocolClient("dyad");
 }
 
+let extensionManager: MCPExtensionManager | null = null;
+
 export async function onReady() {
   try {
     const backupManager = new BackupManager({
@@ -57,13 +61,24 @@ export async function onReady() {
   } catch (e) {
     logger.error("Error initializing backup manager", e);
   }
+
+  // Initialize MCP Extension Manager
+  try {
+    extensionManager = new MCPExtensionManager();
+    await extensionManager.initialize();
+    setExtensionManager(extensionManager);
+    logger.info("MCP Extension Manager initialized successfully");
+  } catch (e) {
+    logger.error("Error initializing MCP Extension Manager", e);
+  }
+
   initializeDatabase();
   const settings = readSettings();
   await onFirstRunMaybe(settings);
   createWindow();
 
   logger.info("Auto-update enabled=", settings.enableAutoUpdate);
-  if (settings.enableAutoUpdate) {
+  if (settings.enableAutoUpdate && app.isPackaged && !process.env.CI) {
     // Technically we could just pass the releaseChannel directly to the host,
     // but this is more explicit and falls back to stable if there's an unknown
     // release channel.
@@ -130,6 +145,7 @@ declare global {
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
+  const currentSettings = readSettings();
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: process.env.NODE_ENV === "development" ? 1280 : 960,
@@ -157,6 +173,9 @@ const createWindow = () => {
       path.join(__dirname, "../renderer/main_window/index.html"),
     );
   }
+  try {
+    mainWindow.setOpacity(currentSettings.enableTransparentWindow ? 0.95 : 1);
+  } catch {}
   if (process.env.NODE_ENV === "development") {
     // Open the DevTools.
     mainWindow.webContents.openDevTools();
@@ -270,6 +289,17 @@ function handleDeepLinkReturn(url: string) {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
+  }
+});
+
+app.on("before-quit", async () => {
+  if (extensionManager) {
+    try {
+      await extensionManager.saveExtensions();
+      logger.info("Extensions saved before quit");
+    } catch (error) {
+      logger.error("Error saving extensions before quit:", error);
+    }
   }
 });
 

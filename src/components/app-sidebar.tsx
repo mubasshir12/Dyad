@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ChatList } from "./ChatList";
 import { AppList } from "./AppList";
-import { HelpDialog } from "./HelpDialog"; // Import the new dialog
+import { HelpDialog } from "./HelpDialog";
 import { SettingsList } from "./SettingsList";
 
 // Menu items.
@@ -46,7 +46,6 @@ const items = [
   },
 ];
 
-// Hover state types
 type HoverState =
   | "start-hover:app"
   | "start-hover:chat"
@@ -55,7 +54,7 @@ type HoverState =
   | "no-hover";
 
 export function AppSidebar() {
-  const { state, toggleSidebar } = useSidebar(); // retrieve current sidebar state
+  const { state, toggleSidebar } = useSidebar();
   const [hoverState, setHoverState] = useState<HoverState>("no-hover");
   const expandedByHover = useRef(false);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false); // State for dialog

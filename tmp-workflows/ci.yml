@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    # Why Mac and Windows?
+    # I can't run electron playwright on ubuntu-latest and
+    # Linux support for Dyad is experimental so not as important
+    # as Mac + Windows
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          [
+            { name: "windows-arm", image: "windows-11-arm" },
+            { name: "windows", image: "windows-latest" },
+            { name: "macos", image: "macos-latest" },
+          ]
+    runs-on: ${{ matrix.os.image }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize environment
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install node modules
+        run: npm ci --no-audit --no-fund --progress=false
+
+      - name: Presubmit check (e.g. lint, format)
+        # do not run this on Windows (it fails and not necessary)
+        if: contains(matrix.os.name, 'macos')
+        run: npm run presubmit
+
+      - name: Type-checking
+        # do not run this on windows (it's redundant)
+        if: contains(matrix.os.name, 'macos')
+        run: npm run ts
+
+      - name: Unit tests
+        # do not run this on windows (it's redundant)
+        if: contains(matrix.os.name, 'macos')
+        run: npm run test
+
+      # --- pnpm setup and robust dependency management for scaffold + nextjs-template ---
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: latest
+
+      - name: Clone nextjs-template
+        run: git clone --depth 1 https://github.com/dyad-sh/nextjs-template.git nextjs-template
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache for scaffold
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ matrix.os.name }}-pnpm-scaffold-${{ hashFiles('scaffold/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ matrix.os.name }}-pnpm-scaffold-
+
+      - name: Setup pnpm cache for nextjs-template
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ matrix.os.name }}-pnpm-nextjs-${{ hashFiles('nextjs-template/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ matrix.os.name }}-pnpm-nextjs-
+
+      # Not strictly needed but makes the e2e tests faster (and less flaky)
+      - name: Install scaffold dependencies (with retry)
+        shell: bash
+        run: |
+          cd scaffold
+          echo "Installing scaffold dependencies..."
+          if ! pnpm install --frozen-lockfile; then
+            echo "Frozen lockfile install failed, trying with lockfile update..."
+            pnpm install --no-frozen-lockfile
+          fi
+          if ! pnpm list --depth=0; then
+            echo "ERROR: scaffold dependency verification failed"
+            exit 1
+          fi
+
+      - name: Install nextjs-template dependencies (with retry)
+        shell: bash
+        run: |
+          cd nextjs-template
+          echo "Installing nextjs-template dependencies..."
+          if ! pnpm install --frozen-lockfile; then
+            echo "Frozen lockfile install failed, trying with lockfile update..."
+            pnpm install --no-frozen-lockfile
+          fi
+          if ! pnpm list --depth=0; then
+            echo "ERROR: nextjs-template dependency verification failed"
+            exit 1
+          fi
+
+      - name: Install Chromium browser for Playwright
+        run: npx playwright install chromium --with-deps
+
+      - name: Build
+        run: npm run pre:e2e
+
+      - name: Prep test server
+        run: cd testing/fake-llm-server && npm install && npm run build && cd -
+
+      - name: E2E tests
+        # You can add debug logging to make it easier to see what's failing
+        # by adding "DEBUG=pw:browser" in front.
+        run: DEBUG=pw:browser npm run e2e
+
+      - name: Debug dependency info
+        if: failure()
+        run: |
+          echo "=== Debug Information ==="
+          echo "Node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "pnpm version: $(pnpm --version)"
+          echo ""
+          echo "=== pnpm store info ==="
+          pnpm store path
+          pnpm store status
+          echo ""
+          echo "=== scaffold lockfile hash ==="
+          if [ -f scaffold/pnpm-lock.yaml ]; then
+            shasum scaffold/pnpm-lock.yaml
+          else
+            echo "scaffold/pnpm-lock.yaml not found"
+          fi
+          echo ""
+          echo "=== nextjs-template lockfile hash ==="
+          if [ -f nextjs-template/pnpm-lock.yaml ]; then
+            shasum nextjs-template/pnpm-lock.yaml
+          else
+            echo "nextjs-template/pnpm-lock.yaml not found"
+          fi
+
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.os.name }}
+          path: playwright-report/
+          retention-days: 3
+
+      - uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        if: failure()
+        with:
+          name: test-results-${{ matrix.os.name }}
+          path: test-results/
+          retention-days: 3

@@ -22,7 +22,9 @@ import { Label } from "@/components/ui/label";
 import { AutoFixProblemsSwitch } from "@/components/AutoFixProblemsSwitch";
 import { AutoUpdateSwitch } from "@/components/AutoUpdateSwitch";
 import { ReleaseChannelSelector } from "@/components/ReleaseChannelSelector";
+import { TransparentWindowSwitch } from "@/components/TransparentWindowSwitch";
 import { NeonIntegration } from "@/components/NeonIntegration";
+import { MCPExtensionsIntegration } from "@/components/MCPExtensionsIntegration";
 
 export default function SettingsPage() {
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -115,6 +117,7 @@ export default function SettingsPage() {
               <VercelIntegration />
               <SupabaseIntegration />
               <NeonIntegration />
+              <MCPExtensionsIntegration />
             </div>
           </div>
 
@@ -206,6 +209,7 @@ export default function SettingsPage() {
 
 export function GeneralSettings({ appVersion }: { appVersion: string | null }) {
   const { theme, setTheme } = useTheme();
+  const { settings, updateSettings } = useSettings();
 
   return (
     <div
@@ -249,6 +253,33 @@ export function GeneralSettings({ appVersion }: { appVersion: string | null }) {
         <div className="text-sm text-gray-500 dark:text-gray-400">
           This will automatically update the app when new versions are
           available.
+        </div>
+      </div>
+
+      <div className="space-y-1 mt-4">
+        <TransparentWindowSwitch />
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Enables transparent windows. A restart may be required on
+          macOS/Windows.
+        </div>
+      </div>
+
+      <div className="space-y-1 mt-4">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="enable-liquid-glass"
+            checked={!!settings?.enableLiquidGlassTheme}
+            onCheckedChange={(checked) => {
+              updateSettings({ enableLiquidGlassTheme: checked });
+              const root = document.documentElement;
+              if (checked) root.classList.add("liquid-glass");
+              else root.classList.remove("liquid-glass");
+            }}
+          />
+          <Label htmlFor="enable-liquid-glass">Liquid Glass Theme</Label>
+        </div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Enables glass/frosted UI for buttons, inputs, cards, and toggles.
         </div>
       </div>
 

@@ -62,7 +62,7 @@ test("edit code edits the right file", async ({ po }) => {
     .fill("export const MadeWithDyad = ;");
 
   // Save the file by switching files
-  await po.page.getByText("robots.txt").click();
+  await po.page.getByText("robots.txt").first().click();
 
   // Expect toast to be visible
   await expect(po.page.getByText("File saved")).toBeVisible();

@@ -1069,4 +1069,38 @@ export class IpcClient {
   public async getTemplates(): Promise<Template[]> {
     return this.ipcRenderer.invoke("get-templates");
   }
+
+  // Extension methods
+  public async listExtensions(): Promise<any[]> {
+    return this.ipcRenderer.invoke("list-extensions");
+  }
+
+  public async addExtension(extension: any): Promise<any> {
+    return this.ipcRenderer.invoke("add-extension", extension);
+  }
+
+  public async updateExtension(params: {
+    extensionId: string;
+    updates: any;
+  }): Promise<any> {
+    return this.ipcRenderer.invoke("update-extension", params);
+  }
+
+  public async deleteExtension(extensionId: string): Promise<void> {
+    return this.ipcRenderer.invoke("delete-extension", extensionId);
+  }
+
+  public async toggleExtension(params: {
+    extensionId: string;
+    enabled: boolean;
+  }): Promise<any> {
+    return this.ipcRenderer.invoke("toggle-extension", params);
+  }
+
+  public async installNpmPackage(params: {
+    packageName: string;
+    config?: any;
+  }): Promise<any> {
+    return this.ipcRenderer.invoke("install-npm-package", params);
+  }
 }

@@ -5,7 +5,6 @@ import fs from "node:fs";
 import git from "isomorphic-git";
 import { getDyadAppPath } from "../../paths/paths";
 import { neon } from "@neondatabase/serverless";
-
 import log from "electron-log";
 import { getNeonClient } from "@/neon_admin/neon_management_client";
 
