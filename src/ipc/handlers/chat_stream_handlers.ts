@@ -38,7 +38,7 @@ import * as path from "path";
 import * as os from "os";
 import * as crypto from "crypto";
 import { readFile, writeFile, unlink } from "fs/promises";
-import { getMaxTokens } from "../utils/token_utils";
+import { getMaxTokens, getTemperature } from "../utils/token_utils";
 import { MAX_CHAT_TURNS_IN_CONTEXT } from "@/constants/settings_constants";
 import { validateChatContext } from "../utils/context_paths_utils";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
@@ -58,6 +58,7 @@ import {
 } from "../utils/dyad_tag_parser";
 import { fileExists } from "../utils/file_utils";
 import { FileUploadsState } from "../utils/file_uploads_state";
+import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 
 type AsyncIterableStream<T> = AsyncIterable<T> & ReadableStream<T>;
 
@@ -123,6 +124,7 @@ async function processStreamChunks({
 
   for await (const part of fullStream) {
     let chunk = "";
+    console.log("part", part);
     if (part.type === "text-delta") {
       if (inThinkingBlock) {
         chunk = "</think>";
@@ -593,7 +595,7 @@ This conversation includes one or more image attachments. When the user uploads 
           }
           return streamText({
             maxTokens: await getMaxTokens(settings.selectedModel),
-            temperature: 0,
+            temperature: await getTemperature(settings.selectedModel),
             maxRetries: 2,
             model: modelClient.model,
             providerOptions: {
@@ -609,6 +611,9 @@ This conversation includes one or more image attachments. When the user uploads 
                   includeThoughts: true,
                 },
               } satisfies GoogleGenerativeAIProviderOptions,
+              openai: {
+                reasoningSummary: "auto",
+              } satisfies OpenAIResponsesProviderOptions,
             },
             system: systemPrompt,
             messages: chatMessages.filter((m) => m.content),
