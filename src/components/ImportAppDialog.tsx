@@ -39,6 +39,8 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
   const [customAppName, setCustomAppName] = useState<string>("");
   const [nameExists, setNameExists] = useState<boolean>(false);
   const [isCheckingName, setIsCheckingName] = useState<boolean>(false);
+  const [installCommand, setInstallCommand] = useState("pnpm install");
+  const [startCommand, setStartCommand] = useState("pnpm dev");
   const navigate = useNavigate();
   const { streamMessage } = useStreamChat({ hasChatId: false });
   const { refreshApps } = useLoadApps();
@@ -89,6 +91,8 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
       return IpcClient.getInstance().importApp({
         path: selectedPath,
         appName: customAppName,
+        installCommand: installCommand.trim(),
+        startCommand: startCommand.trim(),
       });
     },
     onSuccess: async (result) => {
@@ -128,6 +132,8 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
     setHasAiRules(null);
     setCustomAppName("");
     setNameExists(false);
+    setInstallCommand("pnpm install");
+    setStartCommand("pnpm dev");
   };
 
   const handleAppNameChange = async (
@@ -139,6 +145,9 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
       await checkAppName(newName);
     }
   };
+
+  const hasInstall = installCommand.trim().length > 0;
+  const hasStart = startCommand.trim().length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -221,6 +230,25 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
                 </div>
               </div>
 
+              <div className="grid gap-2">
+                <Label className="text-sm ml-2 mb-2">Install command</Label>
+                <Input
+                  value={installCommand}
+                  onChange={(e) => setInstallCommand(e.target.value)}
+                  placeholder="pnpm install"
+                  disabled={importAppMutation.isPending}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-sm ml-2 mb-2">Start command</Label>
+                <Input
+                  value={startCommand}
+                  onChange={(e) => setStartCommand(e.target.value)}
+                  placeholder="pnpm dev"
+                  disabled={importAppMutation.isPending}
+                />
+              </div>
+
               {hasAiRules === false && (
                 <Alert className="border-yellow-500/20 text-yellow-500 flex items-start gap-2">
                   <TooltipProvider>
@@ -264,7 +292,11 @@ export function ImportAppDialog({ isOpen, onClose }: ImportAppDialogProps) {
           <Button
             onClick={handleImport}
             disabled={
-              !selectedPath || importAppMutation.isPending || nameExists
+              !selectedPath ||
+              importAppMutation.isPending ||
+              nameExists ||
+              !hasInstall ||
+              !hasStart
             }
             className="min-w-[80px]"
           >
