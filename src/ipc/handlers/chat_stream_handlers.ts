@@ -124,7 +124,6 @@ async function processStreamChunks({
 
   for await (const part of fullStream) {
     let chunk = "";
-    console.log("part", part);
     if (part.type === "text-delta") {
       if (inThinkingBlock) {
         chunk = "</think>";

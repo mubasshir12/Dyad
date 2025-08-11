@@ -33,7 +33,7 @@ export async function getMaxTokens(
 
 export async function getTemperature(
   model: LargeLanguageModel,
-): Promise<number | undefined> {
+): Promise<number> {
   const modelOption = await findLanguageModel(model);
   return modelOption?.temperature ?? 0;
 }
