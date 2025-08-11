@@ -42,13 +42,16 @@ export function registerCapacitorHandlers() {
       const appPath = getDyadAppPath(app.path);
 
       // check for the required Node.js version before running any commands
-      const currentNodeVersion = process.version; 
-      const majorVersion = parseInt(currentNodeVersion.slice(1).split('.')[0], 10);
+      const currentNodeVersion = process.version;
+      const majorVersion = parseInt(
+        currentNodeVersion.slice(1).split(".")[0],
+        10,
+      );
 
       if (majorVersion < 20) {
         // version is too old? stop and throw a clear error
         throw new Error(
-          `Capacitor requires Node.js v20 or higher, but you are using ${currentNodeVersion}. Please upgrade your Node.js and try again.`
+          `Capacitor requires Node.js v20 or higher, but you are using ${currentNodeVersion}. Please upgrade your Node.js and try again.`,
         );
       }
       return isCapacitorInstalled(appPath);
